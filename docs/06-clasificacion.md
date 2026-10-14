@@ -27,14 +27,14 @@ Confirmar con Andrea esta lista y qué significa cada una:
 | **Cotización** | Envío, consulta, aceptación o modificación de una cotización, **sin** pedir camión ni fecha. | No |
 | **Despacho** | El cliente viene con su camión a **retirar** equipos de Alzatec para llevarlos a su obra. | Sí |
 | **Recepción** | El cliente **devuelve** equipos: los trae de su obra a Alzatec. | Sí |
-| **Camión Alzatec** (excepción) | Gestión interna con el camión propio: llevar a una obra algo que **faltó** en un despacho, o ir a buscar **material galvanizado**. | Sí, como REVISAR en la v1 |
+| **Camión Alzatec** (casos puntuales) | Gestión interna con el camión propio: llevar a una obra algo que **faltó** en un despacho, o ir a **retirar material galvanizado** (por ejemplo, a la obra de un cliente). | Sí, como REVISAR en la v1 |
 | **Cambio o cancelación** | Cambia la fecha o anula un despacho o recepción ya pedido. | Sí, como REVISAR en la v1 |
 | **Otro** | Proveedores, facturas, publicidad, avisos automáticos. | No |
 
 **Preguntas:**
 - ¿Falta alguna categoría? ¿Sobra alguna?
 - **Vocabulario ✓:** cuando un cliente dice **"retiro"**, siempre significa que viene a buscar equipos a Alzatec, o sea, un **despacho**. Para devolver no dicen "retiro". Preguntar qué otras palabras usan: "paso a buscar", "devolución", "término de obra", etc.
-- **Camión de Alzatec:** ¿hay otras excepciones aparte de faltantes y galvanizado? ¿Esos pedidos llegan a esta casilla, o se coordinan internamente? ¿Van en el mismo Excel? El galvanizado, ¿se busca en la galvanizadora?
+- **Camión de Alzatec (casos puntuales):** ¿hay otros aparte de faltantes y material galvanizado? El material galvanizado, ¿se retira de la **obra del cliente** o de la **galvanizadora**? ¿Esos pedidos llegan a esta casilla o se coordinan internamente? ¿Van en el mismo Excel?
 - ¿Un **despacho parcial** (se lleva una parte ahora y el resto otro día) es una fila o varias?
 
 ## 2. Cómo se reconoce cada una

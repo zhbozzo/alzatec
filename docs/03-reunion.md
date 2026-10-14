@@ -28,7 +28,7 @@ Esto va primero, porque todo lo demás depende de esta definición.
   - **Despacho:** el cliente viene a **retirar** equipos de Alzatec. "Retiro" siempre significa esto.
   - **Recepción:** el cliente **devuelve** equipos a Alzatec.
 - ¿Hay casos especiales?
-  - excepciones con el camión de Alzatec (llevar faltantes a una obra, ir a buscar material galvanizado),
+  - casos puntuales con el camión de Alzatec (llevar faltantes a una obra, ir a retirar material galvanizado: ¿a la obra del cliente o a la galvanizadora?),
   - cambios de fecha y cancelaciones,
   - correos que mezclan cosas ("acepto la cotización y la busco mañana").
 - De cada solicitud, ¿qué datos le pasa a Pato?

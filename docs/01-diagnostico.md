@@ -63,7 +63,7 @@ Según gerencia, en la casilla hay tres tipos de correo. Andrea debe definir có
 
 Casos a validar dentro de esos tipos:
 - **Cambio de fecha o cancelación** de una solicitud que ya está en el Excel.
-- **Excepciones con el camión de Alzatec** (gestión interna): llevar a una obra algo que faltó en un despacho, o ir a buscar material galvanizado.
+- **Casos puntuales con el camión de Alzatec** (gestión interna): llevar a una obra algo que faltó en un despacho, o ir a **retirar material galvanizado**, por ejemplo a la obra de un cliente. **(confirmar de dónde)**
 - **Correos que mezclan** cotización y despacho, por ejemplo "acepto la cotización, la voy a buscar mañana".
 
 **Vocabulario ✓:** cuando un cliente dice **"retiro"**, siempre es un **despacho**: viene a buscar equipos a Alzatec. Las devoluciones son **recepciones**.
