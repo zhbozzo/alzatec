@@ -1,36 +1,34 @@
 # Requerimientos · Agente de agenda de camiones
 
 **Para:** Gerencia Alzatec S.A.
-**Estado:** borrador previo a la reunión con Patricio Farías. Los puntos marcados **[validar]** se completan con lo que salga de esa reunión.
+**Estado:** borrador previo a la reunión con Andrea y Patricio Farías. Los puntos marcados **[validar]** se completan con lo que salga de esa reunión.
 
 ## 1. Contexto y objetivo
 
-La casilla `asistentetecnico@` envía unas **25–30 cotizaciones diarias**. Los clientes responden en esos mismos hilos para coordinar **retiros y devoluciones de equipos**, y a la bodega entran unos **10 camiones al día**. Hoy esas solicitudes se detectan a mano entre todos los correos y se traspasan a la agenda de camiones que lleva Patricio Farías.
+La casilla `asistentetecnico@` envía unas **25–30 cotizaciones diarias**. Por esa misma casilla llegan todas las **solicitudes de despacho y de recepción** de equipos: las mandan los clientes, muchas veces en el mismo hilo de la cotización, o los vendedores, con copia a la casilla. A la bodega entran unos **10 camiones al día**, y esa agenda la lleva Patricio Farías en un Excel.
 
-**Objetivo:** que un agente detecte automáticamente esas solicitudes y alimente la agenda de camiones, **sin interferir con el trabajo de la casilla `asistentetecnico@` ni con MADA**.
+**Objetivo:** que un agente separe automáticamente las cotizaciones de las solicitudes de despacho y recepción, **llene el Excel de agenda** y **marque una alerta cuando el día pedido esté copado**. Todo esto sin interferir con el trabajo de `asistentetecnico@` ni con MADA.
 
 ## 2. Alcance
 
 **Incluye**
-- Lectura de una copia de los correos que llegan a `asistentetecnico@`.
-- Clasificación de las solicitudes y extracción de sus datos.
-- Agenda digital de camiones para Patricio Farías, con confirmación de cada solicitud.
-- Avisos de las solicitudes urgentes y un resumen diario.
+- Lectura de una copia de los correos que llegan a `asistentetecnico@`, incluidas las copias (CC).
+- Clasificación de cada correo en cotización, despacho, recepción u otro, y extracción de sus datos.
+- Escritura de las solicitudes en el Excel de agenda, revisando el cupo.
+- Alertas de día copado, de solicitudes urgentes y de casos a revisar.
 
 **No incluye**
 - Enviar o responder correos desde `asistentetecnico@`.
 - Registrar o modificar datos en MADA.
 - El trabajo de cotizaciones y de proyectistas.
-- Cambiar el proveedor de correo.
 
 ## 3. Usuarios
 
 | Usuario | Uso |
 |---|---|
-| Patricio Farías | Usuario principal. Confirma, corrige o descarta las propuestas, y administra la agenda. |
-| Andrea (`asistentetecnico@`) | No cambia su forma de trabajar. Puede consultar la agenda **[validar]**. |
-| Bodega / portería | Ve la agenda del día **[validar]**. |
-| Gerencia | Ve los indicadores. |
+| Patricio Farías | Usa el Excel igual que hoy y confirma las filas que escribe el agente. Recibe las alertas. |
+| Andrea (`asistentetecnico@`) | Define los tipos de correo. No cambia su forma de trabajar. Recibe las alertas de día copado **[validar]**. |
+| Gerencia | Autoriza los accesos y ve los resultados. |
 
 ## 4. Requerimientos funcionales
 
@@ -40,86 +38,78 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-01 | Recibir una copia de cada correo que llega a `asistentetecnico@`, mediante un reenvío con copia a una casilla del agente. | I |
+| RF-01 | Recibir una copia de cada correo que llega a `asistentetecnico@`, incluidas las copias (CC), mediante un reenvío a una casilla del agente. | I |
 | RF-02 | No modificar nada en la casilla `asistentetecnico@`: no marcar como leído, no mover, no borrar y no responder. | I |
-| RF-03 | Agrupar los correos por hilo, para que las respuestas actualicen la misma solicitud. | I |
+| RF-03 | Agrupar los correos por hilo y evitar duplicados cuando el mismo pedido llega en varios correos. | I |
 
 ### B. Clasificación y extracción
 
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-04 | Clasificar cada correo en uno de estos tipos **[validar la lista]**: retiro en bodega; devolución en bodega; camión de Alzatec (despacho a obra, retiro en obra o retiro de galvanizado); reprogramación o cancelación; cotización sin camión; otro. | I |
-| RF-05 | Extraer los datos de la solicitud: fecha, hora o bloque, cliente, obra, N° de cotización, contacto, patente y chofer, y equipos mencionados. | I |
-| RF-06 | Convertir las fechas relativas ("hoy", "mañana", "el jueves") en una fecha real, en horario de Chile y considerando días hábiles y feriados. | I |
-| RF-07 | Cuando haya dudas, marcar la solicitud como "revisar". Ningún correo con posible solicitud se descarta sin que una persona lo vea. | I |
+| RF-04 | Clasificar cada correo como **cotización**, **solicitud de despacho**, **solicitud de recepción** u **otro**, según los criterios que defina Andrea **[validar criterios]**. | I |
+| RF-05 | Reconocer los cambios de fecha y las cancelaciones de solicitudes que ya están en el Excel. | M |
+| RF-06 | Reconocer los viajes del camión de Alzatec (faltantes a obra, material galvanizado) **[validar si van en el mismo Excel]**. | M |
+| RF-07 | Extraer los datos que piden las columnas del Excel **[validar columnas]**: fecha, hora, cliente, obra, N° de cotización, contacto, transporte y equipos. | I |
+| RF-08 | Convertir las fechas relativas ("hoy", "mañana", "el jueves") en una fecha real, en horario de Chile y con días hábiles y feriados. | I |
 
-### C. Agenda
-
-| ID | Requerimiento | Prioridad |
-|---|---|---|
-| RF-08 | Crear cada solicitud como evento "por confirmar", con el texto original y un enlace al correo. | I |
-| RF-09 | Que una reprogramación o cancelación actualice el evento que ya existe. | I |
-| RF-10 | Marcar como **urgente** toda solicitud con menos de 2 días de anticipación **[validar la regla]**. | I |
-| RF-11 | Que Patricio Farías pueda confirmar, corregir o descartar cada propuesta con 1 clic. | I |
-| RF-12 | Vista del día y de la semana, con bloques horarios y capacidad por bloque **[validar bloques y capacidad]**. | I |
-| RF-13 | Carga manual de las solicitudes que llegan por teléfono o WhatsApp. | M |
-| RF-14 | Hoja del día imprimible. | M |
-| RF-15 | Agenda o filtro separado para el camión de Alzatec **[validar]**. | M |
-| RF-16 | Registrar si el cliente llegó o no llegó. | D |
-
-### D. Avisos
+### C. Escritura en el Excel
 
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-17 | Aviso inmediato a Patricio Farías cuando llegue una solicitud para el mismo día. | I |
-| RF-18 | Resumen diario con lo de mañana y pasado, a la hora que se defina **[validar hora]**. | M |
-| RF-19 | Confirmación y recordatorio al cliente desde una casilla de agenda (no desde `asistentetecnico@`), con aprobación previa de Patricio Farías. | D |
+| RF-09 | Escribir cada despacho o recepción como una fila nueva en el Excel de agenda, con el formato actual. | I |
+| RF-10 | Agregar una columna **Estado**: POR CONFIRMAR, CONFIRMADO, SIN CUPO, URGENTE o REVISAR. El agente nunca escribe CONFIRMADO; eso lo hace Patricio Farías. | I |
+| RF-11 | Antes de escribir, **revisar el cupo del día** contando todas las filas, incluidas las que se escriben a mano, contra la capacidad definida **[validar regla de cupo]**. | I |
+| RF-12 | Agregar una columna **Origen** con el asunto, la fecha y el remitente del correo. | M |
+| RF-13 | Revisar los encabezados del Excel antes de escribir. Si cambió el formato, no escribir y avisar. | I |
+| RF-14 | Actualizar la fila existente cuando llega un cambio de fecha o una cancelación. | M |
+
+### D. Alertas
+
+| ID | Requerimiento | Prioridad |
+|---|---|---|
+| RF-15 | **Día copado:** marcar la fila como SIN CUPO, indicar el próximo día con cupo y avisar a Patricio Farías y a Andrea **[validar destinatarios y qué hacer con la solicitud]**. | I |
+| RF-16 | **Urgente:** marcar y avisar cuando la solicitud tiene menos de 2 días de anticipación **[validar regla]**. | I |
+| RF-17 | **Revisar:** marcar y avisar cuando el agente no está seguro del tipo o de la fecha. | I |
+| RF-18 | Enviar un resumen diario de lo agendado para mañana y pasado **[validar hora]**. | D |
 
 ### E. Medición
 
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-20 | Registrar cada propuesta del agente y qué se hizo con ella (confirmada, corregida o descartada), para medir la precisión. | I |
-| RF-21 | Tablero con camiones por día, urgentes y clientes que no llegaron. | D |
-
-### F. Extensiones
-
-| ID | Requerimiento | Prioridad |
-|---|---|---|
-| RF-22 | Leer la cotización en MADA para mostrar qué equipos hay que preparar, solo si INQSOL lo permite. | D |
-| RF-23 | Leer otras casillas, como `pfarias@` o las de los comerciales. | D |
+| RF-19 | Registrar cada correo procesado, cómo se clasificó y qué escribió el agente, para medir la precisión. | I |
 
 ## 5. Requerimientos no funcionales
 
 - **No interferencia:** el trabajo en `asistentetecnico@` y en MADA sigue exactamente igual.
-- **Rapidez:** la solicitud aparece en la agenda menos de 5 minutos después de que llega el correo.
+- **El Excel se sigue usando igual:** mismo formato, se puede escribir a mano y se puede imprimir.
+- **Escritura segura:** el agente puede escribir aunque el Excel esté abierto. Para eso tiene que vivir en OneDrive, SharePoint o Google Sheets **[validar dónde vive hoy]**.
+- **Rapidez:** la fila aparece menos de 5 minutos después de que llega el correo.
 - **Sin pérdida:** si el agente falla, los correos se acumulan en su casilla y se procesan cuando vuelve.
-- **Trazabilidad:** queda registro de quién confirmó o modificó cada evento.
-- **Seguridad:** acceso con usuario personal, contraseñas cifradas y respaldo diario.
-- **Uso:** funciona en el celular, en español y en horario de Chile.
+- **Seguridad:** las credenciales se guardan cifradas, el agente tiene el mínimo acceso necesario y queda registro de lo que escribió.
 
 ## 6. Lo que se necesita de Alzatec
 
 | Qué | Para qué | Cuándo |
 |---|---|---|
-| Patricio Farías como contraparte, con 1 hora a la semana | Validar tipos, reglas y avances | Desde el inicio |
+| Andrea: criterios para cada tipo, más 5–10 correos reales de cada uno | Enseñarle al agente a clasificar | Fase 0 |
+| Patricio Farías: una copia del Excel y la regla de cupo | Saber qué columnas llenar y cuándo un día está copado | Fase 0 |
+| Los correos de 1–2 semanas pasadas, más el Excel de esas mismas semanas | Medir al agente contra lo que pasó de verdad | Fase 0 |
 | Acceso al cPanel de HostingPlus, o alguien que lo tenga | Crear `agente@` y el reenvío con copia | Fase 1 |
-| La agenda real de 1–2 semanas, más los correos de `asistentetecnico@` de esas mismas semanas | Medir al agente contra la realidad antes de que opere | Fase 0 |
-| Las reglas de la agenda: bloques, capacidad, anticipación y horarios | Configurar la agenda | Fase 0 |
+| Acceso de escritura al Excel en la nube, o autorización para moverlo ahí | Que el agente pueda escribir | Fase 1 |
 
 ## 7. Fases y criterios de aceptación
 
 | Fase | Entregable | Se da por cumplida cuando… |
 |---|---|---|
-| 0 · Levantamiento | Requerimientos validados y set de prueba | Gerencia y Patricio Farías aprueban este documento. |
-| 1 · Modo sombra | El agente propone solicitudes, sin reemplazar la agenda actual | Sobre semanas reales, detecta **≥ 95%** de las solicitudes de la agenda de Patricio y acierta tipo y fecha en **≥ 90%** **[validar metas]**. |
-| 2 · Agenda digital | Agenda con confirmación, hoja imprimible y avisos | Dos semanas de operación sin solicitudes perdidas. |
-| 3 · Camión Alzatec y clientes | Agenda del camión propio, reprogramaciones y confirmación al cliente | Se definen al cerrar la fase 2. |
-| 4 · Extensiones | Lectura de MADA, otras casillas, WhatsApp | Se definen con gerencia. |
+| 0 · Levantamiento | Tipos, columnas y regla de cupo definidos, y un set de prueba | Gerencia, Andrea y Patricio Farías aprueban este documento. |
+| 1 · Modo sombra | El agente escribe en una copia del Excel | Sobre semanas reales, detecta **≥ 95%** de las solicitudes del Excel real, acierta tipo y fecha en **≥ 90%**, y las alertas de día copado son correctas **[validar metas]**. |
+| 2 · En vivo | Escribe en el Excel real y manda las alertas | Dos semanas de operación sin solicitudes perdidas. |
+| 3 · Casos especiales | Cambios de fecha, cancelaciones y camión de Alzatec | Se definen al cerrar la fase 2. |
+| 4 · Extensiones | Lectura de MADA, WhatsApp, indicadores | Se definen con gerencia. |
 
 ## 8. Supuestos y pendientes
 
-- El volumen de 25–30 cotizaciones diarias y de unos 10 camiones al día está confirmado por gerencia.
-- MADA se usa para cotizaciones, pedidos, devoluciones e inventario, y el proyecto no lo modifica.
-- La mayoría de los camiones son de los clientes, que retiran o devuelven en la bodega de Alzatec **[validar]**.
-- El formato actual de la agenda de Patricio Farías **[por ver en la reunión]**.
+- Todas las solicitudes se canalizan por `asistentetecnico@`, incluidas las que reenvían o copian los vendedores ✓.
+- La agenda de camiones es un Excel que lleva Patricio Farías ✓. Falta ver dónde vive y cómo está armado **[por ver en la reunión]**.
+- El volumen de 25–30 cotizaciones diarias y de unos 10 camiones al día está confirmado ✓.
+- MADA se usa para cotizaciones, pedidos, devoluciones e inventario, y el proyecto no lo modifica ✓.

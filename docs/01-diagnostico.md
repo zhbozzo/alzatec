@@ -1,7 +1,7 @@
 # 01 · Diagnóstico
 
 > Fuentes: nota de gerencia y conversación con gerencia sobre cómo funciona la empresa.
-> Lo marcado **(confirmar)** se valida con Patricio Farías ([03-reunion.md](03-reunion.md)).
+> Lo marcado **(confirmar)** se valida con Andrea y Patricio Farías ([03-reunion.md](03-reunion.md)).
 
 ## Cómo está organizada el área de proyectos
 
@@ -9,10 +9,8 @@
 |---|---|---|
 | Cotizaciones | 3 personas | Reciben las solicitudes de cotización y se las pasan a los proyectistas. |
 | Proyectistas | Los dirige Alejandro Farías. Son arquitectos, cubicadores y 2 ingenieros estructurales. | Modelan el pedido del cliente en sus sistemas de dibujo y calculan cuántas piezas de cada producto se necesitan (verticales, diagonales, etc.). |
-| Contratos y logística | Patricio "Pato" Farías (`pfarias@`) | Lleva los contratos en curso y los clientes. Administra todos los despachos y recepciones, y lleva la **agenda de camiones**. |
-| Asistente técnico | Andrea (`asistentetecnico@`) | Envía al cliente las cotizaciones terminadas, las registra en MADA y coordina los retiros y devoluciones con Pato. |
-
-Cada área funciona por separado. El punto donde se juntan es la casilla `asistentetecnico@`.
+| Contratos y logística | Patricio "Pato" Farías (`pfarias@`) | Lleva los contratos en curso y los clientes. Administra todos los despachos y recepciones, y lleva la **agenda de camiones en Excel**. |
+| Asistente técnico | Andrea (`asistentetecnico@`) | Envía al cliente las cotizaciones terminadas, las registra en MADA y coordina despachos y recepciones con Pato. |
 
 ## El flujo
 
@@ -23,8 +21,9 @@ flowchart LR
   PR -->|"cotización lista<br/>(por correo)"| AN["Andrea<br/>asistentetecnico@"]
   AN -->|envía cotización| CL
   AN -->|registra| MADA[("MADA")]
-  CL -->|"responde el mismo hilo:<br/>retiro / devolución"| AN
-  AN -->|coordina| PA["Pato<br/>agenda de camiones"]
+  CL -->|"responde el mismo hilo:<br/>despacho / recepción"| AN
+  VE -.->|"con copia a Andrea"| AN
+  AN -->|coordina| PA["Pato<br/>Excel de agenda"]
   PA --> BO["Bodega<br/>~10 camiones/día"]
   BO -->|"despacho parcial /<br/>recepción"| MADA
 ```
@@ -32,55 +31,61 @@ flowchart LR
 1. El cliente le pide algo a un comercial. Los proyectistas lo modelan y cubican.
 2. La cotización terminada le llega a Andrea, probablemente por correo **(confirmar)**. Ella la envía al cliente y la registra en MADA.
 3. El cliente responde, muchas veces **en el mismo hilo de la cotización**: "lo voy a buscar hoy", "pasamos el jueves", "queremos devolver".
-4. Andrea coordina con Pato, y Pato lo anota en su agenda de camiones.
-5. El camión del cliente llega a la bodega a retirar o a devolver. Cada movimiento queda registrado en MADA como despacho parcial o recepción.
+4. Andrea coordina con Pato, y Pato lo anota en su **Excel de agenda**.
+5. El camión llega a la bodega. Cada movimiento queda registrado en MADA como despacho parcial o recepción.
+
+### Todo pasa por Andrea
+
+Si una solicitud llega por otro medio, igual se registra a través de Andrea. Por ejemplo, un vendedor la reenvía o la copia (CC). Eso hace de `asistentetecnico@` la **entrada única**: si el agente lee esa casilla, ve todas las solicitudes.
 
 ## Volumen
 
 - **25–30 cotizaciones** enviadas al día desde `asistentetecnico@`.
-- Unos **10 camiones** entran cada día a Alzatec a retirar o devolver equipos.
+- Unos **10 camiones** entran cada día a Alzatec.
 
 ## Qué hace cada sistema
 
 | Sistema | Qué guarda | ¿Lo toca el proyecto? |
 |---|---|---|
 | **MADA** (INQSOL) | Cotizaciones, pedidos y devoluciones por cliente, inventario al día, y cuánto se ha despachado y facturado por cotización. | **No.** |
-| **Correo `asistentetecnico@`** | Las cotizaciones enviadas y las respuestas de los clientes, incluidas las solicitudes de retiro y devolución. | Solo lee una copia. |
-| **Agenda de Pato** | Qué camión viene, cuándo y a qué. Hoy probablemente está en Excel o en papel **(confirmar)**. La nota de gerencia está escrita al reverso de una planilla con horarios de 8:00 a 13:00; probablemente sea esta agenda. | Es lo que se automatiza. |
+| **Correo `asistentetecnico@`** | Cotizaciones, solicitudes de despacho y solicitudes de recepción. | Solo lee una copia. |
+| **Excel de agenda de Pato** | Qué camión viene, cuándo y a qué. | **Sí: el agente lo llena** y avisa cuando un día está copado. |
 
-## El problema a resolver
+## Tipos de correo
 
-Las solicitudes que implican un camión llegan **mezcladas con las cotizaciones** en la casilla de Andrea. Además vienen en lenguaje libre ("paso mañana en la tarde") y muchas veces escondidas dentro del hilo de una cotización. Alguien tiene que leerlo todo, detectar cuáles requieren camión y traspasarlas a la agenda de Pato.
+Según gerencia, en la casilla hay tres tipos de correo. Andrea debe definir cómo se reconoce cada uno.
 
-**Eso es lo que hará el agente.** Es un trabajo de agenda, no de cotizaciones.
-
-## Tipos de solicitud (hipótesis a validar con Pato)
-
-| Tipo | Ejemplo | ¿Va a la agenda? |
+| Tipo | Qué es | ¿Va al Excel? |
 |---|---|---|
-| **Retiro en bodega** | "Mañana pasamos a retirar lo de la cotización 1234" | Sí, como salida de equipos. |
-| **Devolución en bodega** | "El jueves devolvemos los andamios de la obra X" | Sí, como entrada de equipos. |
-| **Camión de Alzatec** | Llevar algo que faltó a una obra, o ir a buscar material galvanizado | Sí, en la agenda del camión propio. |
-| **Reprogramación o cancelación** | "Mejor el viernes", "no vamos a ir" | Sí, cambia un evento que ya existe. |
-| **Cotización sin camión** | Envío de cotización, consulta o modificación | No. |
-| **Otro** | Proveedores, publicidad | No. |
+| **Cotización** | Envío, consulta o modificación de una cotización, sin pedido de camión. | No. |
+| **Solicitud de despacho** | Equipos que **salen** de Alzatec. | Sí. |
+| **Solicitud de recepción** | Equipos que **vuelven** a Alzatec. | Sí. |
 
-**Regla conocida:** los retiros y devoluciones se agendan con **2 días de anticipación** para alcanzar a prepararlos. Pero muchos clientes piden ir el mismo día. **(confirmar cómo se resuelve hoy)**
+Casos a validar dentro de esos tipos:
+- **Cambio de fecha o cancelación** de una solicitud que ya está en el Excel.
+- **Viajes del camión de Alzatec**: llevar algo que faltó a una obra o ir a buscar material galvanizado.
+- **Correos que mezclan** cotización y despacho, por ejemplo "acepto la cotización, la voy a buscar mañana".
 
-## Infraestructura de correo
+**Ojo con la palabra "retiro".** Puede significar que el cliente viene a buscar equipos (un despacho) o que se recogen equipos de una obra (una recepción). En la reunión hay que acordar un solo nombre para cada cosa.
 
-Se revisó en el DNS público, en octubre de 2026.
+**Reglas conocidas**
+- Despachos y recepciones se agendan con **2 días de anticipación**, pero muchos clientes piden el mismo día. **(confirmar cómo se resuelve)**
+- Si en el Excel **el día ya está copado**, hay que **marcar una alerta**. **(confirmar cuándo se considera copado)**
 
-- El correo está en el hosting compartido **HostingPlus.cl** (cPanel), no en Google ni Microsoft. Se lee por **IMAP**.
-- cPanel permite crear un **reenvío con copia**: todo lo que llega a `asistentetecnico@` llega también a una casilla nueva, por ejemplo `agente@`, y el original queda intacto en la casilla de Andrea. Es la forma de que el agente **no interfiera** con su trabajo, y además no necesita su contraseña.
-- No hay calendario compartido, así que la agenda la tiene que proveer el proyecto.
+## Infraestructura
 
-## Lo que falta saber (para la reunión con Pato)
+- **Correo:** está en **HostingPlus.cl** (cPanel) y se lee por **IMAP**. cPanel permite crear un **reenvío con copia**: todo lo que llega a `asistentetecnico@`, incluidas las copias (CC), llega también a una casilla nueva, `agente@`. El original queda intacto. Así el agente **no interfiere** con Andrea ni necesita su contraseña.
+- **Excel de Pato:** falta saber dónde vive (su PC, una carpeta compartida, OneDrive o Google Drive). De eso depende cómo el agente escribe en él. **(confirmar)**
 
-1. ¿Dónde y cómo lleva hoy la agenda? ¿Con qué bloques horarios y cuánta capacidad?
-2. ¿Cómo se entera hoy de cada solicitud? ¿Qué parte llega por `asistentetecnico@` y qué parte por teléfono, WhatsApp o a su propio correo?
-3. ¿Cómo se manejan los pedidos para el mismo día, dado que la regla es de 2 días?
-4. ¿Qué viajes hace el camión de Alzatec? ¿Quién los pide y por dónde?
-5. ¿Los correos de los clientes traen el número de cotización de MADA?
-6. ¿Se le confirma la hora al cliente? ¿Quién lo hace y cómo?
-7. ¿Cómo quiere ver la agenda: en pantalla, en el celular o impresa?
+## Lo que falta saber
+
+**Andrea**
+1. ¿Cómo distingue una cotización, un despacho y una recepción? Pedirle ejemplos reales de cada uno.
+2. ¿Qué datos le pasa a Pato de cada solicitud?
+3. ¿Qué nombre usar para cada cosa ("retiro", "despacho", "recepción")?
+
+**Pato**
+4. ¿Dónde vive el Excel y cómo está armado (hojas, filas, columnas)?
+5. ¿Cuándo un día está copado? ¿Hay un máximo por día, por bloque o por tipo?
+6. ¿Qué se hace cuando está copado? ¿Quién le avisa al cliente?
+7. ¿El camión de Alzatec va en el mismo Excel?

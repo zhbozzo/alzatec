@@ -1,75 +1,67 @@
-# 03 · Reunión con Patricio "Pato" Farías
+# 03 · Reunión de levantamiento (Andrea y Pato)
 
 ## Objetivo
 
-Entender **la agenda de camiones de Pato** y cómo le llegan hoy las solicitudes, para definir exactamente qué tiene que detectar el agente. Con lo que salga de aquí se completan los requerimientos ([04-requerimientos.md](04-requerimientos.md)) y se envían a gerencia.
+Salir de la reunión con dos cosas:
+
+1. **De Andrea:** una definición clara de qué es una cotización, una solicitud de despacho y una solicitud de recepción, con ejemplos reales.
+2. **De Pato:** cómo es el Excel de agenda, dónde vive y cuándo un día está copado.
+
+Con eso se completan los requerimientos ([04-requerimientos.md](04-requerimientos.md)).
 
 ## Al empezar (2 min)
 
 - [ ] Pedir permiso para **grabar o transcribir** la reunión.
 - [ ] Explicar la idea en una frase:
 
-  > "Un agente lee una copia de los correos de asistentetecnico@ y te propone las entradas de tu agenda. Tú confirmas. Andrea no cambia nada y MADA no se toca."
+  > "Un agente lee una copia de los correos de asistentetecnico@, separa cotizaciones, despachos y recepciones, y llena el Excel de Pato como 'por confirmar'. Si el día está copado, avisa. Andrea no cambia nada y MADA no se toca."
 
-## Pedirle que muestre
+## 1. Con Andrea: definir los tipos
 
-1. **Su agenda actual**, con una semana completa. ¿Es la planilla de horarios de 8:00 a 13:00?
-2. **3 a 5 correos reales** que terminaron en la agenda. Idealmente uno de cada tipo:
-   - un retiro,
-   - una devolución,
-   - un pedido para el mismo día,
-   - una reprogramación,
-   - un viaje del camión de Alzatec.
-3. **Cómo se entera hoy** de cada solicitud, paso a paso.
+Esto va primero, porque todo lo demás depende de esta definición.
 
-## Preguntas
+- Para ella, ¿qué es una **cotización**, un **despacho** y una **recepción**?
+- Al leer un correo, ¿cómo sabe de qué tipo es? ¿Por el asunto, por quién lo manda, por las palabras ("retiro", "devolución", "paso a buscar"), por los adjuntos?
+- **Vocabulario.** "Retiro" puede ser que el cliente viene a buscar equipos (despacho) o que se recogen equipos (recepción). Acordar un solo nombre:
+  - **Despacho** = equipos que salen de Alzatec.
+  - **Recepción** = equipos que vuelven.
+- ¿Hay casos especiales?
+  - viajes del camión de Alzatec (faltantes a obra, material galvanizado),
+  - cambios de fecha y cancelaciones,
+  - correos que mezclan cosas ("acepto la cotización y la busco mañana").
+- De cada solicitud, ¿qué datos le pasa a Pato?
+- ¿Las solicitudes que llegan por otro medio siempre terminan en su correo? ¿Cómo: un vendedor la copia o le reenvía?
+- Cuando el día está lleno, ¿qué hace ella? ¿Quién le avisa al cliente?
 
-### La agenda
-- ¿Dónde la lleva? ¿Quién más la ve (bodega, portería)?
-- ¿Qué horario tiene y en qué bloques la divide? ¿Cuántos camiones se pueden atender al mismo tiempo?
-- ¿Los retiros y las devoluciones usan el mismo espacio y el mismo equipo de bodega?
-- ¿Qué anota de cada camión (cliente, obra, patente, chofer, N° de cotización, equipos)?
-- ¿Cuántos camiones hay en un día normal y en uno peak?
+**Ejercicio (15–20 min, si se puede):** revisar con Andrea los correos de un día y que diga qué es cada uno. Es la forma más rápida de tener ejemplos bien clasificados.
 
-### Las solicitudes
-- ¿Cómo le llegan? ¿Andrea se las reenvía, le avisa, él mira el correo, llegan por teléfono o WhatsApp, o directo a `pfarias@`?
-- Más o menos, ¿qué porcentaje llega por `asistentetecnico@`?
-- ¿Cómo se ven esos correos? ¿Son respuestas al hilo de la cotización o correos nuevos? ¿Traen el número de cotización?
-- ¿Hay casos que confunden, por ejemplo un correo que menciona un retiro pero no es un pedido?
+**Pedirle:** 5 a 10 correos reales de cada tipo, reenviados o exportados.
 
-### Las reglas
-- La regla de los 2 días, ¿para qué sirve exactamente? ¿Para preparar el pedido en bodega?
-- ¿Qué pasa cuando un cliente pide para el mismo día? ¿Quién decide si se acepta?
-- ¿Hay días u horarios en que no se atiende? ¿Sábados?
-- ¿Qué pasa si el cliente no llega?
+## 2. Con Pato: el Excel
 
-### El camión de Alzatec
-- ¿Cuántos camiones propios tienen?
-- ¿Qué viajes hacen: faltantes a obra, retiro de galvanizado, otros?
-- ¿Quién pide esos viajes y por dónde? ¿Van en la misma agenda o en otra?
-
-### Confirmación al cliente
-- Hoy, ¿se le confirma la hora al cliente? ¿Quién lo hace y cómo?
-- Más adelante, ¿le serviría que el sistema mande la confirmación y un recordatorio el día anterior?
-
-### MADA (solo para entender, no se toca)
-- En cada retiro o devolución, ¿qué se registra en MADA y quién lo hace? ¿La guía sale de ahí?
-
-### Cómo lo quiere usar
-- ¿Lo quiere ver en el computador, en el celular o impreso?
-- ¿Prefiere aviso inmediato, un resumen, o ambos? ¿A qué hora le sirve el resumen?
-- Para él, ¿qué sería un éxito?
+- Que lo muestre en pantalla.
+- **¿Dónde vive?** ¿En su PC, en una carpeta compartida, en OneDrive o en Google Drive? ¿Quién más lo abre?
+- **¿Cómo está armado?** ¿Una hoja por día, semana o mes? ¿Una fila por camión? ¿Los horarios van en columnas?
+- ¿Qué columnas llena y cuáles son obligatorias?
+- **¿Cuándo un día está copado?** ¿Hay un máximo de camiones por día, por bloque horario, o uno distinto para despachos y recepciones?
+- **¿Qué pasa cuando está copado?** ¿Se ofrece otro día, se rechaza o se hace igual? ¿Dónde debería quedar la solicitud que no cupo?
+- ¿Le sirve que el agente agregue una columna **Estado** (POR CONFIRMAR, CONFIRMADO, SIN CUPO, URGENTE, REVISAR) con colores?
+- La regla de los 2 días: ¿qué se hace con lo que piden para el mismo día?
+- ¿El camión de Alzatec va en el mismo Excel?
+- Las alertas, ¿por correo o por WhatsApp? ¿Para él, para Andrea o para ambos?
+- (Solo para entender) ¿Qué se registra en MADA en cada despacho o recepción?
 
 ## Pedir al cerrar
 
-- [ ] **La agenda real de 1 a 2 semanas pasadas** (fotos o Excel), más **los correos de `asistentetecnico@` de esas mismas semanas**. Con eso se puede medir al agente contra lo que pasó de verdad antes de que opere.
-- [ ] Quién administra el hosting (cPanel de HostingPlus), para crear `agente@` y el reenvío con copia.
-- [ ] Confirmar que Pato es la contraparte para dudas.
+- [ ] **Una copia del Excel**, idealmente de 1 a 2 semanas pasadas.
+- [ ] **Los correos de `asistentetecnico@` de esas mismas semanas.** Con el Excel y los correos de las mismas fechas se puede medir al agente contra lo que pasó de verdad.
+- [ ] Quién administra el cPanel de HostingPlus.
+- [ ] Contraparte para dudas: Andrea para los tipos y Pato para la agenda.
 
 ## Para gerencia
 
 - Autorizar que se cree la casilla `agente@alzatec.com` y el reenvío con copia desde `asistentetecnico@`.
-- Confirmar quién tiene acceso al cPanel de HostingPlus.
+- Si el Excel es un archivo local, autorizar moverlo a OneDrive o Google Sheets con el mismo formato.
 
 ## Después de la reunión
 
