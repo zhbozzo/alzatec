@@ -17,4 +17,6 @@ Ejemplo: [`ejemplos/agenda-camiones-ejemplo.xlsx`](ejemplos/agenda-camiones-ejem
 
 ## Estado
 
+**Alcance actualizado en la reunión:** la etapa 1 es solo un **clasificador**. Los correos de Andrea y de Javier pasan por `agente@` y se reenvían a `despachosconfirmados@`, `retirosconfirmados@` o `pendientesandrea@`. El Excel queda para la etapa 2. Ver [notas](docs/08-notas-reunion.md).
+
 **Fase 0 · Levantamiento.** Confirmado: 25–30 cotizaciones diarias, unos 10 camiones al día, y MADA como sistema de gestión, que el proyecto no toca. Todas las solicitudes pasan por `asistentetecnico@` y la agenda es un Excel. Falta la reunión con Andrea y Patricio Farías.

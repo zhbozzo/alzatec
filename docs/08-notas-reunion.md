@@ -14,16 +14,40 @@
   - el correo llega con copia a varias casillas internas (pfarias@, departamentotecnico@, abozzo@, cmontes@, jpmontes@ y otras).
 - **Casilla vista en pantalla:** `departamentotecnico@alzatec.com`, en Outlook. **(confirmar si es la de Andrea o si es asistentetecnico@)**
 
-## Nuevo alcance: dos etapas
+## Alcance definido en la reunión: etapa 1 = solo el clasificador
 
-**Etapa 1.** En el correo de Andrea llegan los 3 tipos de correo. La primera tarea es **filtrar y enviar a dos correos distintos: retiros y despachos**. Falta definir qué pasa con las cotizaciones. **(pendiente)**
+```mermaid
+flowchart LR
+  AN["Correo de Andrea<br/>(~99% de los casos)"] -->|reenvío con copia| AG["agente@<br/>(embudo)"]
+  JA["Correo de Javier"] -->|reenvío con copia| AG
+  AG --> IA{"Clasificar"}
+  IA -->|"despacho acordado"| D["despachosconfirmados@"]
+  IA -->|"recepción acordada"| R["retirosconfirmados@<br/>(nombre a confirmar)"]
+  IA -->|"despacho o recepción<br/>con algo pendiente"| P["pendientesandrea@"]
+  IA -->|"cotizaciones y otros"| X["sin acción"]
+```
 
-**Etapa 2.** Por definir; probablemente llenar el Excel de agenda de Pato. **(confirmar)**
+- **Entrada:** los correos que llegan a **Andrea** y a **Javier**, copiados a `agente@alzatec.com`, que funciona como **embudo**.
+- **Clasificación en 3 categorías:**
+  1. **Despacho acordado** → `despachosconfirmados@`
+  2. **Recepción acordada** → `retirosconfirmados@` (en las notas aparece como "retiros@confirmados"; **confirmar el nombre**)
+  3. **Pendiente**: un despacho o una recepción al que **le falta algo** (fecha, stock, condición comercial o cotización final) → `pendientesandrea@`
+- Las **cotizaciones** (25–35 diarias) y el resto **no se mueven**.
+- **Sin Excel en la etapa 1.** El Excel de Pato queda para después.
+- **Ya existe `devoluciones@alzatec.com`.**
+- **Víctor maneja el hosting.** Con él se crean las casillas y los reenvíos.
 
-## Preguntas abiertas
+## Cómo funciona hoy el acuerdo (lo que se entendió)
 
-1. ¿Cuál es la casilla a filtrar: `departamentotecnico@` o `asistentetecnico@`?
-2. ¿Qué es exactamente "retiro" y qué es "despacho" en esta separación? Por ejemplo, ¿camión del cliente frente a camión de Alzatec, o salida de equipos frente a devolución?
-3. ¿A qué dos casillas se envía cada tipo? ¿Ya existen o hay que crearlas? ¿Quién las lee?
-4. ¿Qué se hace con las cotizaciones (incluidas las `-01` con observaciones)?
-5. ¿Qué es la etapa 2?
+- Para que un despacho esté **acordado** se tienen que cumplir varias condiciones: **condición comercial**, **fecha** y **stock**.
+- La **vendedora** (Patricia o Magaly) filtra esos correos, pregunta fecha y stock, responde, **asigna la fecha** y le manda un correo a **Patricio**.
+- Cuando un vendedor coordina un despacho por teléfono, debe… **(quedó incompleto en las notas; completar)**
+
+## Preguntas abiertas (críticas)
+
+1. ¿Cuáles son las direcciones exactas de **Andrea** y de **Javier**? (En la captura aparecía `departamentotecnico@`.)
+2. ¿**"Retiros confirmados" = recepciones**, es decir, equipos que vuelven? Ojo: los clientes usan "retiro" para venir a buscar. Para evitar confusiones conviene llamarla `recepcionesconfirmadas@`.
+3. ¿Las recepciones van a una casilla nueva, o a la **`devoluciones@`** que ya existe?
+4. **¿Qué señal en el correo indica "acordado"?** Si la vendedora le confirma a Patricio **sin copiar a Andrea ni a Javier**, el agente **no ve** esa confirmación y todo quedaría como pendiente. ¿La vendedora copia a Andrea?
+5. ¿Quién lee cada una de las 3 casillas? (¿Pato las de confirmados y Andrea la de pendientes?)
+6. Un correo que llega a Andrea **y** a Javier se procesa **una sola vez** (se detecta por `Message-ID`). Confirmar que eso es lo esperado.
