@@ -1,78 +1,60 @@
-# 03 · Reunión de levantamiento
+# 03 · Sesión online de levantamiento
 
-## Invitación (para copiar)
+Gerencia definió el formato: **el equipo muestra todo online** y después de la sesión se envían los requerimientos ([04-requerimientos.md](04-requerimientos.md)).
 
-**Para:** abozzo@alzatec.com, cmontes@alzatec.com, asistentetecnico@alzatec.com, pfarias@alzatec.com, devoluciones@alzatec.com, pbriceno@alzatec.com
-**Duración:** 60 min
-**Asunto:** Automatización de cotizaciones, despachos y devoluciones: levantamiento
+El objetivo es salir de la sesión con lo necesario para completar ese documento, sin tener que volver a preguntar.
 
-> Hola a todos:
->
-> Estamos trabajando en automatizar parte del trabajo que hacía Andrea con los correos de cotizaciones, despachos y devoluciones. La idea es que lo repetitivo se haga solo y que a cada uno le llegue ordenado lo que le corresponde.
->
-> En esta reunión quiero entender cómo funciona hoy cada flujo, con ejemplos reales. No hace falta preparar nada formal, pero sería de mucha ayuda que cada uno traiga:
-> - 3 a 5 correos reales de lo que le llegaba de Andrea o le mandaba a ella,
-> - un ejemplo de cotización (PDF o Excel),
-> - la planilla o agenda donde se anotan los despachos y retiros, si existe.
->
-> Gracias.
+## Antes de empezar
 
-## Agenda (60 min)
+- [ ] Pedir permiso para **grabar o transcribir** la sesión (Meet, Zoom y Teams tienen transcripción). Con la transcripción se completan los requerimientos sin perder detalle.
+- [ ] Tener abierta esta lista y la tabla de la ronda por persona (más abajo).
+- [ ] Explicar en 1 minuto el objetivo: automatizar lo repetitivo, **no** cambiar cómo trabaja cada uno.
 
-| Min | Tema |
-|---|---|
-| 5 | Objetivo: automatizar lo repetitivo, **no** cambiar cómo trabaja cada uno. |
-| 25 | Recorrer cada flujo con un correo real en pantalla: cotización → respuesta → despacho → devolución → modificación. |
-| 15 | Ronda por persona: qué le llegaba o le mandaba a Andrea, y qué se está cayendo hoy. |
-| 10 | Sistemas y accesos. |
-| 5 | Próximos pasos y quién es el contacto para dudas. |
+## Qué pedir que muestren (en este orden)
 
-## Preguntas
+Lo ideal es que en cada punto compartan pantalla con un **caso real**.
 
-### Generales
-- ¿Las 25/30 cotizaciones son **por día o por semana**? ¿Hay temporadas altas?
-- ¿Quién está haciendo hoy el trabajo de Andrea? ¿Qué se está atrasando o perdiendo?
-- ¿La casilla de Andrea sigue activa? ¿Podemos exportar los últimos 2–3 meses para analizarlos?
-- ¿Cuáles son las tareas de la línea vacía de la nota? ¿Qué más hacía (llamadas, WhatsApp, facturación, cobranza)?
+1. **La casilla de Andrea.** Carpetas, filtros y reglas que tenía, y cómo se ve un día normal. ¿Con qué programa la leía (Outlook, webmail, celular)?
+2. **Una cotización de punta a punta.** Solicitud del cliente → quién la arma y con qué (Excel, Word, lista de precios) → envío → respuesta del cliente.
+3. **Una modificación de un comercial.** Qué llega, qué cambia y cómo queda la nueva versión.
+4. **Un despacho.** Dónde se anota, quién decide la fecha, qué datos se piden al cliente y **cómo se emite la guía de despacho** sin ERP.
+5. **Una devolución.** Qué se reenvía a `devoluciones@`, cómo se coordina el retiro y cómo se cuenta lo que vuelve.
+6. **La agenda o planilla de despachos**, si existe. ¿Es la de horarios de 8:00 a 13:00 que estaba al reverso de la nota?
 
-### Cotizaciones enviadas
-- ¿Por dónde llegan las solicitudes: correo, formulario web, teléfono o WhatsApp?
-- ¿Quién arma la cotización: el comercial, Andrea o el asistente técnico? ¿Con qué herramienta?
-- ¿Qué datos lleva? (equipos, m², plazo de arriendo, flete, montaje, condiciones de pago)
-- ¿Hay lista de precios? ¿Dónde está?
-- ¿Se hace seguimiento si el cliente no contesta? ¿Cuándo?
+## Preguntas que sí o sí deben quedar respondidas
 
-### Respuestas de clientes
-- ¿Qué tipos de respuesta llegan y en qué proporción (acepta, pide cambios, consulta técnica, rechaza)?
-- ¿Qué hacía Andrea con cada tipo? ¿A quién avisaba?
-- ¿Qué se necesita para pasar de "aceptada" a "despacho" (OC, pago, contrato, crédito aprobado)?
+1. ¿Quién arma la cotización: comercial, Andrea o asistente técnico? ¿Con qué herramienta? ¿Hay lista de precios?
+2. ¿Por dónde llegan las solicitudes de cotización: correo, web, teléfono o WhatsApp?
+3. ¿Qué tipos de respuesta llegan y qué se hacía con cada uno?
+4. ¿Qué se necesita para pasar de "aceptada" a "despacho" (OC, pago, crédito aprobado)?
+5. ¿Cuál es la capacidad de despacho por día y por sucursal (Lampa / Concón)?
+6. ¿Cómo y quién emite la guía de despacho y la factura (portal del SII, otro sistema)?
+7. ¿Alzatec retira con su camión o el cliente devuelve en bodega? ¿Cómo se registra lo devuelto?
+8. ¿Quién está haciendo hoy el trabajo de Andrea y qué se está cayendo?
+9. ¿Qué había en la línea vacía de la nota? ¿Qué más hacía Andrea (llamadas, WhatsApp, cobranza)?
+10. ¿Quién será la **contraparte** del proyecto para dudas y validaciones?
 
-### Despachos
-- ¿Dónde se agenda hoy (Excel, papel, calendario)? ¿Esa planilla con horarios de 8:00 a 13:00 es la agenda?
-- ¿Cuál es la capacidad por día (camiones, choferes, horarios) y por sucursal (Lampa / Concón)?
-- ¿Qué datos hacen falta para despachar (dirección, contacto en obra, horario de recepción, accesos)?
-- ¿Quién emite la **guía de despacho** y en qué sistema?
+## Preguntas de detalle (si hay tiempo)
+
+**Cotizaciones**
+- ¿Qué datos lleva la cotización? (equipos, m², plazo de arriendo, flete, montaje, condiciones de pago)
+- ¿Tienen número correlativo? ¿Cómo se versionan los cambios?
+- ¿Se hace seguimiento si el cliente no contesta? ¿A los cuántos días?
+- ¿Quién aprueba un cambio de precio o un descuento?
+
+**Despachos**
+- ¿Qué datos hacen falta: dirección, contacto en obra, horario de recepción, accesos?
 - ¿Se reprograman seguido? ¿Por qué?
 
-### Devoluciones
-- ¿Qué significa "derivados"? ¿Se reenvían a `devoluciones@`? ¿Quién lo atiende?
-- ¿Alzatec retira con su camión o el cliente devuelve en bodega?
-- ¿Cómo se registra lo devuelto (conteo, faltantes, daños) y cómo afecta la facturación del arriendo?
+**Devoluciones**
+- ¿Qué significa exactamente "derivados"?
+- ¿Cómo afecta lo devuelto a la facturación del arriendo (faltantes, daños)?
 
-### Modificaciones y confirmaciones de comerciales
-- ¿Qué suele cambiar (cantidades, fechas, precio, obra)?
-- ¿Quién aprueba un cambio de precio?
-- ¿Cómo se versiona la cotización hoy?
-
-### Sistemas y accesos
-- ¿Qué ERP o sistema de facturación usan?
-- ¿Con qué programa leen el correo (Outlook, webmail, celular)?
-- ¿Quién administra el hosting (HostingPlus) y las casillas?
-- ¿Usan WhatsApp con clientes o choferes? ¿Es personal o WhatsApp Business?
+**Sistemas**
+- ¿Quién administra el hosting (HostingPlus) y las casillas de correo?
+- ¿Usan WhatsApp con clientes o choferes? ¿Personal o WhatsApp Business?
 
 ## Ronda por persona
-
-Completar en la reunión:
 
 | Casilla | Rol | Qué le llegaba de Andrea | Qué le mandaba a Andrea | Qué le duele hoy |
 |---|---|---|---|---|
@@ -83,8 +65,15 @@ Completar en la reunión:
 | asistentetecnico | | | | |
 | devoluciones | | | | |
 
-## Después de la reunión
+## Qué pedir al cerrar la sesión
 
-1. Actualizar [01-diagnostico.md](01-diagnostico.md) con las respuestas y borrar los **(confirmar)**.
-2. Clasificar una muestra de la casilla de Andrea (100–200 correos) para conocer el volumen real por categoría.
-3. Cerrar con gerencia el alcance y el precio de la **Fase 1 (modo sombra)**.
+- [ ] **Export de 2–3 meses** de la casilla de Andrea (desde el webmail de cPanel o Outlook) o un **acceso IMAP de solo lectura**.
+- [ ] 5 correos reales de cada tipo (si no hay export).
+- [ ] Una cotización de ejemplo (PDF o Excel), la plantilla y la lista de precios.
+- [ ] La planilla o agenda de despachos.
+- [ ] Nombre de la contraparte.
+
+## Después de la sesión
+
+1. Completar [01-diagnostico.md](01-diagnostico.md) y quitar los **(confirmar)** que se resolvieron.
+2. Completar los **[validar]** de [04-requerimientos.md](04-requerimientos.md) y enviarlo a gerencia.

@@ -6,8 +6,9 @@ Proyecto para automatizar el trabajo que hacía Andrea: envío y seguimiento de 
 
 1. [Diagnóstico](docs/01-diagnostico.md): qué hacía Andrea, el flujo actual y lo que ya sabemos de la infraestructura.
 2. [Propuesta](docs/02-propuesta.md): la solución por componentes, la arquitectura, las fases y los riesgos.
-3. [Reunión de levantamiento](docs/03-reunion.md): la invitación, la agenda y las preguntas para el equipo.
+3. [Sesión online de levantamiento](docs/03-reunion.md): qué pedir que muestren, las preguntas clave y qué pedir al cerrar.
+4. [Requerimientos](docs/04-requerimientos.md): el borrador que se envía a gerencia después de la sesión.
 
 ## Estado
 
-**Fase 0 · Levantamiento.** Falta la reunión con el equipo para confirmar las hipótesis del diagnóstico.
+**Fase 0 · Levantamiento.** Gerencia confirmó que son 25–30 cotizaciones **diarias** y que no hay ERP. Falta la sesión online con el equipo; después se completan y envían los requerimientos.

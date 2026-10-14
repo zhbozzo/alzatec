@@ -4,6 +4,8 @@
 
 No hay que construir "una plataforma" de una vez. La idea es reemplazar sus **4 tareas** con automatizaciones encadenadas y un panel simple, en fases donde **cada una sirve sola**.
 
+El volumen lo justifica: son **25–30 cotizaciones diarias** con sus respuestas, más despachos, devoluciones y modificaciones. Es probable que sean 60–100 correos al día.
+
 El objetivo realista no es el 100%. Es que **~80% de los correos se resuelva solo o con 1 clic**, y que el ~20% restante llegue ordenado y resumido a la persona correcta. Ningún correo debe perderse.
 
 ## Componentes
@@ -49,7 +51,8 @@ Una sola app con:
 
 ### 5. Integraciones (fase posterior)
 
-- **ERP o facturación**, para la guía de despacho electrónica y la factura (depende de cuál usen).
+- **Guía de despacho electrónica.** Hoy no hay ERP, así que no hay nada que integrar. Lo que sí se puede hacer es que el sistema **emita la guía** al confirmar un despacho, a través de un proveedor de documentos tributarios electrónicos que tenga API. Se evalúa según cómo las emiten hoy.
+- **Facturación del arriendo.** Queda fuera de alcance. Lo que sí entrega el sistema es la base para facturar: qué se despachó, cuándo y qué volvió.
 - **WhatsApp Business**, para avisos a clientes y choferes (opcional).
 
 ## Arquitectura sugerida
@@ -87,7 +90,13 @@ Los plazos son estimados y se ajustan después de la reunión.
 | **1 · Modo sombra** (~2–3 semanas) | La bandeja inteligente clasifica y extrae, **pero no actúa**. Solo muestra lo que haría, y eso se compara con lo que hace la persona. | Precisión medida con datos reales. Confianza de gerencia. |
 | **2 · Ruteo + borradores + seguimiento** (~2–3 semanas) | Reenvío automático a devoluciones, avisos a comerciales, borradores con 1 clic y recordatorios de cotizaciones. | Primer ahorro real de horas. |
 | **3 · Agenda + autoagendamiento** (~3–4 semanas) | Calendario con capacidad y link para clientes. | Se acaba el ida y vuelta para agendar. |
-| **4 · Integraciones** | ERP (guías y facturas), WhatsApp, reportes. | Menos doble digitación. |
+| **4 · Integraciones** | Emisión de guía de despacho, saldo de equipos por obra, WhatsApp, reportes. | Menos doble digitación. |
+
+## Sin ERP: riesgo y oportunidad
+
+Como no hay ERP, hoy ningún sistema sabe qué cotización se ganó, qué andamio está en qué obra ni qué falta por devolver. Eso es un riesgo, porque esa información depende de personas, como pasó con Andrea. Pero también simplifica el proyecto: no hay que integrarse con nada, y la base de datos de este proyecto puede pasar a ser **la fuente de verdad de la operación**.
+
+La regla es no convertir el proyecto en un ERP. Contabilidad, remuneraciones y facturación quedan donde están. El sistema solo cubre el flujo **cotización → obra → despacho → devolución**.
 
 ## Qué NO automatizar
 
