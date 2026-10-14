@@ -1,95 +1,86 @@
-# 01 · Diagnóstico: qué hacía Andrea
+# 01 · Diagnóstico
 
-> Fuente: nota manuscrita de gerencia + lista de correos para la reunión.
-> Todo lo marcado como **(confirmar)** es hipótesis y se valida en la sesión online ([03-reunion.md](03-reunion.md)).
-> Lo marcado **✓** ya lo confirmó gerencia.
+> Fuentes: nota de gerencia y conversación con gerencia sobre cómo funciona la empresa.
+> Lo marcado **(confirmar)** se valida con Patricio Farías ([03-reunion.md](03-reunion.md)).
 
-## Lo que dice la nota
+## Cómo está organizada el área de proyectos
 
-| Nota | Interpretación |
-|---|---|
-| **ENVIADOS → 25/30 cotizaciones** | Andrea enviaba **25–30 cotizaciones diarias** ✓. Son ~125–150 a la semana y ~550–650 al mes. |
-| **ENTRADA:** Respuesta de cotizaciones 25/30 | Recibía unas 25–30 respuestas diarias de clientes (acepta, pide cambios, consulta, rechaza) y les daba curso. |
-| Agendamiento de despacho | Coordinaba con el cliente fecha y hora para despachar andamios a obra. |
-| Agendamiento de devolución **(derivados)** | Recibía las solicitudes de retiro o devolución y las **derivaba**, probablemente a `devoluciones@`. **(confirmar)** |
-| Confirmación de cotización (modificación), **todos los comerciales** | Los comerciales le mandaban cotizaciones confirmadas o con cambios para que ella las procesara. |
-| `–` (línea vacía) | Hay más tareas que no alcanzaron a anotar. **(preguntar)** |
+| Pieza | Quiénes | Qué hacen |
+|---|---|---|
+| Cotizaciones | 3 personas | Reciben las solicitudes de cotización y se las pasan a los proyectistas. |
+| Proyectistas | Los dirige Alejandro Farías. Son arquitectos, cubicadores y 2 ingenieros estructurales. | Modelan el pedido del cliente en sus sistemas de dibujo y calculan cuántas piezas de cada producto se necesitan (verticales, diagonales, etc.). |
+| Contratos y logística | Patricio "Pato" Farías (`pfarias@`) | Lleva los contratos en curso y los clientes. Administra todos los despachos y recepciones, y lleva la **agenda de camiones**. |
+| Asistente técnico | Andrea (`asistentetecnico@`) | Envía al cliente las cotizaciones terminadas, las registra en MADA y coordina los retiros y devoluciones con Pato. |
 
-## Volumen
+Cada área funciona por separado. El punto donde se juntan es la casilla `asistentetecnico@`.
 
-Con 25–30 cotizaciones de salida y 25–30 respuestas de entrada al día, más despachos, devoluciones y modificaciones, la casilla de Andrea probablemente movía **60–100 correos diarios** (estimación; se mide con su historial). Eso es una jornada completa solo de correo, y justifica automatizar.
-
-## En una frase
-
-Andrea era el **router humano** del correo comercial. Todo pasaba por ella: leía cada correo, decidía qué era y lo respondía, lo agendaba o lo reenviaba a la persona correcta.
-
-Ese trabajo se puede automatizar en gran parte, porque consiste en **clasificar, extraer datos, rutear y hacer seguimiento**. Lo que conviene dejar en manos de personas es el criterio: negociar, resolver excepciones técnicas y atender reclamos.
-
-## Flujo actual (hipótesis)
+## El flujo
 
 ```mermaid
 flowchart LR
-  C[Cliente] -->|pide cotización| V[Comercial]
-  V -->|arma o confirma cotización| A((Andrea))
-  A -->|envía cotización ~25-30| C
-  C -->|responde: acepta / cambios / consulta| A
-  V -->|modificación| A
-  A -->|agenda despacho| D["Bodega / despacho"]
-  D -->|guía de despacho + camión| O[Obra]
-  C -->|pide retiro| A
-  A -->|deriva| R["devoluciones@"]
-  R -->|retiro + conteo de piezas| F["Bodega / facturación"]
+  CL[Cliente] -->|pide| VE[Comercial]
+  VE --> PR["Proyectistas<br/>modelan y cubican"]
+  PR -->|"cotización lista<br/>(por correo)"| AN["Andrea<br/>asistentetecnico@"]
+  AN -->|envía cotización| CL
+  AN -->|registra| MADA[("MADA")]
+  CL -->|"responde el mismo hilo:<br/>retiro / devolución"| AN
+  AN -->|coordina| PA["Pato<br/>agenda de camiones"]
+  PA --> BO["Bodega<br/>~10 camiones/día"]
+  BO -->|"despacho parcial /<br/>recepción"| MADA
 ```
 
-## Lo que ya sabemos
+1. El cliente le pide algo a un comercial. Los proyectistas lo modelan y cubican.
+2. La cotización terminada le llega a Andrea, probablemente por correo **(confirmar)**. Ella la envía al cliente y la registra en MADA.
+3. El cliente responde, muchas veces **en el mismo hilo de la cotización**: "lo voy a buscar hoy", "pasamos el jueves", "queremos devolver".
+4. Andrea coordina con Pato, y Pato lo anota en su agenda de camiones.
+5. El camión del cliente llega a la bodega a retirar o a devolver. Cada movimiento queda registrado en MADA como despacho parcial o recepción.
 
-**Empresa.** Alzatec S.A. es una empresa chilena de sistemas de andamios: multidireccional, Eurofachada, alzaprimas y torre escala. Tiene oficinas en Lampa (Santiago) y Concón (V Región). Que haya despachos y *devoluciones* indica que gran parte del negocio es **arriendo**: el equipo sale a obra y vuelve. **(confirmar el mix arriendo/venta)**
+## Volumen
 
-**Personas que participan** (de la lista para la reunión, todos `@alzatec.com`):
+- **25–30 cotizaciones** enviadas al día desde `asistentetecnico@`.
+- Unos **10 camiones** entran cada día a Alzatec a retirar o devolver equipos.
 
-| Casilla | Rol | Relación con Andrea |
+## Qué hace cada sistema
+
+| Sistema | Qué guarda | ¿Lo toca el proyecto? |
 |---|---|---|
-| `abozzo` | Gerencia | — |
-| `cmontes` | ? | ? |
-| `pfarias` | ? | ? |
-| `pbriceno` | ? | ? |
-| `asistentetecnico` | Asistente técnico | ¿Cálculo y diseño de andamios para la cotización? |
-| `devoluciones` | Casilla de devoluciones | Recibía lo que Andrea derivaba |
+| **MADA** (INQSOL) | Cotizaciones, pedidos y devoluciones por cliente, inventario al día, y cuánto se ha despachado y facturado por cotización. | **No.** |
+| **Correo `asistentetecnico@`** | Las cotizaciones enviadas y las respuestas de los clientes, incluidas las solicitudes de retiro y devolución. | Solo lee una copia. |
+| **Agenda de Pato** | Qué camión viene, cuándo y a qué. Hoy probablemente está en Excel o en papel **(confirmar)**. La nota de gerencia está escrita al reverso de una planilla con horarios de 8:00 a 13:00; probablemente sea esta agenda. | Es lo que se automatiza. |
 
-**Sistema de gestión: MADA (INQSOL)** ✓. Según gerencia, las guías y facturas pasan por **MADA**. Es una plataforma web chilena de [INQSOL](https://inqsol.cl/es-cl/mada) hecha para empresas que arriendan equipos: andamios, moldajes y maquinaria. Otras arrendadoras de andamios, como Andamik y Höhe, aparecen entre sus clientes. Esto es lo que dice su sitio:
+## El problema a resolver
 
-- **Módulos publicados:**
-  - Cotizaciones: "cotizar requerimientos de clientes y seguimiento hasta el despacho", con informes de gestión comercial y de pedidos.
-  - Mantenimiento.
-  - Disponibilidad.
-  - QR por activo.
-  - Odómetro, que incluye el cálculo de estados de pago.
-  - Presupuesto.
-- **Reportes:** cotizaciones vigentes, órdenes de trabajo y despachos, inventarios, trazabilidad y movimientos.
-- **Relación con un ERP:** se presenta como complemento de uno. Anuncia "integración con cualquier ERP del mercado" para la facturación y la cobranza, y para los documentos tributarios de los movimientos de material. **(confirmar si Alzatec emite la guía de despacho desde MADA o desde otro sistema conectado)**
-- **API:** no publica una API ni documentación técnica.
+Las solicitudes que implican un camión llegan **mezcladas con las cotizaciones** en la casilla de Andrea. Además vienen en lenguaje libre ("paso mañana en la tarde") y muchas veces escondidas dentro del hilo de una cotización. Alguien tiene que leerlo todo, detectar cuáles requieren camión y traspasarlas a la agenda de Pato.
 
-Consecuencias para el proyecto:
+**Eso es lo que hará el agente.** Es un trabajo de agenda, no de cotizaciones.
 
-- **MADA es la fuente de verdad** de cotizaciones, inventario y movimientos. El proyecto **no debe duplicarlo**: es una **capa de correo** que trabaja encima de MADA.
-- La pregunta técnica más importante es **cómo conectarse con MADA**. Puede ser por API, por exportación e importación de planillas, o con una persona que traspasa los datos que el sistema le deja listos. Esto hay que preguntárselo a INQSOL.
-- Lo más probable es que Andrea armara las cotizaciones en MADA y las enviara por correo. **(confirmar)**
+## Tipos de solicitud (hipótesis a validar con Pato)
 
-**Infraestructura de correo** (revisada en el DNS público, octubre 2026):
+| Tipo | Ejemplo | ¿Va a la agenda? |
+|---|---|---|
+| **Retiro en bodega** | "Mañana pasamos a retirar lo de la cotización 1234" | Sí, como salida de equipos. |
+| **Devolución en bodega** | "El jueves devolvemos los andamios de la obra X" | Sí, como entrada de equipos. |
+| **Camión de Alzatec** | Llevar algo que faltó a una obra, o ir a buscar material galvanizado | Sí, en la agenda del camión propio. |
+| **Reprogramación o cancelación** | "Mejor el viernes", "no vamos a ir" | Sí, cambia un evento que ya existe. |
+| **Cotización sin camión** | Envío de cotización, consulta o modificación | No. |
+| **Otro** | Proveedores, publicidad | No. |
 
-- El correo **no** está en Google Workspace ni en Microsoft 365. Está en el hosting compartido **HostingPlus.cl** (cPanel): el MX apunta a `alzatec.com`, el SPF autoriza IPs de HostingPlus y la política es `DMARC p=none`.
-- Consecuencias para el diseño:
-  - La integración se hace por **IMAP** (lectura, con IMAP IDLE para casi tiempo real) y **SMTP** (envío). No hay API tipo Gmail o Graph, pero para esto no hace falta.
-  - Los correos automáticos deben salir **por el SMTP de su mismo hosting**. El SPF ya lo autoriza, así no caen en spam.
-  - No hay calendario compartido nativo. Lo más probable es que la agenda de despachos viva en Excel, en papel o en la cabeza de alguien. **(confirmar)** La hoja de la nota está escrita sobre el reverso de una planilla con horarios de 8:00 a 13:00; ¿será la agenda de despachos?
-  - Migrar a Google Workspace o Microsoft 365 sería un "nice to have" (calendarios compartidos, mejor entregabilidad, APIs), **pero no es requisito para partir**.
+**Regla conocida:** los retiros y devoluciones se agendan con **2 días de anticipación** para alcanzar a prepararlos. Pero muchos clientes piden ir el mismo día. **(confirmar cómo se resuelve hoy)**
 
-## Lo que NO sabemos (se resuelve en la sesión online)
+## Infraestructura de correo
 
-1. ¿Quién arma la cotización y con qué herramienta (Excel, plantilla Word, otro)? ¿Hay lista de precios?
-2. ¿Dónde vive hoy la agenda de despachos y devoluciones? ¿Qué capacidad hay por día (camiones, choferes, sucursal)?
-3. ¿Qué módulos de MADA usan? ¿La cotización se arma ahí? ¿La **guía de despacho** y la factura salen de MADA o de otro sistema conectado?
-4. ¿MADA tiene API o permite exportar e importar datos? ¿Qué incluye el contrato con INQSOL?
-5. ¿Cómo se controla lo **devuelto vs. lo despachado** para cobrar arriendo y faltantes?
-6. ¿Quién está cubriendo el trabajo de Andrea hoy y qué se está cayendo?
-7. ¿Se puede exportar el historial de la casilla de Andrea? Gerencia dijo que en la sesión le mostrarán todo online; falta conseguir **el export o un acceso de solo lectura**, porque ese historial es la mejor especificación del proceso que vamos a tener.
+Se revisó en el DNS público, en octubre de 2026.
+
+- El correo está en el hosting compartido **HostingPlus.cl** (cPanel), no en Google ni Microsoft. Se lee por **IMAP**.
+- cPanel permite crear un **reenvío con copia**: todo lo que llega a `asistentetecnico@` llega también a una casilla nueva, por ejemplo `agente@`, y el original queda intacto en la casilla de Andrea. Es la forma de que el agente **no interfiera** con su trabajo, y además no necesita su contraseña.
+- No hay calendario compartido, así que la agenda la tiene que proveer el proyecto.
+
+## Lo que falta saber (para la reunión con Pato)
+
+1. ¿Dónde y cómo lleva hoy la agenda? ¿Con qué bloques horarios y cuánta capacidad?
+2. ¿Cómo se entera hoy de cada solicitud? ¿Qué parte llega por `asistentetecnico@` y qué parte por teléfono, WhatsApp o a su propio correo?
+3. ¿Cómo se manejan los pedidos para el mismo día, dado que la regla es de 2 días?
+4. ¿Qué viajes hace el camión de Alzatec? ¿Quién los pide y por dónde?
+5. ¿Los correos de los clientes traen el número de cotización de MADA?
+6. ¿Se le confirma la hora al cliente? ¿Quién lo hace y cómo?
+7. ¿Cómo quiere ver la agenda: en pantalla, en el celular o impresa?
