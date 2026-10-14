@@ -77,6 +77,10 @@ Casos a validar dentro de esos tipos:
 - **Correo:** está en **HostingPlus.cl** (cPanel) y se lee por **IMAP**. cPanel permite crear un **reenvío con copia**: todo lo que llega a `asistentetecnico@`, incluidas las copias (CC), llega también a una casilla nueva, `agente@`. El original queda intacto. Así el agente **no interfiere** con Andrea ni necesita su contraseña.
 - **Excel de Pato:** falta saber dónde vive (su PC, una carpeta compartida, OneDrive o Google Drive). De eso depende cómo el agente escribe en él. **(confirmar)**
 
+## Cómo pasa hoy una solicitud de Andrea a Pato (no confirmado)
+
+Se sabe que Andrea coordina con Pato, que todo termina en el Excel de Pato y que las devoluciones se "derivan". **No se sabe el mecanismo exacto**: si reenvía el correo, si escribe en el Excel o si le avisa por otro medio. Es la primera pregunta de la reunión, porque es justo el paso que reemplaza el agente.
+
 ## Lo que falta saber
 
 **Andrea**

@@ -15,6 +15,15 @@ Con eso se completan los requerimientos ([04-requerimientos.md](04-requerimiento
 
 - [ ] Si sirve, mostrar el ejemplo [`ejemplos/agenda-camiones-ejemplo.xlsx`](../ejemplos/agenda-camiones-ejemplo.xlsx).
 
+## 0. Cómo funciona hoy (lo primero)
+
+Que Andrea muestre **con un caso real** cómo le pasa hoy una solicitud a Pato. **Este es el paso que el agente va a reemplazar.**
+- ¿Le **reenvía el correo**? ¿Escribe ella **directo en el Excel** de Pato? ¿Le avisa por **WhatsApp, teléfono o en persona**?
+- ¿Pato lee el correo de `asistentetecnico@`, o solo se entera por Andrea?
+- La nota dice "agendamiento de devolución (**derivados**)": ¿a quién se derivan las devoluciones? ¿A `devoluciones@`, a Pato o a ambos? ¿Quién las anota en el Excel?
+- ¿Pato confirma de vuelta? ¿A quién: a Andrea o al cliente?
+- **Cuando el agente funcione, ¿quién deja de hacer qué?** Hay que acordarlo para que la misma solicitud no quede dos veces en el Excel: una escrita por el agente y otra por Andrea o Pato.
+
 ## 1. Con Andrea: clasificación de correos
 
 1. **¿Cómo te llegan las cotizaciones listas** desde el área técnica: por correo, por una carpeta o por MADA? ¿Quién te las manda?
