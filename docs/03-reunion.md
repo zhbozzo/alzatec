@@ -45,6 +45,12 @@ Que Andrea muestre **con un caso real** cómo le pasa hoy una solicitud a Pato. 
 ## 2. Con Pato: el Excel y el cupo
 
 1. Que muestre el Excel. **¿Dónde está guardado?** Si es OneDrive, ¿es una cuenta **personal o de empresa** (Microsoft 365)?
+   - **Cómo reconocerlo en el momento:**
+     - En el Explorador de Windows, la nube de OneDrive **azul** y una carpeta "OneDrive - *Nombre empresa*" significan cuenta de **empresa**. La nube **blanca** y "OneDrive - Personal" significan cuenta **personal**.
+     - Si lo abre en el navegador, una dirección `…sharepoint.com` es de **empresa**; `onedrive.live.com` o `1drv.ms` es **personal**.
+     - En Excel, en *Archivo → Cuenta*, se ve con qué correo inició sesión: uno de empresa, o uno hotmail/outlook/gmail.
+   - ¿El archivo es `.xlsx`? (`.xls` no sirve).
+   - ¿Quién administra la cuenta de Microsoft? ¿Alzatec paga Microsoft 365 u Office para alguien?
 2. ¿Cómo está armado? ¿**Una fila por camión**, o una grilla con los horarios en columnas?
 3. ¿Qué columnas llena? ¿Cuáles son obligatorias?
 4. **Cupo:** ¿cuántos camiones caben al día? ¿El límite es por día o por bloque horario? ¿Despachos y recepciones comparten el mismo cupo?
