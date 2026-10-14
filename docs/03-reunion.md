@@ -4,6 +4,33 @@ Gerencia definió el formato: **el equipo muestra todo online** y después de la
 
 El objetivo es salir de la sesión con lo necesario para completar ese documento, sin tener que volver a preguntar.
 
+## Antes de la sesión: preguntas para gerencia
+
+Preguntas cortas que gerencia puede responder por WhatsApp. Sirven para llegar a la sesión sabiendo qué mirar.
+
+1. ¿Las cotizaciones se hacen en MADA o en Excel o Word?
+2. ¿Andrea las mandaba desde MADA o descargaba el PDF y lo enviaba desde su correo?
+3. Cuando un cliente acepta, ¿alguien lo marca en MADA?
+4. ¿Los despachos y devoluciones se registran en MADA? ¿La guía de despacho sale de ahí?
+5. ¿Quién es el contacto en INQSOL? ¿Puedes preguntarles si MADA se puede conectar con otro sistema (API o exportar/importar)?
+6. ¿Quién está haciendo hoy lo de Andrea y qué es lo que más se está cayendo?
+7. ¿Qué hacen cmontes, pfarias y pbriceno?
+8. ¿Quién va a ser mi contraparte para dudas?
+
+## La pregunta central de la sesión
+
+> **¿Qué parte del trabajo de Andrea pasaba por MADA y qué parte quedaba solo en el correo, Excel o papel?**
+
+Lo que queda fuera de MADA es exactamente lo que hay que automatizar. Para responderla, en cada flujo preguntar:
+
+- ¿Esto se registra en MADA? ¿Quién lo registra y en qué momento?
+- Si no se registra en MADA, ¿dónde queda?
+
+| Si las cotizaciones… | Entonces el sistema… |
+|---|---|
+| **Se hacen en MADA** | Enlaza cada correo con el número de cotización de MADA. No guarda cotizaciones propias. |
+| **Se hacen en Excel o Word** | Tiene que registrarlas él. También se puede proponer empezar a usar el módulo de cotizaciones de MADA, que puede que ya estén pagando. |
+
 ## Antes de empezar
 
 - [ ] Pedir permiso para **grabar o transcribir** la sesión (Meet, Zoom y Teams tienen transcripción). Con la transcripción se completan los requerimientos sin perder detalle.
@@ -20,7 +47,13 @@ Lo ideal es que en cada punto compartan pantalla con un **caso real**.
 4. **Un despacho.** Dónde se anota, quién decide la fecha, qué datos se piden al cliente y si **la guía de despacho sale de MADA**.
 5. **Una devolución.** Qué se reenvía a `devoluciones@`, cómo se coordina el retiro y cómo se cuenta lo que vuelve.
 6. **La agenda o planilla de despachos**, si existe. ¿Es la de horarios de 8:00 a 13:00 que estaba al reverso de la nota?
-7. **MADA por dentro.** Qué módulos usan, cómo se crea una cotización, si MADA manda el correo o se descarga el PDF y se envía desde la casilla, dónde quedan los despachos y devoluciones, y qué reportes se pueden exportar a Excel.
+7. **MADA por dentro.**
+   - Qué módulos usan y cómo se crea una cotización.
+   - Si MADA manda el correo, o se descarga el PDF y se envía desde la casilla.
+   - Qué cambia en MADA cuando el cliente acepta.
+   - Dónde quedan los despachos y las devoluciones.
+   - Qué reportes se pueden exportar a Excel.
+   - **Qué cosas no están en MADA y se llevan aparte.**
 
 ## Preguntas que sí o sí deben quedar respondidas
 
