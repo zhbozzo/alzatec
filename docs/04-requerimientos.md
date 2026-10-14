@@ -74,7 +74,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 |---|---|---|
 | **Base de correos de los últimos meses** de Andrea y de Javier | Alzatec | Definir las categorías con datos reales y medir el clasificador antes de usarlo |
 | Crear `agente@`, `despachosconfirmados@`, `retirosconfirmados@` y `pendientesandrea@` | Víctor (hosting) | Embudo y destinos |
-| Reenvíos con copia: Andrea → `agente@` y Javier → `agente@` | Víctor (hosting) | Que el agente reciba los correos |
+| Reenvíos con copia: `departamentotecnico@` → `agente@` y `devoluciones@` → `agente@` | Víctor (hosting) | Que el agente reciba los correos |
 | Datos de conexión de `agente@` (IMAP y SMTP) | Víctor (hosting) | Leer y reenviar |
 | Validar una muestra clasificada (50–100 correos) | Andrea | Confirmar que el criterio es el correcto |
 | Cuenta de IA y n8n a nombre de Alzatec | Gerencia | Que el agente funcione |
@@ -91,7 +91,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 
 ## 8. Supuestos y pendientes
 
-- Las direcciones exactas de Andrea y de Javier **[por confirmar]**. En una captura aparece `departamentotecnico@alzatec.com`.
+- Las casillas de entrada son `departamentotecnico@alzatec.com` y `devoluciones@alzatec.com`, según Informática (Víctor Sánchez). **[confirmar cuál usa Andrea y cuál Javier]**
 - El nombre final de la casilla de recepciones (`retirosconfirmados@`), y si conviene usar la `devoluciones@` que ya existe **[validar]**.
 - Quién lee cada casilla de destino **[validar]**.
 - La frase incompleta de la reunión: "cuando un vendedor coordina un despacho en la misma llamada debe…" **[completar]**.

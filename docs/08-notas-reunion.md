@@ -44,6 +44,10 @@ flowchart LR
 - La **vendedora** (Patricia o Magaly) filtra esos correos, pregunta fecha y stock, responde, **asigna la fecha** y le manda un correo a **Patricio**.
 - Cuando un vendedor coordina un despacho por teléfono, debe… **(quedó incompleto en las notas; completar)**
 
+## Después de la reunión
+
+- **Víctor Sánchez** (Informática de Alzatec) preguntó, de parte de gerencia, qué se necesita de los correos **`departamentotecnico@alzatec.com`** y **`devoluciones@alzatec.com`**. Esas son las dos casillas de entrada del embudo. **(confirmar cuál usa Andrea y cuál Javier)**
+
 ## Preguntas abiertas (críticas)
 
 1. ¿Cuáles son las direcciones exactas de **Andrea** y de **Javier**? (En la captura aparecía `departamentotecnico@`.)
