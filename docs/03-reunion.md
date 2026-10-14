@@ -17,18 +17,19 @@ Con eso se completan los requerimientos ([04-requerimientos.md](04-requerimiento
 
 ## 1. Con Andrea: clasificación de correos
 
-1. Aparte de cotizaciones, despachos y recepciones, ¿llega otro tipo de correo que importe? ¿Qué llega que no importa (proveedores, facturas, avisos de MADA)?
-2. Cuando abres un correo, ¿cómo sabes qué es? ¿Por el asunto, por quién lo manda, por las palabras, por los adjuntos?
-3. ¿Qué palabras usan los clientes para pedir un **despacho** ("retiro", "paso a buscar"…) y para una **recepción** ("devolución", "término de obra"…)?
-4. ¿El **N° de cotización** viene siempre en el correo? ¿En qué formato? ¿Es el de MADA?
-5. Si el cliente **acepta la cotización pero no da fecha**, ¿qué haces?
-6. Si da una **fecha vaga** ("la próxima semana", "lo antes posible"), ¿qué haces?
-7. ¿La **hora** la propone el cliente o la asigna Pato?
-8. De cada solicitud, ¿qué **datos le pasas a Pato**? ¿Cuáles son obligatorios? Si falta alguno, ¿qué haces?
-9. ¿A veces la fecha o el detalle viene **solo en un adjunto** (una orden de compra o un PDF)?
-10. Cuando un **vendedor te copia**, ¿cómo es ese correo? ¿Pasa que el mismo pedido llega dos veces, del vendedor y del cliente?
-11. ¿Con qué frecuencia **cambian la fecha o cancelan**? ¿Cómo lo escriben?
-12. En un día normal, ¿**cuántos correos de cada tipo** llegan?
+1. **¿Cómo te llegan las cotizaciones listas** desde el área técnica: por correo, por una carpeta o por MADA? ¿Quién te las manda?
+2. Aparte de cotizaciones, despachos y recepciones, ¿llega otro tipo de correo que importe? ¿Qué llega que no importa (proveedores, facturas, avisos de MADA)?
+3. Cuando abres un correo, ¿cómo sabes qué es? ¿Por el asunto, por quién lo manda, por las palabras, por los adjuntos?
+4. ¿Qué palabras usan los clientes para pedir un **despacho** ("retiro", "paso a buscar"…) y para una **recepción** ("devolución", "término de obra"…)?
+5. ¿El **N° de cotización** viene siempre en el correo? ¿En qué formato? ¿Es el de MADA?
+6. Si el cliente **acepta la cotización pero no da fecha**, ¿qué haces?
+7. Si da una **fecha vaga** ("la próxima semana", "lo antes posible"), ¿qué haces?
+8. ¿La **hora** la propone el cliente o la asigna Pato?
+9. De cada solicitud, ¿qué **datos le pasas a Pato**? ¿Cuáles son obligatorios? Si falta alguno, ¿qué haces?
+10. ¿A veces la fecha o el detalle viene **solo en un adjunto** (una orden de compra o un PDF)?
+11. Cuando un **vendedor te copia**, ¿cómo es ese correo? ¿Pasa que el mismo pedido llega dos veces, del vendedor y del cliente?
+12. ¿Con qué frecuencia **cambian la fecha o cancelan**? ¿Cómo lo escriben?
+13. En un día normal, ¿**cuántos correos de cada tipo** llegan?
 
 **Si hay tiempo (15–20 min):** abrir con ella los correos de un día y que diga qué es cada uno y por qué.
 
