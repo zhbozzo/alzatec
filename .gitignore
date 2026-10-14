@@ -1,0 +1,7 @@
+# Correos reales y exportaciones: nunca al repositorio
+datos/
+*.pst
+*.ost
+*.mbox
+*.eml
+*.msg

@@ -1,22 +1,38 @@
-# Alzatec · Agente de agenda de camiones
+# Alzatec · Clasificador de correos
 
-Un agente lee una copia de los correos de `asistentetecnico@alzatec.com` y separa cotizaciones, solicitudes de despacho y solicitudes de recepción. Con los despachos y recepciones llena el **Excel de agenda** de Patricio Farías, y marca una alerta cuando el día pedido está copado. No interfiere con el trabajo de la casilla ni con MADA.
+**Etapa 1 (actual):** un agente recibe una copia de los correos de Andrea y de Javier en `agente@alzatec.com`, que funciona como embudo. Los clasifica y los reenvía a tres casillas:
+
+| Categoría | Casilla |
+|---|---|
+| Despacho acordado | `despachosconfirmados@alzatec.com` |
+| Recepción acordada | `retirosconfirmados@alzatec.com` (nombre a confirmar) |
+| Pendiente (le falta algo) | `pendientesandrea@alzatec.com` |
+
+Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. No toca MADA ni responde a clientes.
+
+**Etapa 2 (futuro):** agenda de camiones en el Excel de Pato, con alerta de día copado.
 
 ## Documentos
 
-1. [Diagnóstico](docs/01-diagnostico.md): cómo se organiza el área de proyectos, el flujo de la cotización al camión y los tipos de solicitud.
-2. [Propuesta](docs/02-propuesta.md): cómo funciona el agente, la agenda de Pato, el stack, las fases y los riesgos.
-3. [Reunión con Andrea y Pato](docs/03-reunion.md): definir los tipos de correo con Andrea y revisar el Excel con Pato.
-4. [Requerimientos](docs/04-requerimientos.md): el borrador que se envía a gerencia después de la reunión.
-5. [Implementación](docs/05-implementacion.md): cómo conectar el correo, el Excel en OneDrive y el agente en n8n.
-6. [Clasificación de correos](docs/06-clasificacion.md): qué preguntarle a Andrea para definir cotización, despacho y recepción. Incluye el alcance de la versión 1.
-7. [Agente v1](docs/07-agente-v1.md): cómo funciona paso a paso, el JSON que devuelve la IA, las reglas, los errores y el mantenimiento.
-8. [Notas de la reunión](docs/08-notas-reunion.md): lo confirmado en la reunión y el nuevo alcance en dos etapas.
-
-Ejemplo: [`ejemplos/agenda-camiones-ejemplo.xlsx`](ejemplos/agenda-camiones-ejemplo.xlsx) muestra cómo queda la agenda llenada por el agente (datos ficticios).
+- **Etapa 1**
+  - [Requerimientos](docs/04-requerimientos.md): el documento para gerencia.
+  - [Cómo funciona el clasificador](docs/07-agente-v1.md): flujo, JSON, reglas, reenvío y puesta en marcha.
+  - [Notas de la reunión](docs/08-notas-reunion.md): lo confirmado y las preguntas abiertas.
+- **Contexto y etapa 2**
+  - [Diagnóstico](docs/01-diagnostico.md)
+  - [Propuesta de agenda](docs/02-propuesta.md)
+  - [Guía de reunión](docs/03-reunion.md)
+  - [Implementación (correo, OneDrive, n8n)](docs/05-implementacion.md)
+  - [Clasificación](docs/06-clasificacion.md)
+  - Ejemplo de agenda: [`ejemplos/agenda-camiones-ejemplo.xlsx`](ejemplos/agenda-camiones-ejemplo.xlsx)
 
 ## Estado
 
-**Alcance actualizado en la reunión:** la etapa 1 es solo un **clasificador**. Los correos de Andrea y de Javier pasan por `agente@` y se reenvían a `despachosconfirmados@`, `retirosconfirmados@` o `pendientesandrea@`. El Excel queda para la etapa 2. Ver [notas](docs/08-notas-reunion.md).
+- **Reunión de levantamiento hecha.** Se definió la etapa 1.
+- **Pendiente:**
+  - recibir la base de correos de Andrea y de Javier para analizarla;
+  - que Víctor cree las casillas y los reenvíos.
 
-**Fase 0 · Levantamiento.** Confirmado: 25–30 cotizaciones diarias, unos 10 camiones al día, y MADA como sistema de gestión, que el proyecto no toca. Todas las solicitudes pasan por `asistentetecnico@` y la agenda es un Excel. Falta la reunión con Andrea y Patricio Farías.
+## Datos
+
+Los correos reales de clientes **no se suben a este repositorio**. Van en `datos/`, que está ignorado por git.

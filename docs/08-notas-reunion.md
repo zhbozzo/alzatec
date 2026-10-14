@@ -33,7 +33,8 @@ flowchart LR
   2. **Recepción acordada** → `retirosconfirmados@` (en las notas aparece como "retiros@confirmados"; **confirmar el nombre**)
   3. **Pendiente**: un despacho o una recepción al que **le falta algo** (fecha, stock, condición comercial o cotización final) → `pendientesandrea@`
 - Las **cotizaciones** (25–35 diarias) y el resto **no se mueven**.
-- **Sin Excel en la etapa 1.** El Excel de Pato queda para después.
+- **Sin Excel ni agenda en la etapa 1.** Solo se clasifican correos. El Excel de Pato queda para después.
+- Alzatec entregará una **base de correos de los últimos meses** de Andrea y de Javier para analizarla.
 - **Ya existe `devoluciones@alzatec.com`.**
 - **Víctor maneja el hosting.** Con él se crean las casillas y los reenvíos.
 
@@ -48,6 +49,6 @@ flowchart LR
 1. ¿Cuáles son las direcciones exactas de **Andrea** y de **Javier**? (En la captura aparecía `departamentotecnico@`.)
 2. ¿**"Retiros confirmados" = recepciones**, es decir, equipos que vuelven? Ojo: los clientes usan "retiro" para venir a buscar. Para evitar confusiones conviene llamarla `recepcionesconfirmadas@`.
 3. ¿Las recepciones van a una casilla nueva, o a la **`devoluciones@`** que ya existe?
-4. **¿Qué señal en el correo indica "acordado"?** Si la vendedora le confirma a Patricio **sin copiar a Andrea ni a Javier**, el agente **no ve** esa confirmación y todo quedaría como pendiente. ¿La vendedora copia a Andrea?
+4. ~~¿La vendedora copia a Andrea?~~ **No importa:** en la etapa 1 solo se clasifica lo que llega a Andrea y a Javier. Las señales de "acordado" y "pendiente" se van a sacar del **análisis de la base de correos** de los últimos meses de ambos, que entregará Alzatec.
 5. ¿Quién lee cada una de las 3 casillas? (¿Pato las de confirmados y Andrea la de pendientes?)
 6. Un correo que llega a Andrea **y** a Javier se procesa **una sola vez** (se detecta por `Message-ID`). Confirmar que eso es lo esperado.

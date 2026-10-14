@@ -1,5 +1,7 @@
 # 01 · Diagnóstico
 
+> **Nota (después de la reunión):** el alcance actual de la etapa 1 es solo el **clasificador de correos** que reenvía a tres casillas (ver [04-requerimientos.md](04-requerimientos.md) y [07-agente-v1.md](07-agente-v1.md)). Lo que este documento dice sobre la agenda, el Excel y el cupo queda para la **etapa 2**.
+
 > Fuentes: nota de gerencia y conversación con gerencia sobre cómo funciona la empresa.
 > Lo marcado **(confirmar)** se valida con Andrea y Patricio Farías ([03-reunion.md](03-reunion.md)).
 

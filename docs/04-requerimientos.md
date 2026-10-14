@@ -1,116 +1,97 @@
-# Requerimientos · Agente de agenda de camiones
+# Requerimientos · Clasificador de correos (etapa 1)
 
 **Para:** Gerencia Alzatec S.A.
-**Estado:** borrador previo a la reunión con Andrea y Patricio Farías. Los puntos marcados **[validar]** se completan con lo que salga de esa reunión.
+**Estado:** borrador después de la reunión de levantamiento. Lo marcado **[validar]** se completa con el análisis de la base de correos de los últimos meses.
 
 ## 1. Contexto y objetivo
 
-La casilla `asistentetecnico@` envía unas **25–30 cotizaciones diarias**. Por esa misma casilla llegan todas las **solicitudes de despacho y de recepción** de equipos: las mandan los clientes, muchas veces en el mismo hilo de la cotización, o los vendedores, con copia a la casilla. A la bodega entran unos **10 camiones al día**, y esa agenda la lleva Patricio Farías en un Excel.
+A los correos de Andrea y de Javier llegan diariamente unas **25–35 cotizaciones**, mezcladas con solicitudes de despacho y de recepción de equipos. Hoy hay que leerlos todos para saber cuáles son despachos o recepciones ya acordados y cuáles tienen algo pendiente.
 
-**Objetivo:** que un agente separe automáticamente las cotizaciones de las solicitudes de despacho y recepción, **llene el Excel de agenda** y **marque una alerta cuando el día pedido esté copado**. Todo esto sin interferir con el trabajo de `asistentetecnico@` ni con MADA.
+**Objetivo de la etapa 1:** un **clasificador automático** que separe esos correos y los envíe a tres casillas:
+
+| Categoría | Casilla de destino |
+|---|---|
+| **Despacho acordado** | `despachosconfirmados@alzatec.com` |
+| **Recepción acordada** | `retirosconfirmados@alzatec.com` **[validar nombre]** |
+| **Pendiente**: despacho o recepción al que le falta algo | `pendientesandrea@alzatec.com` |
+
+Las cotizaciones y el resto de los correos **no se mueven**: siguen donde están.
 
 ## 2. Alcance
 
 **Incluye**
-- Lectura de una copia de los correos que llegan a `asistentetecnico@`, incluidas las copias (CC).
-- Clasificación de cada correo en cotización, despacho, recepción u otro, y extracción de sus datos.
-- Escritura de las solicitudes en el Excel de agenda, revisando el cupo.
-- Alertas de día copado, de solicitudes urgentes y de casos a revisar.
+- Recibir una copia de los correos que llegan a Andrea y a Javier en `agente@alzatec.com`, que funciona como **embudo**.
+- Clasificar cada correo en una de las tres categorías, o en "no aplica".
+- Reenviar cada despacho, recepción o pendiente a su casilla, con un resumen.
 
-**No incluye**
-- Enviar o responder correos desde `asistentetecnico@`.
-- Registrar o modificar datos en MADA.
-- El trabajo de cotizaciones y de proyectistas.
+**No incluye (etapa 1)**
+- Agenda, Excel o revisión de cupo de camiones. Eso queda para una etapa posterior.
+- Responder correos a clientes.
+- Modificar las casillas de Andrea o de Javier.
+- Tocar MADA.
 
-## 3. Usuarios
+## 3. Definición de las categorías **[validar con la base de correos]**
 
-| Usuario | Uso |
+| Categoría | Definición preliminar |
 |---|---|
-| Patricio Farías | Usa el Excel igual que hoy y confirma las filas que escribe el agente. Recibe las alertas. |
-| Andrea (`asistentetecnico@`) | Define los tipos de correo. No cambia su forma de trabajar. Recibe las alertas de día copado **[validar]**. |
-| Gerencia | Autoriza los accesos y ve los resultados. |
+| **Despacho acordado** | Salen equipos de Alzatec y están acordadas las condiciones: cotización final aceptada, condición comercial, fecha y stock. El ~90% se hace con camión del cliente y el ~10% con camión de Alzatec. |
+| **Recepción acordada** | Vuelven equipos a Alzatec, con la fecha acordada. |
+| **Pendiente** | Hay una solicitud de despacho o recepción, pero **falta algo**: fecha, stock, condición comercial, o la **cotización final**. Por ejemplo, una cotización con observaciones que lleva sufijo `-01`, porque no se despacha hasta la versión final. |
+| **No aplica** | Cotizaciones sin pedido de despacho ni recepción, consultas, proveedores, avisos automáticos. No se reenvían. |
+
+**Reglas conocidas**
+- Se puede agendar aunque la cotización no esté aprobada, pero **no se despacha** hasta tener la cotización final.
+- Una cotización con observaciones conserva su número con un guion: `N°28484` pasa a `N°28484-01`.
+- Asunto típico: `Re: Cotización Alzatec N°<número> - <CLIENTE> - <OBRA>`.
 
 ## 4. Requerimientos funcionales
 
 Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 
-### A. Lectura sin interferir
-
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-01 | Recibir una copia de cada correo que llega a `asistentetecnico@`, incluidas las copias (CC), mediante un reenvío a una casilla del agente. | I |
-| RF-02 | No modificar nada en la casilla `asistentetecnico@`: no marcar como leído, no mover, no borrar y no responder. | I |
-| RF-03 | Agrupar los correos por hilo y evitar duplicados cuando el mismo pedido llega en varios correos. | I |
-
-### B. Clasificación y extracción
-
-| ID | Requerimiento | Prioridad |
-|---|---|---|
-| RF-04 | Clasificar cada correo como **cotización**, **solicitud de despacho**, **solicitud de recepción** u **otro**, según los criterios que defina Andrea **[validar criterios]**. | I |
-| RF-05 | Reconocer los cambios de fecha y las cancelaciones de solicitudes que ya están en el Excel. | M |
-| RF-06 | Reconocer los viajes del camión de Alzatec (faltantes a obra, material galvanizado) **[validar si van en el mismo Excel]**. | M |
-| RF-07 | Extraer los datos que piden las columnas del Excel **[validar columnas]**: fecha, hora, cliente, obra, N° de cotización, contacto, transporte y equipos. | I |
-| RF-08 | Convertir las fechas relativas ("hoy", "mañana", "el jueves") en una fecha real, en horario de Chile y con días hábiles y feriados. | I |
-
-### C. Escritura en el Excel
-
-| ID | Requerimiento | Prioridad |
-|---|---|---|
-| RF-09 | Escribir cada despacho o recepción como una fila nueva en el Excel de agenda, con el formato actual. | I |
-| RF-10 | Agregar una columna **Estado**: POR CONFIRMAR, CONFIRMADO, SIN CUPO, URGENTE, REVISAR o CANCELADO. El agente nunca escribe CONFIRMADO; eso lo hace Patricio Farías. | I |
-| RF-11 | Antes de escribir, **revisar el cupo del día** contando los **camiones** de ese día (todas las filas, incluidas las escritas a mano) contra la capacidad definida. **No considera inventario**, que sigue en MADA **[validar regla de cupo]**. | I |
-| RF-12 | Agregar una columna **Origen** con el asunto, la fecha y el remitente del correo. | M |
-| RF-13 | Revisar los encabezados del Excel antes de escribir. Si cambió el formato, no escribir y avisar. | I |
-| RF-14 | Actualizar la fila existente cuando llega un cambio de fecha o una cancelación. | M |
-
-### D. Alertas
-
-| ID | Requerimiento | Prioridad |
-|---|---|---|
-| RF-15 | **Día copado:** marcar la fila como SIN CUPO, indicar el próximo día con cupo y avisar a Patricio Farías y a Andrea **[validar destinatarios y qué hacer con la solicitud]**. | I |
-| RF-16 | **Urgente:** marcar y avisar cuando la solicitud tiene menos de 2 días de anticipación **[validar regla]**. | I |
-| RF-17 | **Revisar:** marcar y avisar cuando el agente no está seguro del tipo o de la fecha. | I |
-| RF-18 | Enviar un resumen diario de lo agendado para mañana y pasado **[validar hora]**. | D |
-
-### E. Medición
-
-| ID | Requerimiento | Prioridad |
-|---|---|---|
-| RF-19 | Registrar cada correo procesado, cómo se clasificó y qué escribió el agente, para medir la precisión. | I |
+| RF-01 | Recibir en `agente@` una copia de cada correo que llega a Andrea y a Javier, mediante reenvíos con copia en el hosting. | I |
+| RF-02 | No modificar nada en las casillas de origen. | I |
+| RF-03 | Procesar cada correo **una sola vez**, aunque llegue a Andrea y a Javier a la vez (por `Message-ID`). | I |
+| RF-04 | Clasificar cada correo como despacho acordado, recepción acordada, pendiente o no aplica. | I |
+| RF-05 | Reenviar a la casilla de destino el **correo original completo** (con sus adjuntos), con un **resumen** al inicio: categoría, N° de cotización (con sufijo si lo tiene), cliente, obra, fecha si existe y, en los pendientes, **qué falta**. | I |
+| RF-06 | Poner un prefijo en el asunto del reenvío, por ejemplo `[DESPACHO ACORDADO] Re: Cotización Alzatec N°…`, para filtrar fácil en Outlook. | M |
+| RF-07 | Si el clasificador no está seguro y el correo podría ser un despacho o una recepción, mandarlo a **pendientes** con la nota "revisar". **Nunca** descartarlo en silencio. | I |
+| RF-08 | Registrar cada correo procesado, con su categoría y lo que se hizo, para medir la precisión. | I |
+| RF-09 | Avisar al mantenedor si algo falla. El correo no se pierde y se puede reprocesar. | I |
 
 ## 5. Requerimientos no funcionales
 
-- **No interferencia:** el trabajo en `asistentetecnico@` y en MADA sigue exactamente igual.
-- **El Excel se sigue usando igual:** mismo formato, se puede escribir a mano y se puede imprimir.
-- **Escritura segura:** el agente puede escribir aunque el Excel esté abierto. Para eso tiene que vivir en **OneDrive para empresas o SharePoint** (Microsoft 365), como Tabla de Excel. Un OneDrive personal no sirve **[validar dónde vive hoy]**.
-- **Rapidez:** la fila aparece menos de 5 minutos después de que llega el correo.
-- **Sin pérdida:** si el agente falla, los correos se acumulan en su casilla y se procesan cuando vuelve.
-- **Seguridad:** las credenciales se guardan cifradas, el agente tiene el mínimo acceso necesario y queda registro de lo que escribió.
+- **No interferencia:** Andrea y Javier siguen trabajando igual.
+- **Rapidez:** el reenvío sale menos de 5 minutos después de que llega el correo.
+- **Sin pérdida:** si el agente falla, los correos esperan en `agente@`.
+- **Privacidad:** el contenido de los correos de clientes pasa por el proveedor de IA (con aprobación de gerencia). La base de correos de análisis **no se guarda en el repositorio**.
+- **Seguridad:** credenciales cifradas y acceso mínimo.
 
 ## 6. Lo que se necesita de Alzatec
 
-| Qué | Para qué | Cuándo |
+| Qué | Quién | Para qué |
 |---|---|---|
-| Andrea: criterios para cada tipo, más 5–10 correos reales de cada uno | Enseñarle al agente a clasificar | Fase 0 |
-| Patricio Farías: una copia del Excel y la regla de cupo | Saber qué columnas llenar y cuándo un día está copado | Fase 0 |
-| Los correos de 1–2 semanas pasadas, más el Excel de esas mismas semanas | Medir al agente contra lo que pasó de verdad | Fase 0 |
-| Acceso al cPanel de HostingPlus, o alguien que lo tenga | Crear `agente@` y el reenvío con copia | Fase 1 |
-| Cuenta Microsoft 365 de empresa, o 1 licencia Business Basic, para alojar el Excel | Que el agente pueda escribir en el Excel | Fase 1 |
-| Cuenta de API del modelo de IA elegido, y n8n (VPS o n8n Cloud), a nombre de Alzatec | Que el agente funcione | Fase 1 |
+| **Base de correos de los últimos meses** de Andrea y de Javier | Alzatec | Definir las categorías con datos reales y medir el clasificador antes de usarlo |
+| Crear `agente@`, `despachosconfirmados@`, `retirosconfirmados@` y `pendientesandrea@` | Víctor (hosting) | Embudo y destinos |
+| Reenvíos con copia: Andrea → `agente@` y Javier → `agente@` | Víctor (hosting) | Que el agente reciba los correos |
+| Datos de conexión de `agente@` (IMAP y SMTP) | Víctor (hosting) | Leer y reenviar |
+| Validar una muestra clasificada (50–100 correos) | Andrea | Confirmar que el criterio es el correcto |
+| Cuenta de IA y n8n a nombre de Alzatec | Gerencia | Que el agente funcione |
 
 ## 7. Fases y criterios de aceptación
 
 | Fase | Entregable | Se da por cumplida cuando… |
 |---|---|---|
-| 0 · Levantamiento | Tipos, columnas y regla de cupo definidos, y un set de prueba | Gerencia, Andrea y Patricio Farías aprueban este documento. |
-| 1 · Versión 1 en modo sombra | Solo clasificar y anotar en una copia del Excel, marcando SIN CUPO, URGENTE o REVISAR | Sobre semanas reales, detecta **≥ 95%** de las solicitudes del Excel real, acierta tipo y fecha en **≥ 90%**, y las alertas de día copado son correctas **[validar metas]**. |
-| 2 · Versión 1 en vivo | Lo mismo sobre el Excel real (la alerta es el color en el Excel) | Dos semanas de operación sin solicitudes perdidas. |
-| 3 · Versión 2 | Alertas por correo, cambios de fecha y cancelaciones automáticas, camión de Alzatec | Se definen al cerrar la fase 2. |
-| 4 · Extensiones | Lectura de MADA, WhatsApp, indicadores | Se definen con gerencia. |
+| 0 · Análisis | Análisis de la base de correos: volumen por tipo, patrones y definiciones finales | Andrea valida las definiciones y una muestra clasificada. |
+| 1 · Prueba offline | Clasificador probado con correos reales, sin conectar nada | Acierta en **≥ 95%** de los despachos y recepciones **[validar meta]** y no deja ninguno sin clasificar. |
+| 2 · Modo sombra | Clasificador conectado; reenvía a una casilla de prueba durante 1–2 semanas | Andrea revisa y confirma que coincide con su criterio. |
+| 3 · En vivo | Reenvía a las tres casillas reales | Dos semanas sin correos perdidos. |
+| Etapa 2 (futuro) | Agenda y Excel de Pato, cupo de camiones | Se define al cerrar la etapa 1. |
 
 ## 8. Supuestos y pendientes
 
-- Todas las solicitudes se canalizan por `asistentetecnico@`, incluidas las que reenvían o copian los vendedores ✓.
-- La agenda de camiones es un Excel que lleva Patricio Farías ✓. Falta ver dónde vive y cómo está armado **[por ver en la reunión]**.
-- El volumen de 25–30 cotizaciones diarias y de unos 10 camiones al día está confirmado ✓.
-- MADA se usa para cotizaciones, pedidos, devoluciones e inventario, y el proyecto no lo modifica ✓.
+- Las direcciones exactas de Andrea y de Javier **[por confirmar]**. En una captura aparece `departamentotecnico@alzatec.com`.
+- El nombre final de la casilla de recepciones (`retirosconfirmados@`), y si conviene usar la `devoluciones@` que ya existe **[validar]**.
+- Quién lee cada casilla de destino **[validar]**.
+- La frase incompleta de la reunión: "cuando un vendedor coordina un despacho en la misma llamada debe…" **[completar]**.

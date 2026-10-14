@@ -1,5 +1,7 @@
 # 06 · Definir la clasificación de correos (con Andrea)
 
+> **Nota (después de la reunión):** el alcance actual de la etapa 1 es solo el **clasificador de correos** que reenvía a tres casillas (ver [04-requerimientos.md](04-requerimientos.md) y [07-agente-v1.md](07-agente-v1.md)). Lo que este documento dice sobre la agenda, el Excel y el cupo queda para la **etapa 2**.
+
 El agente va a clasificar como **Andrea le enseñe**. Esta guía sirve para salir de la reunión con definiciones claras y ejemplos reales.
 
 ## Alcance de la versión 1
