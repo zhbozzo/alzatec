@@ -7,6 +7,30 @@
 - la regla de cupo;
 - los accesos.
 
+## Versión corta (10 preguntas generales)
+
+Son preguntas abiertas: al responderlas, Andrea y Pato van a cubrir casi todo el detalle de más abajo. La lista larga sirve para **revisar al final** que no falte nada.
+
+**Andrea**
+1. "¿Me muestras con casos reales cómo llega una solicitud de retiro o devolución y qué haces con ella hasta que llega a Pato?"
+2. "¿Cómo distingues una cotización de un despacho o de una devolución? ¿Me muestras ejemplos de cada uno, incluidos los enredados?"
+3. "¿Qué datos necesita Pato de cada solicitud, y qué haces cuando falta alguno, como la fecha?"
+4. "¿Hay casos especiales o excepciones, como el camión de Alzatec, cambios de fecha o pedidos por otros canales?"
+
+**Pato**
+5. "¿Me muestras tu Excel? ¿Dónde está guardado y con qué cuenta entras?"
+6. "¿Cuándo un día está lleno, y qué haces en ese caso?"
+7. "Una vez que anotas una solicitud, ¿cómo se entera el cliente y qué pasa después?"
+
+**Tu papá**
+8. "¿Quién maneja el hosting del correo y si tenemos Microsoft 365 de empresa?"
+9. "¿Aprobamos las cuentas necesarias (IA, n8n y Microsoft si falta) a nombre de Alzatec?"
+
+**Al cerrar**
+10. "¿Me pasan ejemplos de correos y una copia del Excel de las mismas semanas? ¿Y quién deja de anotar a mano cuando el agente funcione?"
+
+## Versión detallada
+
 ⭐ = imprescindible. Si se acaba el tiempo, prioriza esas.
 
 ## Al empezar
