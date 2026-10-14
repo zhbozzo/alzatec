@@ -9,6 +9,13 @@
 - No lee los adjuntos.
 - No toca MADA.
 
+## Qué correos procesa
+
+- **Solo los que llegan a `asistentetecnico@`.** El reenviador de cPanel copia lo entrante, no lo que Andrea envía. Las cotizaciones que ella manda y sus propias respuestas nunca llegan al agente.
+- Las copias (CC) sí llegan. Por ejemplo, un vendedor que copia a Andrea.
+- **Filtro inicial barato**, antes de llamar a la IA: se descartan remitentes automáticos (no-reply, boletines, avisos de sistemas) con una lista que se mantiene a mano.
+- **¿Solo respuestas (`Re:`)?** Se puede: en el trigger IMAP, con la regla `HEADER In-Reply-To ""`, o con un nodo IF que exija la cabecera `In-Reply-To`. **No se activa en la v1**, porque una devolución o un aviso de un vendedor pueden llegar como correo nuevo y se perderían. Primero se mide en el modo sombra qué parte de las solicitudes llega como respuesta. Si es prácticamente el 100%, se activa el filtro.
+
 ## Recorrido de un correo
 
 Ejemplo: el jueves 15-10 a las 09:12 un cliente responde el hilo de la cotización:
