@@ -65,7 +65,10 @@ Víctor confirmó:
 
 **Pendiente:**
 - Los archivos `.pst` de Andrea y de Javier.
-- Confirmar que se configuraron los **reenvíos con copia** de `departamentotecnico@` y `devoluciones@` hacia `agente@`.
+  - **Tamaño:** máximo ~10 GB cada uno. Si pesan más, se piden menos meses o se dividen por mes. Se mandan comprimidos en `.zip`.
+  - **Envío:** link de Google Drive ("cualquier persona con el enlace") o Dropbox. **OneDrive no se puede descargar desde el entorno de análisis.**
+  - **Lectura:** se usa `pypff` (libpff). Ya está probado que funciona en el entorno.
+- ~~Confirmar los reenvíos con copia~~ ✓ Víctor configuró `departamentotecnico@` → `agente@` y `devoluciones@` → `agente@`. Los alias `@alzatec.cl` de esas casillas ya se reenvían a las `@alzatec.com`.
 - Cambiar las contraseñas iniciales por unas fuertes.
 - Revisar el espacio de las casillas: los adjuntos (planos, PDF) pueden llenar `agente@` y las casillas de destino.
 
