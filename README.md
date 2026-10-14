@@ -11,6 +11,7 @@ Un agente lee una copia de los correos de `asistentetecnico@alzatec.com` y separ
 5. [Implementación](docs/05-implementacion.md): cómo conectar el correo, el Excel en OneDrive y el agente en n8n.
 6. [Clasificación de correos](docs/06-clasificacion.md): qué preguntarle a Andrea para definir cotización, despacho y recepción. Incluye el alcance de la versión 1.
 7. [Agente v1](docs/07-agente-v1.md): cómo funciona paso a paso, el JSON que devuelve la IA, las reglas, los errores y el mantenimiento.
+8. [Notas de la reunión](docs/08-notas-reunion.md): lo confirmado en la reunión y el nuevo alcance en dos etapas.
 
 Ejemplo: [`ejemplos/agenda-camiones-ejemplo.xlsx`](ejemplos/agenda-camiones-ejemplo.xlsx) muestra cómo queda la agenda llenada por el agente (datos ficticios).
 
