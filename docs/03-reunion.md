@@ -85,6 +85,8 @@ Son preguntas abiertas: al responderlas, Andrea y Pato van a cubrir casi todo el
      - En el Explorador de Windows: una nube **azul** con "OneDrive - *empresa*" es de **empresa**; una nube **blanca** con "OneDrive - Personal" es **personal**.
      - En el navegador: una dirección `sharepoint.com` es de **empresa**; `onedrive.live.com` o `1drv.ms` es **personal**.
      - En Excel, en *Archivo → Cuenta*: aparece el correo con el que inició sesión.
+     - **Lo más rápido:** con el Excel abierto, hacer clic en el **nombre del archivo** (arriba, al centro) para ver dónde está guardado. También mirar el interruptor **Autoguardado** (arriba a la izquierda): solo se puede activar si el archivo está en OneDrive o SharePoint.
+     - En *Archivo → Información* aparece la ruta: `C:\…` es local; `https://…sharepoint.com/…` es OneDrive de empresa; `https://d.docs.live.net/…` es OneDrive personal; `\\servidor\…` o una unidad como `Z:` es una carpeta compartida de red.
 4. "¿El archivo termina en .xlsx?" (`.xls` no sirve)
 5. ⭐ "¿Cómo está armado? ¿Una fila por camión, o una grilla con los horarios? ¿Una hoja por día, por semana o por mes?"
 6. ⭐ "¿Qué columnas llenas? ¿Cuáles son obligatorias?"
