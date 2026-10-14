@@ -96,7 +96,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 | Los correos de 1–2 semanas pasadas, más el Excel de esas mismas semanas | Medir al agente contra lo que pasó de verdad | Fase 0 |
 | Acceso al cPanel de HostingPlus, o alguien que lo tenga | Crear `agente@` y el reenvío con copia | Fase 1 |
 | Cuenta Microsoft 365 de empresa, o 1 licencia Business Basic, para alojar el Excel | Que el agente pueda escribir en el Excel | Fase 1 |
-| Cuenta de API de Claude, y n8n (VPS o n8n Cloud), a nombre de Alzatec | Que el agente funcione | Fase 1 |
+| Cuenta de API del modelo de IA elegido, y n8n (VPS o n8n Cloud), a nombre de Alzatec | Que el agente funcione | Fase 1 |
 
 ## 7. Fases y criterios de aceptación
 

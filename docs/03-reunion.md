@@ -62,7 +62,7 @@ Esto va primero, porque todo lo demás depende de esta definición.
 
 - Autorizar que se cree la casilla `agente@alzatec.com` y el reenvío con copia desde `asistentetecnico@`.
 - Si no tienen Microsoft 365 de empresa, aprobar 1 licencia Business Basic para alojar el Excel. El correo no se mueve.
-- Aprobar la cuenta de API de Claude y dónde corre n8n, ambas a nombre de Alzatec.
+- Aprobar la cuenta de API del modelo de IA y dónde corre n8n, ambas a nombre de Alzatec.
 
 ## Después de la reunión
 

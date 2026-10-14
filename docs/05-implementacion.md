@@ -7,7 +7,7 @@
 | Correo | Reenvío con copia en cPanel: `asistentetecnico@` → `agente@alzatec.com`. n8n lee `agente@` por IMAP. |
 | Excel | En **OneDrive para empresas** (Microsoft 365), como **Tabla** de Excel. n8n escribe con el nodo Microsoft Excel 365. |
 | Orquestación | **n8n**, en una instancia dedicada a Alzatec. |
-| IA | Claude API, llamada desde n8n con salida estructurada (JSON). |
+| IA | Un LLM con salida estructurada (JSON). Se elige entre Claude, GPT o Gemini después de probarlos con correos reales (ver la sección *Modelo de IA*). |
 | Alertas | Correo por el SMTP de HostingPlus. |
 
 ```mermaid
@@ -15,7 +15,7 @@ flowchart LR
   AT["asistentetecnico@"] -->|"reenvío con copia"| AG["agente@"]
   AG -->|"IMAP"| N1["n8n: Email Trigger"]
   N1 --> N2["Code: limpiar correo,<br/>ID de hilo"]
-  N2 --> N3["HTTP Request:<br/>Claude API (JSON)"]
+  N2 --> N3["LLM: clasificar<br/>y extraer (JSON)"]
   N3 --> N4{"¿despacho o<br/>recepción?"}
   N4 -->|no| LOG["Excel: hoja Registro"]
   N4 -->|sí| N5["Code: fecha real,<br/>regla 2 días"]
@@ -28,13 +28,32 @@ flowchart LR
 
 ## 1. Conectarse al correo de Andrea sin tocarlo
 
-Lo hace quien administre el cPanel de HostingPlus, y toma unos 10 minutos:
+Lo hace quien tenga el acceso al hosting de HostingPlus, y toma unos 10 minutos. Necesita la autorización de gerencia.
 
-1. **Crear la casilla** `agente@alzatec.com`, en cPanel → *Cuentas de correo*.
-2. **Crear el reenvío**, en cPanel → *Reenviadores* → *Agregar reenviador*: dirección `asistentetecnico`, destino `agente@alzatec.com`.
-   - La casilla de Andrea **sigue recibiendo todo igual**. El reenvío es una copia.
-   - No se usa la contraseña de Andrea.
-3. **Probar.** Mandar un correo a `asistentetecnico@` y verificar dos cosas: que llega a ambas casillas, y que conserva las cabeceras `Message-ID`, `In-Reply-To` y `References`, porque el agente las usa para agrupar los hilos.
+**Paso a paso en cPanel**
+
+1. **Entrar a cPanel.** Se entra desde el área de clientes de HostingPlus, o directo en `https://alzatec.com:2083`.
+2. **Crear la casilla del agente.** Ir a *Correo electrónico → Cuentas de correo electrónico → Crear*.
+   - Usuario: `agente`. Dominio: `alzatec.com`.
+   - Una contraseña larga.
+   - Cuota: 2 GB alcanza. Se puede limpiar cada cierto tiempo.
+3. **Crear el reenviador.** Ir a *Correo electrónico → Reenviadores → Agregar reenviador*.
+   - *Dirección a reenviar*: `asistentetecnico` (dominio `alzatec.com`).
+   - *Destino*: elegir *Reenviar a la dirección de correo electrónico* y escribir `agente@alzatec.com`.
+   - Clic en *Agregar reenviador*.
+4. **Verificar** que en la lista de reenviadores aparezca `asistentetecnico@alzatec.com → agente@alzatec.com`.
+5. **Probar.** Desde un correo externo, mandar un correo de prueba a `asistentetecnico@` y revisar dos cosas:
+   - que llegue a **las dos** casillas;
+   - que conserve las cabeceras `Message-ID`, `In-Reply-To` y `References`, que el agente usa para agrupar los hilos.
+
+**Qué cambia para Andrea: nada.**
+- En cPanel, si una dirección tiene casilla y además reenviador, el correo **se entrega en la casilla y además se copia** al destino.
+- Andrea no ve el reenvío.
+- No se usa su contraseña.
+
+**Si no hay acceso a cPanel**, se le puede pedir a soporte de HostingPlus con este texto:
+
+> Hola, para el dominio alzatec.com necesitamos: (1) crear la casilla agente@alzatec.com, y (2) crear un reenviador que envíe una **copia** de todo lo que llega a asistentetecnico@alzatec.com hacia agente@alzatec.com, **manteniendo** la entrega normal en asistentetecnico@. Gracias.
 
 **En n8n:** nodo **Email Trigger (IMAP)**.
 - Credencial IMAP de `agente@`: servidor `mail.alzatec.com` (el exacto está en cPanel → *Conectar dispositivos*), puerto 993, SSL.
@@ -46,7 +65,13 @@ Lo hace quien administre el cPanel de HostingPlus, y toma unos 10 minutos:
 
 ### Requisito: OneDrive **para empresas**
 
-n8n escribe en Excel a través de la API de Excel de Microsoft Graph. Esa API funciona con **OneDrive para empresas y SharePoint** (Microsoft 365). Con un OneDrive **personal** (cuentas hotmail u outlook.com) no está soportada de forma confiable.
+n8n escribe en Excel a través de la API de Excel de Microsoft Graph. La documentación oficial de Microsoft dice:
+
+> "Support for workbooks stored in OneDrive Consumer platform is still not available. At this time, only the files stored in business platform are supported by Excel REST APIs."
+
+Es decir: **con un OneDrive personal (cuentas hotmail u outlook.com) esa API no está soportada.** Solo funciona con **OneDrive para empresas y SharePoint** (Microsoft 365). Además, no acepta archivos `.xls`.
+
+Con una cuenta personal, el único camino sería descargar el archivo completo, modificarlo y volver a subirlo. Para una agenda que Pato está editando al mismo tiempo eso es peligroso: **la subida pisa los cambios que Pato hizo mientras tanto**. La API de empresa, en cambio, agrega la fila dentro del archivo abierto, sin pisar nada.
 
 | Si el Excel está en… | Qué hacer |
 |---|---|
@@ -67,14 +92,30 @@ Que el Excel viva en una **cuenta de la empresa** y no en la de una persona evit
 4. **Formato condicional** en Estado, para los colores. Lo hace Excel; el agente solo escribe el texto.
 5. Pato lo abre desde OneDrive, en el escritorio con *Autoguardado* activo o en la web. Así ve aparecer las filas nuevas mientras lo tiene abierto.
 
-### Conectar n8n
+### Conectar n8n ("la API de Microsoft")
 
-1. En el portal de Azure → **Microsoft Entra ID → Registros de aplicaciones**, crear una app:
-   - URL de redirección: la URL de OAuth que muestra n8n al crear la credencial.
-   - Permisos delegados: `Files.ReadWrite` y `offline_access`.
-   - Copiar el *Client ID* y crear un *Client Secret*.
-2. En n8n, crear la credencial **Microsoft Excel OAuth2** y entrar con la cuenta dueña del Excel.
-3. Nodo **Microsoft Excel 365**, con estas operaciones sobre la tabla de la agenda:
+La API de Microsoft **no se compra**: viene incluida con la cuenta Microsoft 365. Lo que se hace es **autorizar a n8n** para que use esa cuenta. Hay dos caminos.
+
+**A. Con n8n Cloud (más simple)**
+1. En n8n: *Credentials → New → Microsoft Excel OAuth2 API → Connect my account*.
+2. Entrar con la cuenta dueña del Excel (por ejemplo `agenda@alzatec.onmicrosoft.com`) y aceptar los permisos.
+
+Listo: n8n Cloud no pide registrar ninguna aplicación.
+
+**B. Con n8n en un servidor propio (self-hosted)**
+
+Hay que registrar una aplicación en Microsoft. Es gratis:
+1. Entrar a `https://entra.microsoft.com` con la cuenta administradora de Microsoft 365.
+2. Ir a *Aplicaciones → Registros de aplicaciones → Nuevo registro*.
+   - Nombre: `n8n agenda Alzatec`.
+   - Tipos de cuenta: *cualquier directorio organizativo y cuentas personales de Microsoft*. Es lo que indica la guía de n8n. Si se elige "solo este directorio", n8n puede fallar al conectarse.
+   - URI de redirección: plataforma *Web*, y pegar la *OAuth Callback URL* que muestra n8n al crear la credencial.
+3. Copiar el **Id. de aplicación (cliente)**: es el *Client ID*.
+4. En *Certificados y secretos → Nuevo secreto de cliente*, copiar el **Valor**. Es el *Client Secret* y se muestra una sola vez. Vence (máximo 2 años): **dejar un recordatorio para renovarlo**.
+5. En n8n, crear la credencial *Microsoft Excel OAuth2 API*, pegar el Client ID y el Secret, luego *Connect my account*, entrar con la cuenta dueña del Excel y aceptar.
+6. Si Microsoft pide "aprobación del administrador", el administrador de la cuenta Microsoft 365 la da una vez.
+
+**Después, en el flujo:** nodo **Microsoft Excel 365**, con estas operaciones sobre la tabla de la agenda:
    - *Get Rows*: para contar el cupo del día.
    - *Lookup*: para buscar por ID hilo.
    - *Append*: para agregar la fila.
@@ -87,7 +128,7 @@ Al día llegan unos 100 correos. Cada uno es una ejecución, o sea unas **2.500�
 
 | Opción | Costo aprox. | A favor | En contra |
 |---|---|---|---|
-| **n8n Cloud** | Starter: €20 al mes (2.500 ejecuciones). Pro: €50 al mes (10.000). Precios con facturación anual. | Nadie mantiene servidores. | Starter queda justo con este volumen. |
+| **n8n Cloud** | Starter: €20 al mes (2.500 ejecuciones). Pro: €50 al mes (10.000). Precios con facturación anual. | Nadie mantiene servidores. Conectar Microsoft es un clic, sin registrar una app. | Starter queda justo con este volumen. |
 | **n8n self-hosted** en un VPS con Docker | Unos US$5–10 al mes de VPS | Sin límite de ejecuciones. Más barato. | Hay que mantener actualizaciones y respaldos. Necesita dominio con HTTPS para el OAuth de Microsoft. |
 
 **Recomendación**
@@ -97,25 +138,43 @@ Al día llegan unos 100 correos. Cada uno es una ejecución, o sea unas **2.500�
 
 ### Detalles del flujo
 
-- **IA:** usar el nodo **HTTP Request** contra la API de mensajes de Claude, con salida estructurada (`output_config.format` con un JSON schema). Eso da control total sobre el modelo y garantiza un JSON válido. El *prompt* incluye las definiciones de Andrea y unos 10 ejemplos reales de cada tipo.
+- **IA:** un solo nodo llama al modelo y le pide **salida estructurada** (un JSON schema), para que la respuesta siempre sea un JSON válido. Los tres proveedores lo soportan. Puede ser el nodo del proveedor en n8n, o un nodo **HTTP Request** contra su API si se necesita control total. Como es un solo nodo, **cambiar de modelo es cambiar ese nodo**. El *prompt* incluye las definiciones de Andrea y unos 10 ejemplos reales de cada tipo.
 - **Fechas:** un nodo **Code** convierte "hoy", "mañana" o "el jueves" en una fecha real, con la zona `America/Santiago`, considerando días hábiles y una lista de feriados de Chile.
 - **Duplicados y cambios:** antes de agregar una fila, el flujo busca por **ID hilo**. Si ya existe, actualiza esa fila en vez de crear otra.
 - **Registro:** una hoja aparte (*Registro*) guarda cada correo procesado y cómo se clasificó. Sirve para medir la precisión en el modo sombra.
 - **Errores:** un *Error Workflow* de n8n avisa por correo si algo falla. El correo no se pierde: sigue en `agente@`.
 
-### Modelo y costo de IA (estimación gruesa)
+### Modelo de IA
 
-Se asume que cada correo tiene unos 3.000 tokens de entrada (instrucciones, ejemplos y correo) y hasta unos 1.000 de salida.
+**Para esta tarea sirven todos.** Hay que clasificar cada correo en unas 5 categorías, sacar fecha, cliente y obra, y entender español de Chile ("paso mañana en la tarde"). Cualquier modelo actual de Anthropic, OpenAI o Google lo hace bien. La diferencia la van a hacer **las definiciones y los ejemplos de Andrea** más que el modelo.
 
-| Modelo | ID | Costo aprox. con ~100 correos al día |
-|---|---|---|
-| Claude Opus 5.5 (el más capaz, por defecto) | `claude-opus-5-5` | US$50–100 al mes |
-| Claude Sonnet 5.5 | `claude-sonnet-5-5` | US$30–50 al mes |
-| Claude Haiku 5.5 | `claude-haiku-5-5` | US$2–3 al mes |
+Costo estimado con **3.000 correos al mes** (100 al día), unos 3.000 tokens de entrada y hasta 1.000 de salida por correo. Es un techo: el *prompt caching* de las instrucciones fijas lo baja.
 
-En el modo sombra se pueden probar los mismos correos con más de un modelo y elegir según la precisión real. El *prompt caching* sobre las instrucciones fijas baja el costo de entrada.
+| Modelo | ID | Precio por millón de tokens (entrada / salida) | Costo al mes (techo) |
+|---|---|---|---|
+| Claude Opus 5.5 | `claude-opus-5-5` | US$4 / US$20 | ~US$95 |
+| Claude Sonnet 5.5 | `claude-sonnet-5-5` | US$2 / US$10 | ~US$50 |
+| GPT-6.1 Sol | `gpt-6.1-sol` | US$2 / US$10 | ~US$50 |
+| Gemini 3.8 Flash | `gemini-3.8-flash` | US$0,75 / US$3,75 (introductorio hasta el 31-12-2026; luego US$1,50 / US$7,50) | ~US$20, luego ~US$35 |
+| Claude Haiku 5.5 | `claude-haiku-5-5` | US$0,10 / US$0,50 | ~US$2–3 |
 
-**Privacidad:** el contenido de los correos de clientes pasa por la API de IA. Hay que comentarlo con gerencia.
+Notas:
+- No encontré un precio publicado de "Gemini 3.8 Pro". El de la tabla es el **Flash**.
+- Los precios de GPT y Gemini salen de anuncios y sitios de precios de octubre de 2026. **Confirmarlos** en la página de cada proveedor antes de presupuestar.
+
+**Cómo elegir: con datos, no por marca.**
+1. Con los correos que Andrea clasificó (100–200), correr **los mismos correos** con 2 o 3 modelos.
+   - Por ejemplo: uno de gama media (Sonnet 5.5 o GPT-6.1 Sol), uno económico (Haiku 5.5 o Gemini 3.8 Flash) y, si hace falta, uno tope (Opus 5.5).
+2. Comparar tres cosas:
+   - cuántos despachos y recepciones detecta (lo más importante: que no se le escape ninguno);
+   - si acierta la fecha;
+   - el costo.
+3. Elegir **el más barato que cumpla la meta**. Si dos empatan, da lo mismo cuál.
+
+**Lo mismo para cualquier proveedor**
+- La cuenta de API va **a nombre de Alzatec**, con su tarjeta, y con un **límite de gasto mensual** configurado.
+- Usar siempre el **plan pagado** de la API. En Gemini, el nivel gratuito puede usar los datos para mejorar los productos de Google.
+- **Privacidad:** el contenido de los correos de clientes pasa por el proveedor de IA. Hay que comentarlo con gerencia.
 
 ## 4. Accesos a pedir
 
@@ -124,7 +183,7 @@ En el modo sombra se pueden probar los mismos correos con más de un modelo y el
 | cPanel de HostingPlus, o alguien que cree `agente@` y el reenvío | Quien administra el hosting | Leer el correo |
 | Cuenta Microsoft 365 de empresa, o aprobar la licencia Business Basic | Gerencia | Que el Excel viva en OneDrive para empresas |
 | Acceso a Azure / Entra ID de esa cuenta | La misma cuenta | Registrar la app para n8n |
-| Cuenta de API de Claude a nombre de Alzatec | Gerencia | El costo de IA lo paga la empresa |
+| Cuenta de API del modelo elegido (Anthropic, OpenAI o Google), a nombre de Alzatec | Gerencia | El costo de IA lo paga la empresa |
 | VPS o cuenta n8n Cloud a nombre de Alzatec | Gerencia | Dónde corre el agente |
 
 ## 5. Orden para montar el modo sombra

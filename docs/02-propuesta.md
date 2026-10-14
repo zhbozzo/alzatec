@@ -89,7 +89,7 @@ El detalle está en [05-implementacion.md](05-implementacion.md).
 |---|---|
 | Orquestación | **n8n**, en una instancia a nombre de Alzatec. |
 | Ingesta | Casilla `agente@`, leída con el nodo *Email Trigger (IMAP)*. |
-| IA | Claude API con salida estructurada, desde el nodo HTTP Request. |
+| IA | Un LLM con salida estructurada (Claude, GPT o Gemini). Se elige midiendo con correos reales. |
 | Agenda | El Excel de Pato en **OneDrive para empresas**, como Tabla de Excel, con el nodo Microsoft Excel 365. |
 | Registro interno | Una hoja *Registro* para los hilos, los duplicados y la medición. |
 | Alertas | Correo por el SMTP del hosting. WhatsApp más adelante. |
