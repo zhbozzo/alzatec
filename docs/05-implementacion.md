@@ -55,6 +55,38 @@ Lo hace quien tenga el acceso al hosting de HostingPlus, y toma unos 10 minutos.
 
 > Hola, para el dominio alzatec.com necesitamos: (1) crear la casilla agente@alzatec.com, y (2) crear un reenviador que envíe una **copia** de todo lo que llega a asistentetecnico@alzatec.com hacia agente@alzatec.com, **manteniendo** la entrega normal en asistentetecnico@. Gracias.
 
+### ¿Cuánto cuesta la casilla `agente@`?
+
+Normalmente **nada**: las casillas vienen incluidas en el plan de hosting. Así es en HostingPlus (precios anuales más IVA, según su sitio en octubre de 2026):
+
+| Plan | Precio al año | Casillas incluidas |
+|---|---|---|
+| Personal NVMe | $64.900 | 10 |
+| Emprendedor NVMe y superiores | desde $83.900 | Ilimitadas |
+
+**Cómo saber cuántas quedan:** en cPanel → *Cuentas de correo electrónico* aparece cuántas se usan y el límite (por ejemplo "12 / ∞").
+
+Solo costaría algo si Alzatec está en el plan Personal y ya usa las 10. En ese caso hay dos salidas: subir de plan, o conectarse directo a la casilla de Andrea (ver abajo).
+
+### ¿Y conectarse directo a la casilla de Andrea?
+
+Se puede, por IMAP con el usuario y la contraseña de `asistentetecnico@`.
+
+| | Reenvío a `agente@` | Directo a `asistentetecnico@` |
+|---|---|---|
+| Casilla extra | Sí (normalmente gratis) | No |
+| Contraseña de Andrea | No se usa | **Se necesita.** Si la cambia, el agente deja de funcionar. |
+| Si Andrea lee, mueve o borra un correo antes que el agente | No afecta: el agente tiene su copia | **Puede perderse.** Por ejemplo, si el agente estuvo caído y Andrea ya movió el correo a una carpeta. |
+| Riesgo de cambiarle algo a Andrea | Ninguno | Hay que abrir la casilla en **solo lectura** y no marcar nada como leído. |
+| Ve lo que Andrea envía | No | Sí (carpeta *Enviados*) |
+| Acceso a todo el historial de Andrea | No, solo lo nuevo | Sí. Más acceso del necesario. |
+
+**Recomendación:** si la casilla es gratis, el **reenvío** es más seguro y más simple.
+
+Si se va por la conexión directa, hay que hacerlo con cuidado:
+- Abrir la casilla en **solo lectura** (`EXAMINE` en vez de `SELECT`) y leer con `BODY.PEEK`, para no marcar nada como leído.
+- **Recordar el último UID procesado** en vez de depender de "no leídos". El nodo IMAP de n8n busca por defecto los no leídos, así que si Andrea abre un correo antes, el agente no lo ve. Para esta variante conviene **código propio** (por ejemplo con `imapflow`) en vez de n8n.
+
 **En n8n:** nodo **Email Trigger (IMAP)**.
 - Credencial IMAP de `agente@`: servidor `mail.alzatec.com` (el exacto está en cPanel → *Conectar dispositivos*), puerto 993, SSL.
 - *Action*: **Mark as Read**. Así se marcan como leídos solo en la casilla del agente, nunca en la de Andrea.
@@ -102,6 +134,8 @@ La API de Microsoft **no se compra**: viene incluida con la cuenta Microsoft 365
 
 Listo: n8n Cloud no pide registrar ninguna aplicación.
 
+**¿Por qué en n8n Cloud es un clic?** Porque n8n ya registró **su propia** aplicación en Microsoft, y uno solo autoriza esa aplicación. Si n8n corre en tu servidor, o si escribes **tu propio código** sin n8n, no hay aplicación prestada: **hay que registrar una propia**. Se hace una sola vez, es gratis y toma unos 10 minutos.
+
 **B. Con n8n en un servidor propio (self-hosted)**
 
 Hay que registrar una aplicación en Microsoft. Es gratis:
@@ -114,6 +148,13 @@ Hay que registrar una aplicación en Microsoft. Es gratis:
 4. En *Certificados y secretos → Nuevo secreto de cliente*, copiar el **Valor**. Es el *Client Secret* y se muestra una sola vez. Vence (máximo 2 años): **dejar un recordatorio para renovarlo**.
 5. En n8n, crear la credencial *Microsoft Excel OAuth2 API*, pegar el Client ID y el Secret, luego *Connect my account*, entrar con la cuenta dueña del Excel y aceptar.
 6. Si Microsoft pide "aprobación del administrador", el administrador de la cuenta Microsoft 365 la da una vez.
+
+**C. Con código propio (sin n8n)**
+
+Se registra la app igual que en B, pero conviene el modo **solo aplicación** (*client credentials*): el agente se conecta con el Client ID y el Secret, sin que nadie inicie sesión.
+- Permiso de **aplicación** en Microsoft Graph: `Files.ReadWrite.All`, o `Sites.Selected` si el Excel vive en un sitio de SharePoint y se quiere dar acceso solo a ese sitio.
+- El administrador da el consentimiento una vez.
+- Es lo más estable para un servicio que corre solo: no depende de la sesión de una persona.
 
 **Después, en el flujo:** nodo **Microsoft Excel 365**, con estas operaciones sobre la tabla de la agenda:
    - *Get Rows*: para contar el cupo del día.
