@@ -58,15 +58,15 @@ Según gerencia, en la casilla hay tres tipos de correo. Andrea debe definir có
 | Tipo | Qué es | ¿Va al Excel? |
 |---|---|---|
 | **Cotización** | Envío, consulta o modificación de una cotización, sin pedido de camión. | No. |
-| **Solicitud de despacho** | Equipos que **salen** de Alzatec. | Sí. |
-| **Solicitud de recepción** | Equipos que **vuelven** a Alzatec. | Sí. |
+| **Solicitud de despacho** | El cliente viene a **retirar** equipos de Alzatec para su obra. | Sí. |
+| **Solicitud de recepción** | El cliente **devuelve** equipos a Alzatec. | Sí. |
 
 Casos a validar dentro de esos tipos:
 - **Cambio de fecha o cancelación** de una solicitud que ya está en el Excel.
-- **Viajes del camión de Alzatec**: llevar algo que faltó a una obra o ir a buscar material galvanizado.
+- **Excepciones con el camión de Alzatec** (gestión interna): llevar a una obra algo que faltó en un despacho, o ir a buscar material galvanizado.
 - **Correos que mezclan** cotización y despacho, por ejemplo "acepto la cotización, la voy a buscar mañana".
 
-**Ojo con la palabra "retiro".** Puede significar que el cliente viene a buscar equipos (un despacho) o que se recogen equipos de una obra (una recepción). En la reunión hay que acordar un solo nombre para cada cosa.
+**Vocabulario ✓:** cuando un cliente dice **"retiro"**, siempre es un **despacho**: viene a buscar equipos a Alzatec. Las devoluciones son **recepciones**.
 
 **Reglas conocidas**
 - Despachos y recepciones se agendan con **2 días de anticipación**, pero muchos clientes piden el mismo día. **(confirmar cómo se resuelve)**
@@ -82,7 +82,7 @@ Casos a validar dentro de esos tipos:
 **Andrea**
 1. ¿Cómo distingue una cotización, un despacho y una recepción? Pedirle ejemplos reales de cada uno.
 2. ¿Qué datos le pasa a Pato de cada solicitud?
-3. ¿Qué nombre usar para cada cosa ("retiro", "despacho", "recepción")?
+3. ¿Qué otras palabras usan los clientes para pedir despacho o recepción?
 
 **Pato**
 4. ¿Dónde vive el Excel y cómo está armado (hojas, filas, columnas)?

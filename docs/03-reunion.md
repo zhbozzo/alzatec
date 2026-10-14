@@ -24,11 +24,11 @@ Esto va primero, porque todo lo demás depende de esta definición.
 
 - Para ella, ¿qué es una **cotización**, un **despacho** y una **recepción**?
 - Al leer un correo, ¿cómo sabe de qué tipo es? ¿Por el asunto, por quién lo manda, por las palabras ("retiro", "devolución", "paso a buscar"), por los adjuntos?
-- **Vocabulario.** "Retiro" puede ser que el cliente viene a buscar equipos (despacho) o que se recogen equipos (recepción). Acordar un solo nombre:
-  - **Despacho** = equipos que salen de Alzatec.
-  - **Recepción** = equipos que vuelven.
+- **Vocabulario (confirmado):**
+  - **Despacho:** el cliente viene a **retirar** equipos de Alzatec. "Retiro" siempre significa esto.
+  - **Recepción:** el cliente **devuelve** equipos a Alzatec.
 - ¿Hay casos especiales?
-  - viajes del camión de Alzatec (faltantes a obra, material galvanizado),
+  - excepciones con el camión de Alzatec (llevar faltantes a una obra, ir a buscar material galvanizado),
   - cambios de fecha y cancelaciones,
   - correos que mezclan cosas ("acepto la cotización y la busco mañana").
 - De cada solicitud, ¿qué datos le pasa a Pato?
