@@ -24,7 +24,7 @@ flowchart TD
   E --> F["Reglas"]
   F -->|despacho acordado| G1["Reenviar a despachosconfirmados@"]
   F -->|recepción acordada| G2["Reenviar a retirosconfirmados@"]
-  F -->|pendiente o dudoso| G3["Reenviar a pendientesandrea@"]
+  F -->|pendiente o dudoso| G3["Reenviar a pendientesdespachoyrecepcion@"]
   F -->|no aplica| L
   G1 --> L2["Registro"]
   G2 --> L2

@@ -13,7 +13,7 @@ A los correos de Andrea y de Javier llegan diariamente unas **25–35 cotizacion
 |---|---|
 | **Despacho acordado** | `despachosconfirmados@alzatec.com` |
 | **Recepción acordada** | `retirosconfirmados@alzatec.com` **[validar nombre]** |
-| **Pendiente**: despacho o recepción al que le falta algo | `pendientesandrea@alzatec.com` |
+| **Pendiente**: despacho o recepción al que le falta algo | `pendientesdespachoyrecepcion@alzatec.com` |
 
 Las cotizaciones y el resto de los correos **no se mueven**: siguen donde están.
 
@@ -73,7 +73,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 | Qué | Quién | Para qué |
 |---|---|---|
 | **Base de correos de los últimos meses** de Andrea y de Javier | Alzatec | Definir las categorías con datos reales y medir el clasificador antes de usarlo |
-| Crear `agente@`, `despachosconfirmados@`, `retirosconfirmados@` y `pendientesandrea@` | Víctor (hosting) | Embudo y destinos |
+| Crear `agente@`, `despachosconfirmados@`, `retirosconfirmados@` y `pendientesdespachoyrecepcion@` | Víctor (hosting) | Embudo y destinos |
 | Reenvíos con copia: `departamentotecnico@` → `agente@` y `devoluciones@` → `agente@` | Víctor (hosting) | Que el agente reciba los correos |
 | Datos de conexión de `agente@` (IMAP y SMTP) | Víctor (hosting) | Leer y reenviar |
 | Validar una muestra clasificada (50–100 correos) | Andrea | Confirmar que el criterio es el correcto |

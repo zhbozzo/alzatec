@@ -6,7 +6,7 @@
 |---|---|
 | Despacho acordado | `despachosconfirmados@alzatec.com` |
 | Recepción acordada | `retirosconfirmados@alzatec.com` (nombre a confirmar) |
-| Pendiente (le falta algo) | `pendientesandrea@alzatec.com` |
+| Pendiente (le falta algo) | `pendientesdespachoyrecepcion@alzatec.com` |
 
 Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. No toca MADA ni responde a clientes.
 
@@ -29,9 +29,10 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
 ## Estado
 
 - **Reunión de levantamiento hecha.** Se definió la etapa 1.
+- **Casillas creadas por Informática** ✓
 - **Pendiente:**
-  - recibir la base de correos de Andrea y de Javier para analizarla;
-  - que Víctor cree las casillas y los reenvíos.
+  - recibir los `.pst` de Andrea (`departamentotecnico@`) y de Javier (`devoluciones@`);
+  - confirmar los reenvíos con copia hacia `agente@`.
 
 ## Datos
 

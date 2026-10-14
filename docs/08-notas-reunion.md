@@ -23,7 +23,7 @@ flowchart LR
   AG --> IA{"Clasificar"}
   IA -->|"despacho acordado"| D["despachosconfirmados@"]
   IA -->|"recepción acordada"| R["retirosconfirmados@<br/>(nombre a confirmar)"]
-  IA -->|"despacho o recepción<br/>con algo pendiente"| P["pendientesandrea@"]
+  IA -->|"despacho o recepción<br/>con algo pendiente"| P["pendientesdespachoyrecepcion@"]
   IA -->|"cotizaciones y otros"| X["sin acción"]
 ```
 
@@ -31,7 +31,7 @@ flowchart LR
 - **Clasificación en 3 categorías:**
   1. **Despacho acordado** → `despachosconfirmados@`
   2. **Recepción acordada** → `retirosconfirmados@` (en las notas aparece como "retiros@confirmados"; **confirmar el nombre**)
-  3. **Pendiente**: un despacho o una recepción al que **le falta algo** (fecha, stock, condición comercial o cotización final) → `pendientesandrea@`
+  3. **Pendiente**: un despacho o una recepción al que **le falta algo** (fecha, stock, condición comercial o cotización final) → `pendientesdespachoyrecepcion@`
 - Las **cotizaciones** (25–35 diarias) y el resto **no se mueven**.
 - **Sin Excel ni agenda en la etapa 1.** Solo se clasifican correos. El Excel de Pato queda para después.
 - Alzatec entregará una **base de correos de los últimos meses** de Andrea y de Javier para analizarla.
@@ -47,6 +47,27 @@ flowchart LR
 ## Después de la reunión
 
 - **Víctor Sánchez** (Informática de Alzatec) preguntó, de parte de gerencia, qué se necesita de los correos **`departamentotecnico@alzatec.com`** y **`devoluciones@alzatec.com`**. Esas son las dos casillas de entrada del embudo. **(confirmar cuál usa Andrea y cuál Javier)**
+
+## Casillas creadas por Informática ✓
+
+Víctor confirmó:
+- `departamentotecnico@` es de **Andrea** y `devoluciones@` es de **Javier**.
+- Creó `agente@`, `despachosconfirmados@`, `retirosconfirmados@` y `pendientesdespachoyrecepcion@`. El nombre de esta última reemplaza a "pendientesandrea@".
+
+**Conexión** (las contraseñas **no** se guardan en este repositorio):
+
+| Dato | Valor |
+|---|---|
+| Servidor entrante | `mail.alzatec.com`, IMAP 993 (SSL) o POP3 995 |
+| Servidor saliente | `mail.alzatec.com`, SMTP 465 (SSL) |
+| Usuario | la dirección completa de la casilla |
+| Autenticación | requerida en IMAP, POP3 y SMTP |
+
+**Pendiente:**
+- Los archivos `.pst` de Andrea y de Javier.
+- Confirmar que se configuraron los **reenvíos con copia** de `departamentotecnico@` y `devoluciones@` hacia `agente@`.
+- Cambiar las contraseñas iniciales por unas fuertes.
+- Revisar el espacio de las casillas: los adjuntos (planos, PDF) pueden llenar `agente@` y las casillas de destino.
 
 ## Preguntas abiertas (críticas)
 
