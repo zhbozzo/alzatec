@@ -82,7 +82,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 
 - **No interferencia:** el trabajo en `asistentetecnico@` y en MADA sigue exactamente igual.
 - **El Excel se sigue usando igual:** mismo formato, se puede escribir a mano y se puede imprimir.
-- **Escritura segura:** el agente puede escribir aunque el Excel esté abierto. Para eso tiene que vivir en OneDrive, SharePoint o Google Sheets **[validar dónde vive hoy]**.
+- **Escritura segura:** el agente puede escribir aunque el Excel esté abierto. Para eso tiene que vivir en **OneDrive para empresas o SharePoint** (Microsoft 365), como Tabla de Excel. Un OneDrive personal no sirve **[validar dónde vive hoy]**.
 - **Rapidez:** la fila aparece menos de 5 minutos después de que llega el correo.
 - **Sin pérdida:** si el agente falla, los correos se acumulan en su casilla y se procesan cuando vuelve.
 - **Seguridad:** las credenciales se guardan cifradas, el agente tiene el mínimo acceso necesario y queda registro de lo que escribió.
@@ -95,7 +95,8 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 | Patricio Farías: una copia del Excel y la regla de cupo | Saber qué columnas llenar y cuándo un día está copado | Fase 0 |
 | Los correos de 1–2 semanas pasadas, más el Excel de esas mismas semanas | Medir al agente contra lo que pasó de verdad | Fase 0 |
 | Acceso al cPanel de HostingPlus, o alguien que lo tenga | Crear `agente@` y el reenvío con copia | Fase 1 |
-| Acceso de escritura al Excel en la nube, o autorización para moverlo ahí | Que el agente pueda escribir | Fase 1 |
+| Cuenta Microsoft 365 de empresa, o 1 licencia Business Basic, para alojar el Excel | Que el agente pueda escribir en el Excel | Fase 1 |
+| Cuenta de API de Claude, y n8n (VPS o n8n Cloud), a nombre de Alzatec | Que el agente funcione | Fase 1 |
 
 ## 7. Fases y criterios de aceptación
 

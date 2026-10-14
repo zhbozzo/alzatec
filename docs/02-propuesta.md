@@ -83,12 +83,15 @@ Las columnas del Excel de Pato definen qué tiene que extraer el agente. Esta es
 
 ## Stack sugerido
 
-| Pieza | Recomendación |
+El detalle está en [05-implementacion.md](05-implementacion.md).
+
+| Pieza | Decisión |
 |---|---|
-| Ingesta | Casilla `agente@` en HostingPlus, leída con IMAP IDLE (`imapflow` en Node o `imap-tools` en Python). |
-| IA | LLM con salida estructurada (JSON schema). |
-| Agenda | El Excel de Pato, por Microsoft Graph o la API de Google Sheets, según dónde viva. |
-| Registro interno | Una base pequeña (SQLite o Postgres) para los hilos, los duplicados y la medición. No reemplaza el Excel. |
+| Orquestación | **n8n**, en una instancia a nombre de Alzatec. |
+| Ingesta | Casilla `agente@`, leída con el nodo *Email Trigger (IMAP)*. |
+| IA | Claude API con salida estructurada, desde el nodo HTTP Request. |
+| Agenda | El Excel de Pato en **OneDrive para empresas**, como Tabla de Excel, con el nodo Microsoft Excel 365. |
+| Registro interno | Una hoja *Registro* para los hilos, los duplicados y la medición. |
 | Alertas | Correo por el SMTP del hosting. WhatsApp más adelante. |
 
 ## Fases

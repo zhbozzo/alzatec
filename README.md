@@ -8,6 +8,7 @@ Un agente lee una copia de los correos de `asistentetecnico@alzatec.com` y separ
 2. [Propuesta](docs/02-propuesta.md): cómo funciona el agente, la agenda de Pato, el stack, las fases y los riesgos.
 3. [Reunión con Andrea y Pato](docs/03-reunion.md): definir los tipos de correo con Andrea y revisar el Excel con Pato.
 4. [Requerimientos](docs/04-requerimientos.md): el borrador que se envía a gerencia después de la reunión.
+5. [Implementación](docs/05-implementacion.md): cómo conectar el correo, el Excel en OneDrive y el agente en n8n.
 
 ## Estado
 

@@ -40,7 +40,7 @@ Esto va primero, porque todo lo demás depende de esta definición.
 ## 2. Con Pato: el Excel
 
 - Que lo muestre en pantalla.
-- **¿Dónde vive?** ¿En su PC, en una carpeta compartida, en OneDrive o en Google Drive? ¿Quién más lo abre?
+- **¿Dónde vive?** ¿En su PC, en una carpeta compartida o en OneDrive? Si está en OneDrive, **¿es una cuenta personal (hotmail/outlook) o de empresa (Microsoft 365)?** ¿Quién más lo abre?
 - **¿Cómo está armado?** ¿Una hoja por día, semana o mes? ¿Una fila por camión? ¿Los horarios van en columnas?
 - ¿Qué columnas llena y cuáles son obligatorias?
 - **¿Cuándo un día está copado?** ¿Hay un máximo de camiones por día, por bloque horario, o uno distinto para despachos y recepciones?
@@ -61,7 +61,8 @@ Esto va primero, porque todo lo demás depende de esta definición.
 ## Para gerencia
 
 - Autorizar que se cree la casilla `agente@alzatec.com` y el reenvío con copia desde `asistentetecnico@`.
-- Si el Excel es un archivo local, autorizar moverlo a OneDrive o Google Sheets con el mismo formato.
+- Si no tienen Microsoft 365 de empresa, aprobar 1 licencia Business Basic para alojar el Excel. El correo no se mueve.
+- Aprobar la cuenta de API de Claude y dónde corre n8n, ambas a nombre de Alzatec.
 
 ## Después de la reunión
 
