@@ -56,11 +56,24 @@ flowchart LR
 | `asistentetecnico` | Asistente técnico | ¿Cálculo y diseño de andamios para la cotización? |
 | `devoluciones` | Casilla de devoluciones | Recibía lo que Andrea derivaba |
 
-**Sistemas.** Según gerencia, **no usan ERP** para guías ni facturas ✓ (respondió "Mada"; se asume que quiso decir "Nada"). En Chile la guía de despacho y la factura electrónicas son obligatorias, así que algo las emite. Lo más probable es el portal gratuito del SII o un sistema de facturación simple. **(confirmar cuál)** Consecuencias:
+**Sistema de gestión: MADA (INQSOL)** ✓. Según gerencia, las guías y facturas pasan por **MADA**. Es una plataforma web chilena de [INQSOL](https://inqsol.cl/es-cl/mada) hecha para empresas que arriendan equipos: andamios, moldajes y maquinaria. Otras arrendadoras de andamios, como Andamik y Höhe, aparecen entre sus clientes. Esto es lo que dice su sitio:
 
-- No hay ningún sistema que sepa qué cotizaciones se ganaron, qué andamio está en qué obra ni qué falta por devolver. Esa información debe vivir hoy en correos, Excel y la memoria de las personas.
-- La base de datos del proyecto puede pasar a ser **la fuente de verdad de la operación** (cotización → obra → despachos → devoluciones), sin pretender ser contabilidad.
-- No hay que integrarse con un ERP. Más adelante, la emisión de la guía de despacho se puede automatizar con un proveedor de documentos tributarios electrónicos que tenga API.
+- **Módulos publicados:**
+  - Cotizaciones: "cotizar requerimientos de clientes y seguimiento hasta el despacho", con informes de gestión comercial y de pedidos.
+  - Mantenimiento.
+  - Disponibilidad.
+  - QR por activo.
+  - Odómetro, que incluye el cálculo de estados de pago.
+  - Presupuesto.
+- **Reportes:** cotizaciones vigentes, órdenes de trabajo y despachos, inventarios, trazabilidad y movimientos.
+- **Relación con un ERP:** se presenta como complemento de uno. Anuncia "integración con cualquier ERP del mercado" para la facturación y la cobranza, y para los documentos tributarios de los movimientos de material. **(confirmar si Alzatec emite la guía de despacho desde MADA o desde otro sistema conectado)**
+- **API:** no publica una API ni documentación técnica.
+
+Consecuencias para el proyecto:
+
+- **MADA es la fuente de verdad** de cotizaciones, inventario y movimientos. El proyecto **no debe duplicarlo**: es una **capa de correo** que trabaja encima de MADA.
+- La pregunta técnica más importante es **cómo conectarse con MADA**. Puede ser por API, por exportación e importación de planillas, o con una persona que traspasa los datos que el sistema le deja listos. Esto hay que preguntárselo a INQSOL.
+- Lo más probable es que Andrea armara las cotizaciones en MADA y las enviara por correo. **(confirmar)**
 
 **Infraestructura de correo** (revisada en el DNS público, octubre 2026):
 
@@ -75,7 +88,8 @@ flowchart LR
 
 1. ¿Quién arma la cotización y con qué herramienta (Excel, plantilla Word, otro)? ¿Hay lista de precios?
 2. ¿Dónde vive hoy la agenda de despachos y devoluciones? ¿Qué capacidad hay por día (camiones, choferes, sucursal)?
-3. Sin ERP, ¿cómo y quién emite hoy la **guía de despacho** y la factura?
-4. ¿Cómo se controla lo **devuelto vs. lo despachado** para cobrar arriendo y faltantes?
-5. ¿Quién está cubriendo el trabajo de Andrea hoy y qué se está cayendo?
-6. ¿Se puede exportar el historial de la casilla de Andrea? Gerencia dijo que en la sesión le mostrarán todo online; falta conseguir **el export o un acceso de solo lectura**, porque ese historial es la mejor especificación del proceso que vamos a tener.
+3. ¿Qué módulos de MADA usan? ¿La cotización se arma ahí? ¿La **guía de despacho** y la factura salen de MADA o de otro sistema conectado?
+4. ¿MADA tiene API o permite exportar e importar datos? ¿Qué incluye el contrato con INQSOL?
+5. ¿Cómo se controla lo **devuelto vs. lo despachado** para cobrar arriendo y faltantes?
+6. ¿Quién está cubriendo el trabajo de Andrea hoy y qué se está cayendo?
+7. ¿Se puede exportar el historial de la casilla de Andrea? Gerencia dijo que en la sesión le mostrarán todo online; falta conseguir **el export o un acceso de solo lectura**, porque ese historial es la mejor especificación del proceso que vamos a tener.

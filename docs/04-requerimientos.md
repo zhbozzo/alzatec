@@ -5,7 +5,7 @@
 
 ## 1. Contexto y objetivo
 
-El cargo que ocupaba Andrea concentraba la gestión del correo comercial: unas **25–30 cotizaciones enviadas al día**, sus respuestas, el agendamiento de despachos y devoluciones, y las modificaciones que piden los comerciales. Hoy no hay un ERP que registre ese flujo, por lo que depende de una persona.
+El cargo que ocupaba Andrea concentraba la gestión del correo comercial: unas **25–30 cotizaciones enviadas al día**, sus respuestas, el agendamiento de despachos y devoluciones, y las modificaciones que piden los comerciales. La operación se registra en **MADA (INQSOL)**, pero el correo que la alimenta dependía de una sola persona.
 
 El objetivo es que **la mayor parte de ese trabajo se haga de forma automática**, y que lo que requiera criterio llegue ordenado y resumido a la persona correcta, sin que se pierda ningún correo.
 
@@ -21,6 +21,7 @@ El objetivo es que **la mayor parte de ese trabajo se haga de forma automática*
 - Contabilidad, facturación del arriendo ni remuneraciones.
 - Negociación de precios ni cálculo técnico de andamios. El sistema resume y deriva, pero no decide.
 - Cambiar el proveedor de correo de la empresa.
+- Reemplazar MADA, que sigue siendo el sistema de cotizaciones, inventario, movimientos y documentos.
 
 ## 3. Usuarios
 
@@ -52,10 +53,10 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-07 | Registrar cada cotización enviada: número, cliente, obra, comercial, monto, fecha y PDF. | I |
-| RF-08 | Mantener el estado de cada cotización: enviada, respondida, aceptada, rechazada, modificada o vencida. | I |
+| RF-07 | Identificar a qué cotización de MADA se refiere cada correo, por número o por hilo. | I |
+| RF-08 | Llevar el estado de cada cotización en el correo: enviada, respondida, aceptada, rechazada, modificada o sin respuesta. | I |
 | RF-09 | Avisar al comercial cuando su cliente responde, con un resumen. | I |
-| RF-10 | Guardar cada modificación como una nueva versión de la cotización. | M |
+| RF-10 | Dejar cada modificación de un comercial lista para cargarla en MADA. | M |
 | RF-11 | Hacer seguimiento automático a las cotizaciones sin respuesta después de **[validar]** días. | M |
 | RF-12 | Mostrar un tablero de cotizaciones enviadas, aceptadas y perdidas por comercial y por semana. | M |
 
@@ -63,11 +64,11 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-13 | Llevar un calendario de despachos por sucursal con capacidad diaria **[validar capacidad]**. | I |
+| RF-13 | Llevar un calendario de despachos por sucursal con capacidad diaria, si MADA no lo cubre **[validar capacidad y si MADA ya agenda despachos]**. | I |
 | RF-14 | Crear la solicitud de despacho con los datos obligatorios **[validar cuáles]**. | I |
 | RF-15 | Enviar la confirmación al cliente y un recordatorio el día anterior, y avisar a bodega. | M |
 | RF-16 | Ofrecer al cliente un link de autoagendamiento con las reglas de Alzatec (cotización aceptada, OC, etc.). | M |
-| RF-17 | Emitir la guía de despacho electrónica al confirmar el despacho **[validar cómo se emite hoy]**. | D |
+| RF-17 | Dejar el despacho confirmado listo para que MADA emita la guía, o crearlo directamente en MADA si la integración lo permite. | D |
 
 ### D. Devoluciones
 
@@ -75,7 +76,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 |---|---|---|
 | RF-18 | Derivar automáticamente las solicitudes de devolución a `devoluciones@`, con los datos ya extraídos. | I |
 | RF-19 | Registrar cada retiro: fecha, obra, equipos y estado. | M |
-| RF-20 | Llevar el saldo de equipos por obra (despachado menos devuelto). | D |
+| RF-20 | Mostrar el saldo de equipos por obra, leído desde MADA. | D |
 
 ### E. Respuestas y envíos
 
@@ -92,6 +93,13 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 | RF-24 | Vistas de bandeja clasificada, cola de revisión, cotizaciones, calendario y ficha por obra. | I |
 | RF-25 | Funcionar bien desde el celular. | M |
 
+### G. Conexión con MADA
+
+| ID | Requerimiento | Prioridad |
+|---|---|---|
+| RF-26 | Leer desde MADA cotizaciones, clientes y obras, por API, exportación o reporte programado **[según lo que permita INQSOL]**. | M |
+| RF-27 | Crear o actualizar despachos y cotizaciones en MADA, solo si INQSOL lo permite. | D |
+
 ## 5. Requerimientos no funcionales
 
 - **Correo actual:** el sistema usa las casillas de HostingPlus (IMAP y SMTP), sin cambiar de proveedor. Los envíos salen por el mismo servidor para no caer en spam.
@@ -100,6 +108,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 - **Trazabilidad:** queda registro de quién aprobó o envió cada respuesta.
 - **Seguridad:** las contraseñas se guardan cifradas, el acceso es por usuario y hay respaldo diario.
 - **Idioma y zona horaria:** español, horario de Chile.
+- **MADA:** el sistema no modifica nada en MADA sin una integración aprobada por INQSOL.
 
 ## 6. Lo que se necesita de Alzatec
 
@@ -107,7 +116,9 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 |---|---|---|
 | Una **contraparte** con 1–2 horas a la semana | Resolver dudas y validar avances | Desde el inicio |
 | **Export de 2–3 meses** de la casilla de Andrea, o acceso de solo lectura | Medir el volumen real y probar la clasificación con correos reales | Fase 0 |
+| Contacto en INQSOL y autorización para pedirles las opciones de integración | Definir la conexión con MADA | Fase 0 |
 | La casilla que se usará como entrada única, con acceso IMAP y SMTP | Conectar el sistema | Fase 1 |
+| Un usuario de MADA de solo lectura | Enlazar los correos con las cotizaciones | Fase 1 |
 | Plantilla de cotización, lista de precios y catálogo de equipos | Leer y generar cotizaciones | Fase 1 |
 | Reglas del negocio: capacidad de despacho, días de seguimiento, requisitos para despachar | Configurar agenda y seguimientos | Fase 2 |
 | Comunicar la casilla única a clientes y comerciales | Que todo entre por un solo lugar | Fase 2 |
@@ -120,11 +131,11 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 | 1 · Modo sombra | Clasificación y extracción funcionando **sin enviar nada**, con un panel para revisar | La clasificación acierta en **≥ 90%** de una muestra de 200 correos reales **[validar meta]**. |
 | 2 · Derivación y seguimiento | Derivación a devoluciones, avisos a comerciales, borradores y seguimiento de cotizaciones | Dos semanas de operación sin correos perdidos. |
 | 3 · Agenda | Calendario de despachos y retiros, con link para clientes | Los despachos de una semana completa se agendan por el sistema. |
-| 4 · Extensiones | Guía de despacho, saldo de equipos por obra, WhatsApp | Se definen al cerrar la fase 3. |
+| 4 · Integración con MADA | Escritura en MADA, saldo de equipos por obra y WhatsApp | Se definen con INQSOL al cerrar la fase 3. |
 
 ## 8. Supuestos y pendientes
 
-- **No hay ERP** (respuesta de gerencia: "Mada", leído como "Nada"). **[validar cómo se emiten hoy guías y facturas]**
+- Alzatec usa **MADA** (INQSOL) como sistema de gestión ✓. **[validar qué módulos usan, si la guía de despacho sale de MADA y si hay API o exportes]**
 - El volumen de 25–30 cotizaciones diarias está confirmado. El volumen total de correos se mide con el historial.
 - Se asume que el negocio es principalmente de **arriendo**. **[validar el mix arriendo/venta]**
 - Los roles de cmontes, pfarias y pbriceno están **[por definir en la sesión]**.

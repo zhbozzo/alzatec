@@ -11,4 +11,4 @@ Proyecto para automatizar el trabajo que hacía Andrea: envío y seguimiento de 
 
 ## Estado
 
-**Fase 0 · Levantamiento.** Gerencia confirmó que son 25–30 cotizaciones **diarias** y que no hay ERP. Falta la sesión online con el equipo; después se completan y envían los requerimientos.
+**Fase 0 · Levantamiento.** Gerencia confirmó que son 25–30 cotizaciones **diarias** y que el sistema de gestión es **MADA** (INQSOL). El proyecto es la capa de correo encima de MADA, no un reemplazo. Falta la sesión online con el equipo; después se completan y envían los requerimientos.

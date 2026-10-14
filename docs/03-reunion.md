@@ -17,9 +17,10 @@ Lo ideal es que en cada punto compartan pantalla con un **caso real**.
 1. **La casilla de Andrea.** Carpetas, filtros y reglas que tenía, y cómo se ve un día normal. ¿Con qué programa la leía (Outlook, webmail, celular)?
 2. **Una cotización de punta a punta.** Solicitud del cliente → quién la arma y con qué (Excel, Word, lista de precios) → envío → respuesta del cliente.
 3. **Una modificación de un comercial.** Qué llega, qué cambia y cómo queda la nueva versión.
-4. **Un despacho.** Dónde se anota, quién decide la fecha, qué datos se piden al cliente y **cómo se emite la guía de despacho** sin ERP.
+4. **Un despacho.** Dónde se anota, quién decide la fecha, qué datos se piden al cliente y si **la guía de despacho sale de MADA**.
 5. **Una devolución.** Qué se reenvía a `devoluciones@`, cómo se coordina el retiro y cómo se cuenta lo que vuelve.
 6. **La agenda o planilla de despachos**, si existe. ¿Es la de horarios de 8:00 a 13:00 que estaba al reverso de la nota?
+7. **MADA por dentro.** Qué módulos usan, cómo se crea una cotización, si MADA manda el correo o se descarga el PDF y se envía desde la casilla, dónde quedan los despachos y devoluciones, y qué reportes se pueden exportar a Excel.
 
 ## Preguntas que sí o sí deben quedar respondidas
 
@@ -28,11 +29,12 @@ Lo ideal es que en cada punto compartan pantalla con un **caso real**.
 3. ¿Qué tipos de respuesta llegan y qué se hacía con cada uno?
 4. ¿Qué se necesita para pasar de "aceptada" a "despacho" (OC, pago, crédito aprobado)?
 5. ¿Cuál es la capacidad de despacho por día y por sucursal (Lampa / Concón)?
-6. ¿Cómo y quién emite la guía de despacho y la factura (portal del SII, otro sistema)?
+6. ¿La guía de despacho y la factura salen de MADA o de otro sistema conectado a MADA?
 7. ¿Alzatec retira con su camión o el cliente devuelve en bodega? ¿Cómo se registra lo devuelto?
 8. ¿Quién está haciendo hoy el trabajo de Andrea y qué se está cayendo?
 9. ¿Qué había en la línea vacía de la nota? ¿Qué más hacía Andrea (llamadas, WhatsApp, cobranza)?
 10. ¿Quién será la **contraparte** del proyecto para dudas y validaciones?
+11. ¿Quién administra la cuenta de MADA y quién es el contacto en INQSOL? ¿El contrato incluye API o integraciones?
 
 ## Preguntas de detalle (si hay tiempo)
 
@@ -53,6 +55,7 @@ Lo ideal es que en cada punto compartan pantalla con un **caso real**.
 **Sistemas**
 - ¿Quién administra el hosting (HostingPlus) y las casillas de correo?
 - ¿Usan WhatsApp con clientes o choferes? ¿Personal o WhatsApp Business?
+- ¿Algún cliente (constructora) usa **ADAM**, el otro producto de INQSOL, para pedir equipos?
 
 ## Ronda por persona
 
@@ -72,6 +75,8 @@ Lo ideal es que en cada punto compartan pantalla con un **caso real**.
 - [ ] Una cotización de ejemplo (PDF o Excel), la plantilla y la lista de precios.
 - [ ] La planilla o agenda de despachos.
 - [ ] Nombre de la contraparte.
+- [ ] Contacto en INQSOL y autorización para pedirles las opciones de integración con MADA.
+- [ ] Un usuario de MADA de solo lectura para el proyecto.
 
 ## Después de la sesión
 
