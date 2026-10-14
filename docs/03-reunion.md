@@ -18,6 +18,8 @@ Con eso se completan los requerimientos ([04-requerimientos.md](04-requerimiento
 
 ## 1. Con Andrea: definir los tipos
 
+> La guía completa, con los casos difíciles y una ficha para llenar por categoría, está en [06-clasificacion.md](06-clasificacion.md).
+
 Esto va primero, porque todo lo demás depende de esta definición.
 
 - Para ella, ¿qué es una **cotización**, un **despacho** y una **recepción**?

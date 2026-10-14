@@ -35,7 +35,7 @@ flowchart LR
 3. **Clasifica:** cotización (no va al Excel), despacho, recepción, cambio de fecha o cancelación, u otro.
 4. **Extrae los datos** que piden las columnas del Excel.
 5. **Resuelve la fecha.** "Hoy", "mañana" o "el jueves" se convierten en una fecha real, en horario de Chile y con días hábiles y feriados.
-6. **Revisa el cupo.** Lee en el Excel lo que ya hay ese día, incluidas las filas escritas a mano, y lo compara con la capacidad.
+6. **Revisa el cupo.** Cuenta los **camiones** que ya hay ese día en el Excel, incluidas las filas escritas a mano, y los compara con la capacidad. No mira inventario: eso es de MADA.
 7. **Escribe la fila** con su estado y, si corresponde, avisa.
 
 ## Estados y alertas
@@ -116,9 +116,9 @@ Los plazos son estimados y se ajustan después de la reunión.
 | Fase | Qué | Resultado |
 |---|---|---|
 | **0 · Levantamiento** (esta semana) | Andrea define los tipos con ejemplos. Pato muestra el Excel. Conseguir una copia del Excel y los correos de 1–2 semanas. | Tipos, columnas y regla de cupo definidos, y un set de prueba con la respuesta correcta conocida. |
-| **1 · Modo sombra** (~2 semanas) | El agente escribe en una **copia** del Excel, y esa copia se compara con el Excel real. | Precisión medida. Meta: detectar ≥95% de las solicitudes **(validar)**. |
-| **2 · En vivo** (~2 semanas) | Escribe en el Excel real como POR CONFIRMAR y manda las alertas de día copado y urgentes. | Pato deja de transcribir. |
-| **3 · Casos especiales** | Cambios de fecha y cancelaciones automáticas, viajes del camión de Alzatec, y confirmación al cliente aprobada por Pato. | Menos ida y vuelta. |
+| **1 · Versión 1 en modo sombra** (~2 semanas) | **Solo clasificar y anotar**: escribe despachos y recepciones en una **copia** del Excel y marca SIN CUPO, URGENTE o REVISAR. La copia se compara con el Excel real. | Precisión medida. Meta: detectar ≥95% de las solicitudes **(validar)**. |
+| **2 · Versión 1 en vivo** (~2 semanas) | Lo mismo, pero sobre el Excel real. La alerta es el color en el Excel. | Pato deja de transcribir. |
+| **3 · Versión 2** | Alertas por correo, actualización automática de cambios de fecha y cancelaciones, viajes del camión de Alzatec, y confirmación al cliente aprobada por Pato. | Menos ida y vuelta. |
 | **4 · Extensiones** | Leer MADA (si INQSOL lo permite), WhatsApp, un tablero de indicadores. | — |
 
 ## Fuera de alcance (por ahora)

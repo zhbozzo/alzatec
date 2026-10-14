@@ -58,7 +58,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 |---|---|---|
 | RF-09 | Escribir cada despacho o recepción como una fila nueva en el Excel de agenda, con el formato actual. | I |
 | RF-10 | Agregar una columna **Estado**: POR CONFIRMAR, CONFIRMADO, SIN CUPO, URGENTE, REVISAR o CANCELADO. El agente nunca escribe CONFIRMADO; eso lo hace Patricio Farías. | I |
-| RF-11 | Antes de escribir, **revisar el cupo del día** contando todas las filas, incluidas las que se escriben a mano, contra la capacidad definida **[validar regla de cupo]**. | I |
+| RF-11 | Antes de escribir, **revisar el cupo del día** contando los **camiones** de ese día (todas las filas, incluidas las escritas a mano) contra la capacidad definida. **No considera inventario**, que sigue en MADA **[validar regla de cupo]**. | I |
 | RF-12 | Agregar una columna **Origen** con el asunto, la fecha y el remitente del correo. | M |
 | RF-13 | Revisar los encabezados del Excel antes de escribir. Si cambió el formato, no escribir y avisar. | I |
 | RF-14 | Actualizar la fila existente cuando llega un cambio de fecha o una cancelación. | M |
@@ -103,9 +103,9 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 | Fase | Entregable | Se da por cumplida cuando… |
 |---|---|---|
 | 0 · Levantamiento | Tipos, columnas y regla de cupo definidos, y un set de prueba | Gerencia, Andrea y Patricio Farías aprueban este documento. |
-| 1 · Modo sombra | El agente escribe en una copia del Excel | Sobre semanas reales, detecta **≥ 95%** de las solicitudes del Excel real, acierta tipo y fecha en **≥ 90%**, y las alertas de día copado son correctas **[validar metas]**. |
-| 2 · En vivo | Escribe en el Excel real y manda las alertas | Dos semanas de operación sin solicitudes perdidas. |
-| 3 · Casos especiales | Cambios de fecha, cancelaciones y camión de Alzatec | Se definen al cerrar la fase 2. |
+| 1 · Versión 1 en modo sombra | Solo clasificar y anotar en una copia del Excel, marcando SIN CUPO, URGENTE o REVISAR | Sobre semanas reales, detecta **≥ 95%** de las solicitudes del Excel real, acierta tipo y fecha en **≥ 90%**, y las alertas de día copado son correctas **[validar metas]**. |
+| 2 · Versión 1 en vivo | Lo mismo sobre el Excel real (la alerta es el color en el Excel) | Dos semanas de operación sin solicitudes perdidas. |
+| 3 · Versión 2 | Alertas por correo, cambios de fecha y cancelaciones automáticas, camión de Alzatec | Se definen al cerrar la fase 2. |
 | 4 · Extensiones | Lectura de MADA, WhatsApp, indicadores | Se definen con gerencia. |
 
 ## 8. Supuestos y pendientes

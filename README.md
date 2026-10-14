@@ -9,6 +9,7 @@ Un agente lee una copia de los correos de `asistentetecnico@alzatec.com` y separ
 3. [Reunión con Andrea y Pato](docs/03-reunion.md): definir los tipos de correo con Andrea y revisar el Excel con Pato.
 4. [Requerimientos](docs/04-requerimientos.md): el borrador que se envía a gerencia después de la reunión.
 5. [Implementación](docs/05-implementacion.md): cómo conectar el correo, el Excel en OneDrive y el agente en n8n.
+6. [Clasificación de correos](docs/06-clasificacion.md): qué preguntarle a Andrea para definir cotización, despacho y recepción. Incluye el alcance de la versión 1.
 
 Ejemplo: [`ejemplos/agenda-camiones-ejemplo.xlsx`](ejemplos/agenda-camiones-ejemplo.xlsx) muestra cómo queda la agenda llenada por el agente (datos ficticios).
 
