@@ -48,12 +48,27 @@ El agente agrega una columna **Estado** al Excel. Los colores ayudan a verla de 
 | **El día está copado** | 🟥 **SIN CUPO**, con el próximo día que tiene cupo | Pato y Andrea **(validar)** |
 | Faltan menos de 2 días | 🟧 **URGENTE** | Pato |
 | No se entiende el tipo o la fecha | ⬜ **REVISAR**, con el texto original | Pato |
-| Cambio de fecha o cancelación | Actualiza la fila que ya existía | Pato |
+| Cambio de fecha | Actualiza la fecha en la fila que ya existía | Pato |
+| Cancelación | ⬜ **CANCELADO** en la fila que ya existía (no la borra) | Pato |
 | Pato confirma | 🟩 **CONFIRMADO** (lo cambia Pato) | — |
 
 Las alertas parten por correo, que ya tienen. WhatsApp queda para más adelante.
 
 Hay que definir con Pato qué pasa con una solicitud sin cupo: si queda escrita en ese día marcada en rojo, o en una hoja aparte de pendientes.
+
+### Cómo se ve día a día
+
+Hay un ejemplo con datos ficticios en [`ejemplos/agenda-camiones-ejemplo.xlsx`](../ejemplos/agenda-camiones-ejemplo.xlsx). Tiene cuatro hojas:
+- **Cómo funciona:** explica el resto.
+- **Agenda:** la tabla que llena el agente.
+- **Cupo:** cuenta los camiones por día y marca COPADO.
+- **Registro:** cada correo que leyó el agente y qué hizo con él.
+
+1. Llega un correo. El agente **agrega una fila al final** de la tabla. Pato la ve aparecer aunque tenga el Excel abierto.
+2. Pato revisa las amarillas (POR CONFIRMAR) y les cambia el Estado a **CONFIRMADO**.
+3. Lo que llega por otro lado, Pato lo escribe a mano como siempre. El agente lo cuenta igual para el cupo.
+4. Para ver un día, Pato **filtra u ordena** por Fecha, porque las filas nuevas siempre quedan al final.
+5. Las cotizaciones no aparecen en la Agenda; solo quedan en la hoja Registro.
 
 ## Dónde vive el Excel (decisión clave)
 

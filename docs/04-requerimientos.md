@@ -57,7 +57,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 | ID | Requerimiento | Prioridad |
 |---|---|---|
 | RF-09 | Escribir cada despacho o recepción como una fila nueva en el Excel de agenda, con el formato actual. | I |
-| RF-10 | Agregar una columna **Estado**: POR CONFIRMAR, CONFIRMADO, SIN CUPO, URGENTE o REVISAR. El agente nunca escribe CONFIRMADO; eso lo hace Patricio Farías. | I |
+| RF-10 | Agregar una columna **Estado**: POR CONFIRMAR, CONFIRMADO, SIN CUPO, URGENTE, REVISAR o CANCELADO. El agente nunca escribe CONFIRMADO; eso lo hace Patricio Farías. | I |
 | RF-11 | Antes de escribir, **revisar el cupo del día** contando todas las filas, incluidas las que se escriben a mano, contra la capacidad definida **[validar regla de cupo]**. | I |
 | RF-12 | Agregar una columna **Origen** con el asunto, la fecha y el remitente del correo. | M |
 | RF-13 | Revisar los encabezados del Excel antes de escribir. Si cambió el formato, no escribir y avisar. | I |

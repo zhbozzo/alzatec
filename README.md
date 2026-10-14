@@ -10,6 +10,8 @@ Un agente lee una copia de los correos de `asistentetecnico@alzatec.com` y separ
 4. [Requerimientos](docs/04-requerimientos.md): el borrador que se envía a gerencia después de la reunión.
 5. [Implementación](docs/05-implementacion.md): cómo conectar el correo, el Excel en OneDrive y el agente en n8n.
 
+Ejemplo: [`ejemplos/agenda-camiones-ejemplo.xlsx`](ejemplos/agenda-camiones-ejemplo.xlsx) muestra cómo queda la agenda llenada por el agente (datos ficticios).
+
 ## Estado
 
 **Fase 0 · Levantamiento.** Confirmado: 25–30 cotizaciones diarias, unos 10 camiones al día, y MADA como sistema de gestión, que el proyecto no toca. Todas las solicitudes pasan por `asistentetecnico@` y la agenda es un Excel. Falta la reunión con Andrea y Patricio Farías.

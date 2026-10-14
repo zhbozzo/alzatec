@@ -114,11 +114,13 @@ Que el Excel viva en una **cuenta de la empresa** y no en la de una persona evit
 
 ### Preparar el Excel (una vez)
 
+Un modelo listo para mostrarle a Pato está en [`ejemplos/agenda-camiones-ejemplo.xlsx`](../ejemplos/agenda-camiones-ejemplo.xlsx). Tiene la tabla, los colores, las listas desplegables y la hoja de cupo.
+
 1. Tiene que ser `.xlsx`, no `.xls`.
 2. **Convertir la agenda en una Tabla de Excel** (*Insertar → Tabla*), con una fila por camión. El nodo de n8n agrega filas al final de la tabla y las lee filtrando por fecha.
    - Si hoy es una grilla, por ejemplo con horarios en columnas, igual se puede escribir llamando a Graph desde el nodo HTTP Request. Pero es más frágil: conviene acordar con Pato una tabla, y si quiere, una vista de grilla que se arme con fórmulas.
 3. **Agregar tres columnas:**
-   - **Estado**: POR CONFIRMAR, CONFIRMADO, SIN CUPO, URGENTE o REVISAR.
+   - **Estado**: POR CONFIRMAR, CONFIRMADO, SIN CUPO, URGENTE, REVISAR o CANCELADO.
    - **Origen**: asunto y fecha del correo.
    - **ID hilo**: puede quedar oculta. Sirve para no duplicar filas y para encontrar la fila cuando llega un cambio de fecha.
 4. **Formato condicional** en Estado, para los colores. Lo hace Excel; el agente solo escribe el texto.
