@@ -50,7 +50,8 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-01 | Recibir en `agente@` una copia de cada correo que llega a Andrea y a Javier, mediante reenvíos con copia en el hosting. | I |
+| RF-01 | Recibir en `agente@` una copia de cada correo que llega a Andrea (`asistentetecnico@` y `departamentotecnico@`) y a Javier (`devoluciones@`), mediante reenvíos con copia en el hosting. | I |
+| RF-01b | Recibir también una copia de los correos que **envía** Javier, porque ahí están la mayoría de las recepciones acordadas (regla CC en Outlook o lectura de enviados por IMAP). Ver [09-analisis-correos.md](09-analisis-correos.md). | I |
 | RF-02 | No modificar nada en las casillas de origen. | I |
 | RF-03 | Procesar cada correo **una sola vez**, aunque llegue a Andrea y a Javier a la vez (por `Message-ID`). | I |
 | RF-04 | Clasificar cada correo como despacho acordado, recepción acordada, pendiente o no aplica. | I |

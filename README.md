@@ -18,6 +18,7 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
   - [Requerimientos](docs/04-requerimientos.md): el documento para gerencia.
   - [Cómo funciona el clasificador](docs/07-agente-v1.md): flujo, JSON, reglas, reenvío y puesta en marcha.
   - [Notas de la reunión](docs/08-notas-reunion.md): lo confirmado y las preguntas abiertas.
+  - [Análisis de la base de correos](docs/09-analisis-correos.md): volúmenes, hallazgos críticos y señales de cada categoría.
 - **Contexto y etapa 2**
   - [Diagnóstico](docs/01-diagnostico.md)
   - [Propuesta de agenda](docs/02-propuesta.md)
@@ -31,8 +32,10 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
 - **Reunión de levantamiento hecha.** Se definió la etapa 1.
 - **Casillas creadas por Informática** ✓
 - **Pendiente:**
-  - recibir los `.pst` de Andrea (`departamentotecnico@`) y de Javier (`devoluciones@`);
-  - confirmar los reenvíos con copia hacia `agente@`.
+  - ~~recibir los `.pst`~~ ✓ analizados (ver [09](docs/09-analisis-correos.md));
+  - **agregar el reenvío `asistentetecnico@ → agente@`**: es la dirección real de Andrea;
+  - definir cómo llegan los correos **enviados** por Javier;
+  - validación de Andrea y Javier.
 
 ## Datos
 
