@@ -75,9 +75,10 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 |---|---|---|
 | **Base de correos de los últimos meses** de Andrea y de Javier | Alzatec | Definir las categorías con datos reales y medir el clasificador antes de usarlo |
 | Crear `agente@`, `despachosconfirmados@`, `retirosconfirmados@` y `pendientesdespachoyrecepcion@` | Víctor (hosting) | Embudo y destinos |
-| Reenvíos con copia: `departamentotecnico@` → `agente@` y `devoluciones@` → `agente@` | Víctor (hosting) | Que el agente reciba los correos |
+| Reenvíos con copia: `asistentetecnico@`, `departamentotecnico@` y `devoluciones@` → `agente@` ✓ | Víctor (hosting) | Que el agente reciba los correos |
+| Regla en el Outlook de Javier: lo que envía va con copia (CC) a `agente@` | Víctor | Que lleguen las recepciones que Javier confirma |
 | Datos de conexión de `agente@` (IMAP y SMTP) | Víctor (hosting) | Leer y reenviar |
-| Validar una muestra clasificada (50–100 correos) | Andrea | Confirmar que el criterio es el correcto |
+| Revisar el **archivo de validación**: 200 correos reales con la categoría propuesta | Andrea y Javier | Confirmar que el criterio es el correcto y resolver las dudas de criterio |
 | Cuenta de IA y n8n a nombre de Alzatec | Gerencia | Que el agente funcione |
 
 ## 7. Fases y criterios de aceptación
@@ -92,7 +93,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 
 ## 8. Supuestos y pendientes
 
-- Las casillas de entrada son `departamentotecnico@alzatec.com` y `devoluciones@alzatec.com`, según Informática (Víctor Sánchez). **[confirmar cuál usa Andrea y cuál Javier]**
+- ✓ Andrea usa `asistentetecnico@alzatec.com` (y recibe copia en `departamentotecnico@`); Javier usa `devoluciones@alzatec.com`. Se confirmó con la base de correos.
 - El nombre final de la casilla de recepciones (`retirosconfirmados@`), y si conviene usar la `devoluciones@` que ya existe **[validar]**.
 - Quién lee cada casilla de destino **[validar]**.
 - La frase incompleta de la reunión: "cuando un vendedor coordina un despacho en la misma llamada debe…" **[completar]**.

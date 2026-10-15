@@ -12,7 +12,7 @@
   - el cliente acusa recibo y da conforme a la cotización y al plano;
   - pide coordinar con un contacto en obra el despacho "para mañana viernes";
   - el correo llega con copia a varias casillas internas (pfarias@, departamentotecnico@, abozzo@, cmontes@, jpmontes@ y otras).
-- **Casilla vista en pantalla:** `departamentotecnico@alzatec.com`, en Outlook. **(confirmar si es la de Andrea o si es asistentetecnico@)**
+- **Casilla vista en pantalla:** `departamentotecnico@alzatec.com`, en Outlook. ✓ La dirección principal de Andrea es `asistentetecnico@`; `departamentotecnico@` le llega en copia (ver [09](09-analisis-correos.md)).
 
 ## Alcance definido en la reunión: etapa 1 = solo el clasificador
 
@@ -46,12 +46,12 @@ flowchart LR
 
 ## Después de la reunión
 
-- **Víctor Sánchez** (Informática de Alzatec) preguntó, de parte de gerencia, qué se necesita de los correos **`departamentotecnico@alzatec.com`** y **`devoluciones@alzatec.com`**. Esas son las dos casillas de entrada del embudo. **(confirmar cuál usa Andrea y cuál Javier)**
+- **Víctor Sánchez** (Informática de Alzatec) preguntó, de parte de gerencia, qué se necesita de los correos **`departamentotecnico@alzatec.com`** y **`devoluciones@alzatec.com`**. Esas eran las dos casillas de entrada previstas. ✓ La base de correos mostró que Andrea usa sobre todo `asistentetecnico@`, que se agregó al embudo.
 
 ## Casillas creadas por Informática ✓
 
 Víctor confirmó:
-- `departamentotecnico@` es de **Andrea** y `devoluciones@` es de **Javier**.
+- `departamentotecnico@` es de **Andrea** y `devoluciones@` es de **Javier**. (La dirección principal de Andrea resultó ser `asistentetecnico@`.)
 - Creó `agente@`, `despachosconfirmados@`, `retirosconfirmados@` y `pendientesdespachoyrecepcion@`. El nombre de esta última reemplaza a "pendientesandrea@".
 
 **Conexión** (las contraseñas **no** se guardan en este repositorio):
@@ -68,13 +68,13 @@ Víctor confirmó:
   - **Tamaño:** máximo ~10 GB cada uno. Si pesan más, se piden menos meses o se dividen por mes. Se mandan comprimidos en `.zip`.
   - **Envío:** link de Google Drive ("cualquier persona con el enlace") o Dropbox. **OneDrive no se puede descargar desde el entorno de análisis.**
   - **Lectura:** se usa `pypff` (libpff). Ya está probado que funciona en el entorno.
-- ~~Confirmar los reenvíos con copia~~ ✓ Víctor configuró `departamentotecnico@` → `agente@` y `devoluciones@` → `agente@`. Los alias `@alzatec.cl` de esas casillas ya se reenvían a las `@alzatec.com`.
+- ~~Confirmar los reenvíos con copia~~ ✓ Víctor configuró `departamentotecnico@` → `agente@` y `devoluciones@` → `agente@`, y después `asistentetecnico@` → `agente@`. Los alias `@alzatec.cl` de esas casillas ya se reenvían a las `@alzatec.com`.
 - Cambiar las contraseñas iniciales por unas fuertes.
 - Revisar el espacio de las casillas: los adjuntos (planos, PDF) pueden llenar `agente@` y las casillas de destino.
 
 ## Preguntas abiertas (críticas)
 
-1. ¿Cuáles son las direcciones exactas de **Andrea** y de **Javier**? (En la captura aparecía `departamentotecnico@`.)
+1. ~~¿Cuáles son las direcciones exactas de **Andrea** y de **Javier**?~~ ✓ Andrea: `asistentetecnico@`. Javier: `devoluciones@`.
 2. ¿**"Retiros confirmados" = recepciones**, es decir, equipos que vuelven? Ojo: los clientes usan "retiro" para venir a buscar. Para evitar confusiones conviene llamarla `recepcionesconfirmadas@`.
 3. ¿Las recepciones van a una casilla nueva, o a la **`devoluciones@`** que ya existe?
 4. ~~¿La vendedora copia a Andrea?~~ **No importa:** en la etapa 1 solo se clasifica lo que llega a Andrea y a Javier. Las señales de "acordado" y "pendiente" se van a sacar del **análisis de la base de correos** de los últimos meses de ambos, que entregará Alzatec.
