@@ -24,7 +24,7 @@
 | Otros | 16 |
 
 El reenvío configurado hoy (`departamentotecnico@ → agente@`) **no captura casi la mitad** de los correos de Andrea.
-**Acción:** agregar el reenvío `asistentetecnico@ → agente@`. Los correos que llegan a ambas direcciones se deduplican por `Message-ID`.
+**Acción:** agregar el reenvío `asistentetecnico@ → agente@`. El de `departamentotecnico@` **se mantiene**, por decisión del proyecto, por si acaso. Los correos que llegan a ambas direcciones se deduplican por `Message-ID`.
 
 ### 2.2 Las recepciones acordadas las escribe Javier, en correos que él envía ⚠️
 
