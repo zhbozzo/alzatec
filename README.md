@@ -42,7 +42,7 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
   - ~~recibir los `.pst`~~ ✓ analizados (ver [09](docs/09-analisis-correos.md));
   - ~~reenvío `asistentetecnico@ → agente@`~~ ✓ listo (se mantiene también el de `departamentotecnico@`);
   - regla en el Outlook de Javier: todo lo que envía va con copia (CC) a `agente@`. **Víctor la configura mañana**;
-  - validación de Andrea y Javier.
+  - validación de Andrea y Javier: el **archivo de validación** está listo (200 correos clasificados, con 8 preguntas de criterio). Ver [09 §5](docs/09-analisis-correos.md#5-archivo-de-validación).
 
 ## Datos
 

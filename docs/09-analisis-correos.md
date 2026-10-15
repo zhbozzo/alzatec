@@ -108,11 +108,51 @@ Hay solicitud o aceptación, pero **falta algo**:
   - reportes automáticos (`MovimientosPorBodegaAgrupado….xlsx`);
   - auto-respuestas.
 
-## 5. Próximos pasos
+## 5. Archivo de validación
+
+Archivo: `datos/validacion/validacion-clasificador.xlsx`. No está en el repositorio porque contiene correos reales.
+
+**Contenido**
+- **200 correos reales:** 100 de Andrea; de Javier, 65 recibidos y 35 enviados.
+- La muestra se cargó a propósito hacia despachos y recepciones, para revisar bien los casos que importan. Por eso **no** refleja la proporción real; esa está en la sección 3.
+- Cada correo trae la categoría propuesta, qué falta, la fecha del movimiento, el N° de cotización y el motivo. Además tiene columnas para que Andrea y Javier marquen si está bien y cuál es la categoría correcta.
+- La hoja *Resumen* calcula sola el % de acierto por categoría a medida que se llena.
+
+**Cómo se etiquetó**
+1. Dos clasificadores independientes etiquetaron cada correo con la misma rúbrica. Coincidieron en 199 de 200; el caso restante lo decidió un juez.
+2. Verificación adversarial:
+   - un revisor escéptico por lote;
+   - un crítico que comparó los 200 entre sí para detectar casos parecidos con etiquetas distintas;
+   - dos jueces con distinta mirada (rúbrica literal y operativa) para cada objeción.
+3. Se aplicaron solo los cambios en que los dos jueces coincidieron: **5 de categoría** y **4 de "qué falta"**.
+
+**Etiquetas propuestas**
+
+| Categoría | Andrea | Javier |
+|---|---|---|
+| Despacho acordado | 27 | 1 |
+| Recepción acordada | 1 | 35 |
+| Pendiente | 43 | 38 |
+| No aplica | 29 | 26 |
+
+**47 correos tienen una "duda de criterio".** Son casos que la rúbrica no resuelve sola y quedaron agrupados en 8 preguntas, que están en el mismo archivo:
+
+1. Cuando Alzatec asigna día y hora (la plantilla de ejecutivas, *"Es necesario confirmar su hora"*), ¿ya es **acordado** o queda **pendiente** hasta que el cliente confirme? Es la duda más frecuente.
+2. Si el cliente responde solo "gracias" u "ok" a esa hora, ¿cuenta como confirmación?
+3. Si el cliente elige un cupo de la lista de horas de Javier, ¿ya está acordada, o falta el *"agendo su hora"*?
+4. ¿Un despacho sin OC está acordado? Por ejemplo, "se libera el camión con el compromiso de enviar la OC", o clientes que trabajan con estado de pago mensual.
+5. Las **anulaciones**, ¿van a pendientes o a otra casilla?
+6. Los movimientos **en curso** (el camión ya llegó o va en camino) y la agenda consolidada del día, ¿se reenvían?
+7. Un despacho **parcial** (una parte sin stock), ¿es acordado o pendiente?
+8. Una aceptación de cotización sin pedir despacho, ¿va a pendientes?
+
+**Hallazgo técnico.** En varias recepciones de Javier la fecha y la hora **no están en el texto**: vienen en una imagen o en una tabla pegada. El clasificador tiene que mirar también el hilo citado. Si eso no basta, se evalúa leer las imágenes en la etapa de prueba.
+
+## 6. Próximos pasos
 
 1. **Informática:**
-   - reenvío `asistentetecnico@ → agente@`;
-   - definir cómo llegan los enviados de Javier (regla CC en Outlook, recomendada).
-2. **Andrea y Javier:** validar las definiciones y la duda de la sección 4, y revisar una muestra de ~100 correos ya clasificados.
-3. **Set de prueba:** 200 correos etiquetados (100 de cada casilla) para medir el clasificador.
-4. **Prompt y prueba offline:** medir aciertos antes de conectar.
+   - ~~reenvío `asistentetecnico@ → agente@`~~ ✓;
+   - regla CC en el Outlook de Javier (Víctor).
+2. **Andrea y Javier:** revisar el archivo de validación y responder las 8 preguntas.
+3. **Ajustar la rúbrica** con sus respuestas. Los 200 correos corregidos pasan a ser el **set de prueba**.
+4. **Prompt y prueba offline:** medir aciertos contra ese set (meta ≥ 95% en despachos y recepciones) antes de conectar.
