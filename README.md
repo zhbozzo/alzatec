@@ -27,6 +27,13 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
   - [Clasificación](docs/06-clasificacion.md)
   - Ejemplo de agenda: [`ejemplos/agenda-camiones-ejemplo.xlsx`](ejemplos/agenda-camiones-ejemplo.xlsx)
 
+## Herramientas
+
+- [`herramientas/contar_embudo.py`](herramientas/contar_embudo.py): cuenta los correos que llegaron a `agente@`, por casilla de origen y por día. Abre la bandeja en solo lectura: no descarga cuerpos ni marca nada como leído. Pide la contraseña al ejecutarlo.
+  ```
+  python3 herramientas/contar_embudo.py --desde 15-Oct-2026
+  ```
+
 ## Estado
 
 - **Reunión de levantamiento hecha.** Se definió la etapa 1.
