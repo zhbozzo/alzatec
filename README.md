@@ -33,8 +33,8 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
 - **Casillas creadas por Informática** ✓
 - **Pendiente:**
   - ~~recibir los `.pst`~~ ✓ analizados (ver [09](docs/09-analisis-correos.md));
-  - **agregar el reenvío `asistentetecnico@ → agente@`**: es la dirección real de Andrea (se mantiene también el de `departamentotecnico@`);
-  - definir cómo llegan los correos **enviados** por Javier;
+  - ~~reenvío `asistentetecnico@ → agente@`~~ ✓ listo (se mantiene también el de `departamentotecnico@`);
+  - regla en el Outlook de Javier: todo lo que envía va con copia (CC) a `agente@`. **Víctor la configura mañana**;
   - validación de Andrea y Javier.
 
 ## Datos
