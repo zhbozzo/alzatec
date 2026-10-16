@@ -42,7 +42,7 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
   - ~~recibir los `.pst`~~ ✓ analizados (ver [09](docs/09-analisis-correos.md));
   - ~~reenvío `asistentetecnico@ → agente@`~~ ✓ listo (se mantiene también el de `departamentotecnico@`);
   - ~~reglas CC en Outlook~~ ✓ Víctor configuró la copia a `agente@` de todo lo que **envían** Andrea (`asistentetecnico@`) y Javier (`devoluciones@`). Las reglas corren en el Outlook del PC; Víctor confirmó que ambos envían siempre desde el PC y no usan el correo en el celular ✓;
-  - **antes de que Javier use el celular de Alzatec:** pedir a HostingPlus que el servidor copie a `agente@` todo lo que sale de `devoluciones@` (funciona desde cualquier aparato). Plan B: que Javier envíe las confirmaciones siempre desde el PC;
+  - **antes de que Javier use el celular de Alzatec:** que el servidor copie a `agente@` todo lo que sale de `devoluciones@` (funciona desde cualquier aparato). Víctor dice que lo puede hacer él desde el hosting; si cPanel no lo permite, lo hace el soporte de HostingPlus. Plan B: que Javier envíe las confirmaciones siempre desde el PC;
   - respaldo de los **Elementos enviados** de Andrea (pedido a Víctor, cuando ella tenga tiempo);
   - validación de Andrea y Javier: el **archivo de validación** está listo (200 correos clasificados, con 8 preguntas de criterio). Ver [09 §5](docs/09-analisis-correos.md#5-archivo-de-validación).
   - comparación preliminar de modelos: **Sonnet** coincide en 95% y tiene 0 errores graves claros; Haiku perdería 3 correos. Ver [09 §6](docs/09-analisis-correos.md#6-comparación-de-modelos-preliminar).
