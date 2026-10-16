@@ -34,7 +34,7 @@ flowchart TD
 ### 1. Entrada
 
 - El hosting copia a `agente@` lo que **llega** a Andrea y a Javier, incluidos los correos en copia (CC).
-- Lo que ellos **envían** no pasa por el reenvío. Para eso, el Outlook de Andrea y el de Javier tienen una regla que agrega `agente@` en copia (CC) ✓. Así llegan las confirmaciones que ellos mismos escriben: la plantilla de retiro de Andrea y el *"agendo su hora de devolución"* de Javier. Las reglas de Outlook corren en el PC: lo que se enviara desde el celular o el webmail no se copiaría. Víctor confirmó que Andrea y Javier envían siempre desde el PC ✓.
+- Lo que ellos **envían** no pasa por el reenvío. Para eso, el Outlook de Andrea y el de Javier tienen una regla que agrega `agente@` en copia (CC) ✓. Así llegan las confirmaciones que ellos mismos escriben: la plantilla de retiro de Andrea y el *"agendo su hora de devolución"* de Javier. Las reglas de Outlook corren en el PC: lo que se enviara desde el celular o el webmail no se copiaría. Víctor confirmó que Andrea y Javier envían siempre desde el PC ✓. Javier va a tener pronto un celular de Alzatec: antes de eso hay que pedir a HostingPlus una copia de salida en el servidor (`devoluciones@` → `agente@`), o que Javier envíe las confirmaciones desde el PC **[pendiente]**.
 - Si el mismo correo le llega a los dos, entra dos veces, pero se procesa **una sola vez** porque tiene el mismo `Message-ID`.
 
 ### 2. Preparación (nodo Code)
