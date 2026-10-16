@@ -35,7 +35,12 @@ El reenvío configurado hoy (`departamentotecnico@ → agente@`) **no captura ca
 - **(Recomendada)** Una regla en el Outlook de Javier: *"a los mensajes que envío, agregar CC a agente@alzatec.com"*.
 - Leer por IMAP la carpeta de enviados de `devoluciones@`. Solo funciona si su Outlook guarda los enviados en el servidor (IMAP); a confirmar con Informática.
 
-### 2.3 Un despacho genera varios correos
+### 2.3 Andrea también envía confirmaciones ⚠️
+
+En su bandeja hay 19 correos de clientes que responden citando la plantilla *"el equipo se encuentra disponible para retirar el día…"* **escrita por Andrea** (16 hilos). Como con Javier, lo que ella envía no pasa por el reenvío.
+**Acción:** ✓ Víctor configuró la regla CC también en el Outlook de Andrea. Se pidió el respaldo de sus Elementos enviados para medir el volumen.
+
+### 2.4 Un despacho genera varios correos
 
 Una solicitud pasa por varios correos:
 1. el cliente acepta;
@@ -184,7 +189,8 @@ Haiku y Sonnet clasificaron por separado los mismos 200 correos, sin ver las eti
 
 1. **Informática:**
    - ~~reenvío `asistentetecnico@ → agente@`~~ ✓;
-   - regla CC en el Outlook de Javier (Víctor).
+   - ~~reglas CC en el Outlook de Andrea y de Javier~~ ✓;
+   - respaldo de los Elementos enviados de Andrea (pendiente).
 2. **Andrea y Javier:** revisar el archivo de validación y responder las 8 preguntas.
 3. **Ajustar la rúbrica** con sus respuestas. Los 200 correos corregidos pasan a ser el **set de prueba**.
 4. **Prompt y prueba offline:** medir aciertos contra ese set (meta ≥ 95% en despachos y recepciones) antes de conectar.

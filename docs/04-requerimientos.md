@@ -51,7 +51,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 | ID | Requerimiento | Prioridad |
 |---|---|---|
 | RF-01 | Recibir en `agente@` una copia de cada correo que llega a Andrea (`asistentetecnico@` y `departamentotecnico@`) y a Javier (`devoluciones@`), mediante reenvíos con copia en el hosting. | I |
-| RF-01b | Recibir también una copia de los correos que **envía** Javier, porque ahí están la mayoría de las recepciones acordadas (regla CC en Outlook o lectura de enviados por IMAP). Ver [09-analisis-correos.md](09-analisis-correos.md). | I |
+| RF-01b | Recibir también una copia de los correos que **envían** Andrea y Javier, porque ahí están confirmaciones de despachos (plantilla de Andrea) y la mayoría de las recepciones acordadas (Javier). Regla CC en Outlook ✓. Ver [09-analisis-correos.md](09-analisis-correos.md). | I |
 | RF-02 | No modificar nada en las casillas de origen. | I |
 | RF-03 | Procesar cada correo **una sola vez**, aunque llegue a Andrea y a Javier a la vez (por `Message-ID`). | I |
 | RF-04 | Clasificar cada correo como despacho acordado, recepción acordada, pendiente o no aplica. | I |
@@ -76,7 +76,7 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 | **Base de correos de los últimos meses** de Andrea y de Javier | Alzatec | Definir las categorías con datos reales y medir el clasificador antes de usarlo |
 | Crear `agente@`, `despachosconfirmados@`, `retirosconfirmados@` y `pendientesdespachoyrecepcion@` | Víctor (hosting) | Embudo y destinos |
 | Reenvíos con copia: `asistentetecnico@`, `departamentotecnico@` y `devoluciones@` → `agente@` ✓ | Víctor (hosting) | Que el agente reciba los correos |
-| Regla en el Outlook de Javier: lo que envía va con copia (CC) a `agente@` | Víctor | Que lleguen las recepciones que Javier confirma |
+| Reglas en el Outlook de Andrea y de Javier: lo que envían va con copia (CC) a `agente@` ✓ | Víctor | Que lleguen las confirmaciones que ellos mismos envían |
 | Datos de conexión de `agente@` (IMAP y SMTP) | Víctor (hosting) | Leer y reenviar |
 | Revisar el **archivo de validación**: 200 correos reales con la categoría propuesta | Andrea y Javier | Confirmar que el criterio es el correcto y resolver las dudas de criterio |
 | Cuenta de IA y n8n a nombre de Alzatec | Gerencia | Que el agente funcione |

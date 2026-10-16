@@ -29,7 +29,7 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
 
 ## Herramientas
 
-- [`herramientas/contar_embudo.py`](herramientas/contar_embudo.py): cuenta los correos que llegaron a `agente@`, por casilla de origen y por día. Abre la bandeja en solo lectura: no descarga cuerpos ni marca nada como leído. Pide la contraseña al ejecutarlo.
+- [`herramientas/contar_embudo.py`](herramientas/contar_embudo.py): cuenta los correos que llegaron a `agente@`, por casilla de origen (incluidos los que llegan por la regla CC de lo que envían Andrea y Javier) y por día. Abre la bandeja en solo lectura: no descarga cuerpos ni marca nada como leído. Pide la contraseña al ejecutarlo.
   ```
   python3 herramientas/contar_embudo.py --desde 15-Oct-2026
   ```
@@ -41,7 +41,8 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
 - **Pendiente:**
   - ~~recibir los `.pst`~~ ✓ analizados (ver [09](docs/09-analisis-correos.md));
   - ~~reenvío `asistentetecnico@ → agente@`~~ ✓ listo (se mantiene también el de `departamentotecnico@`);
-  - regla en el Outlook de Javier: todo lo que envía va con copia (CC) a `agente@`. **Víctor la configura mañana**;
+  - ~~reglas CC en Outlook~~ ✓ Víctor configuró la copia a `agente@` de todo lo que **envían** Andrea (`asistentetecnico@`) y Javier (`devoluciones@`). Solo funcionan cuando envían desde el Outlook del PC, no desde el celular ni el webmail **[confirmar con Víctor]**;
+  - respaldo de los **Elementos enviados** de Andrea (pedido a Víctor, cuando ella tenga tiempo);
   - validación de Andrea y Javier: el **archivo de validación** está listo (200 correos clasificados, con 8 preguntas de criterio). Ver [09 §5](docs/09-analisis-correos.md#5-archivo-de-validación).
   - comparación preliminar de modelos: **Sonnet** coincide en 95% y tiene 0 errores graves claros; Haiku perdería 3 correos. Ver [09 §6](docs/09-analisis-correos.md#6-comparación-de-modelos-preliminar).
 

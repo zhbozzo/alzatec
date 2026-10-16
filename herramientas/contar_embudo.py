@@ -48,7 +48,7 @@ def main():
     por_dia = collections.Counter()
     por_origen = collections.Counter()
     vistos = collections.Counter()
-    campos = "(INTERNALDATE BODY.PEEK[HEADER.FIELDS (TO CC MESSAGE-ID)])"
+    campos = "(INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM TO CC MESSAGE-ID)])"
     for i in range(0, len(ids), 200):
         typ, resp = M.fetch(b",".join(ids[i:i + 200]), campos)
         for parte in resp:
@@ -59,15 +59,21 @@ def main():
             if m:
                 por_dia[m.group(1)] += 1
             h = message_from_bytes(parte[1])
+            remitente = {a.lower() for _, a in getaddresses(h.get_all("From", []))}
             dest = {a.lower() for _, a in getaddresses(h.get_all("To", []) + h.get_all("Cc", []))}
-            origen = [o.split("@")[0] + "@" for o in ORIGENES if o in dest]
-            por_origen[" + ".join(origen) or "otro (CCO o reenvío manual)"] += 1
+            enviado = [o for o in ORIGENES if o in remitente]
+            if enviado:
+                # copia por la regla CC del Outlook de Andrea o de Javier
+                por_origen["enviado por " + enviado[0].split("@")[0] + "@"] += 1
+            else:
+                origen = [o.split("@")[0] + "@" for o in ORIGENES if o in dest]
+                por_origen[" + ".join(origen) or "otro (CCO o reenvío manual)"] += 1
             vistos[(h.get("Message-ID") or "").strip()] += 1
     M.logout()
 
     print(f"\nCorreos contados: {len(ids)}")
     print(f"Repetidos por Message-ID (llegaron por dos casillas): {sum(n - 1 for k, n in vistos.items() if k and n > 1)}")
-    print("\nPor casilla de origen (según Para/CC):")
+    print("\nPor casilla de origen (según De/Para/CC):")
     for k, n in por_origen.most_common():
         print(f"  {n:5d}  {k}")
     print("\nPor día de llegada:")
