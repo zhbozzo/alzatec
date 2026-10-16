@@ -11,11 +11,25 @@
 - tocar MADA;
 - modificar las casillas de Andrea o de Javier.
 
+## Implementación
+
+Código propio en Python ([`clasificador/`](../clasificador)), en Google Cloud: un Cloud Run Job que corre cada 3 minutos. No usa n8n. La puesta en marcha está en [`deploy/README.md`](../deploy/README.md).
+
+| Pieza | Qué hace |
+|---|---|
+| Reglas fijas | Resuelven sin IA lo que siempre se escribe igual: rebotes, avisos de marca de asistencia, informes `RECEPCION #### - GUIA` de Javier y su plantilla *"agendo su hora de devolución"*. |
+| Modelo principal | **GPT-6.1 Sol** (esfuerzo medio), con salida JSON estructurada. Lee el texto, el hilo citado y las imágenes (por ejemplo, el pantallazo de agenda de Javier). |
+| Segunda opinión | **Claude Sonnet 5.5** revisa los correos que el principal marca como "acordado" y los que descarta pese a mencionar un despacho o una devolución. Si no coinciden, el correo va a pendientes con `[REVISAR]`. |
+| A prueba de fallas | Si un modelo falla, rechaza o devuelve algo incompleto, el correo va a pendientes con `[REVISAR]`. Si falla el envío, no se marca y se reintenta. |
+| Estado | Marcas IMAP en la propia casilla `agente@` (`Clasificado`, `NoAplica`, etc.). No hay base de datos y no se marca nada como leído. |
+| Resumen diario | A las 17:45 llega la lista de lo descartado como "no aplica", para revisarla en un minuto. |
+| Modo sombra | Con `MODO=sombra`, todo se reenvía a la casilla de prueba con `[SOMBRA]` en el asunto. |
+
 ## Recorrido de un correo
 
 ```mermaid
 flowchart TD
-  A["Llega a Andrea o a Javier<br/>(el hosting copia a agente@)"] --> B["n8n lo detecta (IMAP)"]
+  A["Llega a Andrea o a Javier<br/>(el hosting copia a agente@)"] --> B["Cloud Run lo lee cada 3 min (IMAP)"]
   B --> C{"¿Ya procesado?<br/>(Message-ID)"}
   C -->|sí| Z["Fin"]
   C -->|no| D{"¿Remitente automático?"}
@@ -37,7 +51,7 @@ flowchart TD
 - Lo que ellos **envían** no pasa por el reenvío. Para eso, el Outlook de Andrea y el de Javier tienen una regla que agrega `agente@` en copia (CC) ✓. Así llegan las confirmaciones que ellos mismos escriben: la plantilla de retiro de Andrea y el *"agendo su hora de devolución"* de Javier. Las reglas de Outlook corren en el PC: lo que se enviara desde el celular o el webmail no se copiaría. Víctor confirmó que Andrea y Javier envían siempre desde el PC ✓. Javier va a tener pronto un celular de Alzatec: antes de eso hay que configurar una copia de salida en el servidor (`devoluciones@` → `agente@`; la hace Víctor o el soporte de HostingPlus), o que Javier envíe las confirmaciones desde el PC **[pendiente]**.
 - Si el mismo correo le llega a los dos, entra dos veces, pero se procesa **una sola vez** porque tiene el mismo `Message-ID`.
 
-### 2. Preparación (nodo Code)
+### 2. Preparación
 
 - Saca el remitente, el asunto, la fecha y el `Message-ID`.
 - Limpia el cuerpo: quita el HTML, las firmas y los mensajes antiguos citados, pero deja algo de contexto.
@@ -75,7 +89,7 @@ El modelo recibe las definiciones, ejemplos reales sacados de la base de correos
 
 Ante la duda, siempre se va a **pendientes**. Un despacho perdido es peor que uno de más en pendientes.
 
-### 5. Reenvío (nodo Send Email, SMTP del hosting)
+### 5. Reenvío (SMTP del hosting)
 
 - **Para:** la casilla según la categoría.
 - **Asunto:** `[DESPACHO ACORDADO] Re: Cotización Alzatec N°28484 - CLIENTE - OBRA`
@@ -95,7 +109,7 @@ Este registro sirve para medir cuánto acierta el clasificador.
 
 ## Si algo falla
 
-Te llega un correo a ti, el mantenedor. El correo original sigue en `agente@` y se reprocesa desde n8n.
+Te llega un correo a ti, el mantenedor. El correo original sigue en `agente@` y se reprocesa solo en la próxima corrida.
 
 ## Cómo se pone en marcha
 
@@ -111,4 +125,4 @@ Te llega un correo a ti, el mantenedor. El correo original sigue en `agente@` y 
 ## Mantenimiento
 
 - **Primer mes, una vez por semana:** revisar el registro. Cada error se vuelve un ejemplo nuevo en las instrucciones de la IA.
-- **Una vez al mes:** costo de la IA, espacio de `agente@`, actualizaciones de n8n.
+- **Una vez al mes:** costo de la IA, espacio de `agente@`, actualizaciones de las librerías.

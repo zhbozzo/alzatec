@@ -27,6 +27,16 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
   - [Clasificación](docs/06-clasificacion.md)
   - Ejemplo de agenda: [`ejemplos/agenda-camiones-ejemplo.xlsx`](ejemplos/agenda-camiones-ejemplo.xlsx)
 
+## Clasificador (código)
+
+- [`clasificador/`](clasificador): el agente. Se corre con `python -m clasificador procesar` (cada 3 minutos) y `python -m clasificador resumen` (una vez al día). Cómo funciona: [07](docs/07-agente-v1.md).
+- Prueba con los 200 correos etiquetados (necesita las API keys y los datos en `datos/`):
+  ```
+  python -m clasificador.evaluar --modelo openai:gpt-6.1-sol --verificador anthropic:claude-sonnet-5-5
+  ```
+- Pruebas automáticas, sin red: `pip install -r requirements-dev.txt && python -m pytest`.
+- Puesta en marcha en Google Cloud: [`deploy/README.md`](deploy/README.md).
+
 ## Herramientas
 
 - [`herramientas/contar_embudo.py`](herramientas/contar_embudo.py): cuenta los correos que llegaron a `agente@`, por casilla de origen (incluidos los que llegan por la regla CC de lo que envían Andrea y Javier) y por día. Abre la bandeja en solo lectura: no descarga cuerpos ni marca nada como leído. Pide la contraseña al ejecutarlo.

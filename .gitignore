@@ -5,3 +5,5 @@ datos/
 *.mbox
 *.eml
 *.msg
+__pycache__/
+.pytest_cache/

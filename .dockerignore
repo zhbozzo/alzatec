@@ -1,0 +1,9 @@
+datos/
+docs/
+ejemplos/
+tests/
+herramientas/
+.git/
+**/__pycache__/
+*.pst
+*.eml

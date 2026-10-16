@@ -1,0 +1,103 @@
+"""Acceso IMAP a la casilla embudo.
+
+El estado se guarda en la misma casilla con marcas IMAP (keywords), así el
+clasificador no necesita base de datos:
+- Clasificado: ya procesado.
+- NoAplica: descartado (entra al resumen diario).
+- Resumido: ya incluido en un resumen diario.
+- Duplicado: copia de un correo que llegó por dos casillas.
+- Toma0 a Toma5: una corrida lo está procesando, con el tramo de 10 minutos
+  en que lo tomó. Evita que dos corridas tomen el mismo correo; si la corrida
+  se cae, se libera a los 30 minutos. Son solo 6 marcas que rotan, porque
+  Dovecot (el servidor de cPanel) admite pocas marcas distintas por casilla.
+No marca nada como leído: si alguien abre agente@ por webmail, ve todo igual.
+"""
+
+import imaplib
+import re
+import ssl
+
+CLASIFICADO, NO_APLICA, RESUMIDO, DUPLICADO = "Clasificado", "NoAplica", "Resumido", "Duplicado"
+
+
+class Buzon:
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.imap = None
+
+    def conectar(self):
+        self.imap = imaplib.IMAP4_SSL(self.cfg.imap_host, self.cfg.imap_puerto,
+                                      ssl_context=ssl.create_default_context(), timeout=60)
+        self.imap.login(self.cfg.usuario, self.cfg.contrasena)
+        typ, _ = self.imap.select("INBOX")
+        if typ != "OK":
+            raise RuntimeError("No se pudo abrir la bandeja de entrada de agente@")
+        permanentes = self.imap.untagged_responses.get("PERMANENTFLAGS", [b""])[0] or b""
+        if b"\\*" not in permanentes:
+            raise RuntimeError("El servidor no permite marcas propias (keywords) en agente@; avisar al mantenedor")
+        return self
+
+    def cerrar(self):
+        if self.imap is not None:
+            try:
+                self.imap.logout()
+            except Exception:
+                pass
+
+    def _buscar(self, *criterio):
+        typ, data = self.imap.uid("SEARCH", None, *criterio)
+        if typ != "OK":
+            raise RuntimeError(f"Búsqueda IMAP falló: {criterio}")
+        return [int(x) for x in (data[0] or b"").split()]
+
+    def pendientes(self):
+        """UIDs aún no procesados, del más antiguo al más nuevo."""
+        criterio = ["UNKEYWORD", CLASIFICADO, "NOT", "DELETED"]
+        if self.cfg.desde:
+            criterio += ["SINCE", self.cfg.desde]
+        return sorted(self._buscar(*criterio))
+
+    def leer(self, uid):
+        typ, data = self.imap.uid("FETCH", str(uid), "(BODY.PEEK[])")
+        for parte in data or []:
+            if isinstance(parte, tuple):
+                return parte[1]
+        raise RuntimeError(f"No se pudo leer el correo UID {uid}")
+
+    def tomar(self, uid, ahora_min):
+        """Reserva el correo para esta corrida. False si ya está procesado o tomado hace menos de 30 min."""
+        typ, data = self.imap.uid("FETCH", str(uid), "(FLAGS)")
+        texto = b" ".join(d if isinstance(d, bytes) else d[0] for d in (data or []) if d).decode(errors="replace")
+        m = re.search(r"FLAGS \(([^)]*)\)", texto)
+        marcas = m.group(1).split() if m else []
+        if CLASIFICADO in marcas:
+            return False
+        tramo = (ahora_min // 10) % 6
+        tomas = [f for f in marcas if re.fullmatch(r"Toma[0-5]", f)]
+        if tomas and min((tramo - int(f[4])) % 6 for f in tomas) < 3:
+            return False
+        if tomas:
+            self.imap.uid("STORE", str(uid), "-FLAGS", "(" + " ".join(tomas) + ")")
+        self.marcar(uid, f"Toma{tramo}")
+        return True
+
+    def ya_procesado(self, message_id):
+        if not message_id:
+            return False
+        mid = message_id.replace('"', "")
+        return bool(self._buscar("KEYWORD", CLASIFICADO, "HEADER", "Message-ID", f'"{mid}"'))
+
+    def marcar(self, uid, *marcas):
+        typ, _ = self.imap.uid("STORE", str(uid), "+FLAGS", "(" + " ".join(marcas) + ")")
+        if typ != "OK":
+            raise RuntimeError(f"No se pudo marcar el correo UID {uid}")
+
+    def descartados_sin_resumir(self):
+        return sorted(self._buscar("KEYWORD", NO_APLICA, "UNKEYWORD", RESUMIDO))
+
+    def encabezados(self, uid):
+        typ, data = self.imap.uid("FETCH", str(uid), "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])")
+        for parte in data or []:
+            if isinstance(parte, tuple):
+                return parte[1]
+        return b""
