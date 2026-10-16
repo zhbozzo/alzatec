@@ -43,6 +43,7 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
   - ~~reenvío `asistentetecnico@ → agente@`~~ ✓ listo (se mantiene también el de `departamentotecnico@`);
   - regla en el Outlook de Javier: todo lo que envía va con copia (CC) a `agente@`. **Víctor la configura mañana**;
   - validación de Andrea y Javier: el **archivo de validación** está listo (200 correos clasificados, con 8 preguntas de criterio). Ver [09 §5](docs/09-analisis-correos.md#5-archivo-de-validación).
+  - comparación preliminar de modelos: **Sonnet** coincide en 95% y tiene 0 errores graves claros; Haiku perdería 3 correos. Ver [09 §6](docs/09-analisis-correos.md#6-comparación-de-modelos-preliminar).
 
 ## Datos
 

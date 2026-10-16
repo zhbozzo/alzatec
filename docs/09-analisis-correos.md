@@ -148,7 +148,39 @@ Archivo: `datos/validacion/validacion-clasificador.xlsx`. No está en el reposit
 
 **Hallazgo técnico.** En varias recepciones de Javier la fecha y la hora **no están en el texto**: vienen en una imagen o en una tabla pegada. El clasificador tiene que mirar también el hilo citado. Si eso no basta, se evalúa leer las imágenes en la etapa de prueba.
 
-## 6. Próximos pasos
+## 6. Comparación de modelos (preliminar)
+
+Haiku y Sonnet clasificaron por separado los mismos 200 correos, sin ver las etiquetas y con acceso a las imágenes y PDF de cada correo. El resultado se comparó con las etiquetas verificadas de la sección 5.
+
+**Es preliminar por tres razones:**
+- las etiquetas aún no las valida Andrea;
+- se hizo una sola pasada por modelo;
+- la prueba se corrió con subagentes de Claude Code, no con la llamada a la API que se usará en producción.
+
+**Tipos de error**
+- **Graves:** un despacho o devolución que terminaría en "no aplica" (se pierde), o algo no acordado que terminaría en una casilla de confirmados.
+- **Leves:** algo acordado que termina en pendientes, o ruido en pendientes.
+
+| | Haiku | Sonnet |
+|---|---|---|
+| Coincide con la etiqueta | 177/200 (88,5%) | **190/200 (95%)** |
+| Errores graves | 4 (3 se perderían, 1 falso confirmado) | **1** |
+| Errores leves | 19 | 9 |
+| Errores en casos sin duda de criterio | 6 | **1** |
+
+**Detalle**
+- **Sonnet:**
+  - Los 9 errores leves son todos casos con duda de criterio. Por ejemplo, un cliente que elige un cupo de la lista de Javier: Sonnet lo deja en pendientes. Se resuelven con las respuestas de Andrea a las 8 preguntas.
+  - Su único error grave es discutible: un cliente "reaccionó" (👍) a la hora que Javier ya había agendado, y Sonnet lo reenvió como recepción acordada. Como la recepción ya estaba acordada, el efecto sería un reenvío duplicado, no un error de agenda.
+- **Haiku:** perdería 3 correos con movimiento:
+  - una recotización con el cliente esperando retirar;
+  - un saldo de despacho pendiente;
+  - un camión que ya estaba en la planta.
+- **Imágenes:** los dos modelos leyeron bien el pantallazo de agenda que pega Javier y sacaron de ahí la fecha y la hora. La diferencia entre ellos está en **interpretar el hilo**, no en leer imágenes.
+
+**Conclusión preliminar:** Sonnet es el modelo que cumple la meta de cero errores graves. Haiku no la cumple sin reglas adicionales. Con unos 3.000 correos al mes, la diferencia es de unos US$50 contra unos US$3 al mes (tabla de costos en [05](05-implementacion.md)).
+
+## 7. Próximos pasos
 
 1. **Informática:**
    - ~~reenvío `asistentetecnico@ → agente@`~~ ✓;
