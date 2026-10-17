@@ -74,9 +74,10 @@ cat <<'EOF'
 
 Clave creada. Ahora:
  1. Arriba se abre el archivo clave-claude.txt: selecciona todo (Cmd+A) y copia (Cmd+C).
- 2. En Claude Code: menú del entorno en la barra de título de la sesión → Edit → variables de entorno.
-    Agrega una línea que empiece con  GCP_SA_KEY=  y pega la clave justo después del =, sin espacios.
-    No la pegues en el chat.
+ 2. NO la pegues en el chat de Claude: va en la CONFIGURACIÓN DEL ENTORNO de Claude Code.
+    Arriba, en la barra de título de la sesión, haz clic en el nombre del entorno (ícono de nube) → Edit
+    → Variables de entorno. Agrega una línea que empiece con  GCP_SA_KEY=  y pega la clave justo
+    después del =, sin espacios. Guarda.
  3. Vuelve aquí y aprieta Enter: el archivo se borra de Cloud Shell. Cierra la pestaña del archivo sin guardar.
 EOF
 cloudshell edit "$ARCHIVO" 2>/dev/null || echo "   (No se abrió solo: ábrelo con  cloudshell edit ~/clave-claude.txt)"
