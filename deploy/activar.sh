@@ -9,16 +9,6 @@ SA=clasificador@$PROYECTO.iam.gserviceaccount.com
 URI=https://run.googleapis.com/v2/projects/$PROYECTO/locations/$REGION/jobs
 
 echo "Proyecto: $PROYECTO"
-echo "¿A dónde reenviar los correos clasificados?"
-echo "  1) A las casillas reales de Alzatec (despachosconfirmados@, retirosconfirmados@, pendientesdespachoyrecepcion@)"
-echo "  2) Seguir en modo sombra, todo a la casilla de prueba"
-read -r -p "Opción [1]: " OPCION
-if [ "${OPCION:-1}" = "1" ]; then
-  for J in clasificador clasificador-resumen; do
-    gcloud run jobs update "$J" --region "$REGION" --update-env-vars "MODO=vivo,PREFIJO=[PRUEBA]" >/dev/null
-  done
-  echo "   Modo vivo, con [PRUEBA] en el asunto mientras se valida."
-fi
 
 programar() {  # nombre, horario, job
   if gcloud scheduler jobs describe "$1" --location "$REGION" >/dev/null 2>&1; then

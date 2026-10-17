@@ -8,8 +8,8 @@ Todo se hace desde [Cloud Shell](https://shell.cloud.google.com), la terminal en
 
 1. Abrir [Cloud Shell](https://shell.cloud.google.com) con la cuenta dueña del proyecto.
 2. Traer el repositorio: en GitHub, elegir la rama `claude/automatizacion-empresa-papa-1a1tca`, **Code → Download ZIP**; en Cloud Shell, menú ⋮ → **Upload** y subir el ZIP; luego `unzip alzatec-*.zip && cd alzatec-*`.
-3. `bash deploy/instalar.sh`: pide el ID del proyecto, el correo de prueba, la contraseña de `agente@` y la API key de OpenAI (las claves no se muestran y quedan en Secret Manager). Sube el clasificador y hace una primera corrida de prueba. Si pregunta si crear un repositorio de Artifact Registry, responder **Y**.
-4. Revisar el correo de prueba. Si todo se ve bien: `bash deploy/activar.sh`. Programa las corridas cada 3 minutos, el resumen diario y la alerta de respaldo, y permite pasar a las casillas reales.
+3. `bash deploy/instalar.sh`: pide el ID del proyecto, la contraseña de `agente@` y la API key de OpenAI (las claves no se muestran y quedan en Secret Manager). Sube el clasificador y hace la primera corrida, que ya reenvía a las casillas reales. Si pregunta si crear un repositorio de Artifact Registry, responder **Y**.
+4. Si la corrida se ve bien: `bash deploy/activar.sh`. Programa las corridas cada 3 minutos, el resumen diario y la alerta de respaldo.
 
 Los pasos de abajo son lo mismo, a mano.
 
@@ -18,14 +18,12 @@ Los pasos de abajo son lo mismo, a mano.
 - Un proyecto de Google Cloud con facturación activa.
 - La contraseña de `agente@alzatec.com`.
 - La API key de OpenAI.
-- El correo de prueba que recibirá los resultados del modo sombra.
 
 ## 1. Variables
 
 ```bash
 PROYECTO=el-id-de-tu-proyecto
 REGION=southamerica-west1          # Santiago
-CASILLA_PRUEBA=tu-correo@ejemplo.com
 gcloud config set project $PROYECTO
 ```
 
@@ -58,26 +56,26 @@ gcloud projects add-iam-policy-binding $PROYECTO --member serviceAccount:$SA --r
 
 ## 5. Subir el clasificador
 
-Desde la carpeta del repositorio (`git clone` en Cloud Shell). `DESDE` evita procesar de golpe los correos que se acumularon en `agente@` antes de la puesta en marcha: poner la fecha en que parte el modo sombra.
+Desde la carpeta del repositorio (`git clone` en Cloud Shell). `DESDE` evita procesar de golpe los correos que se acumularon en `agente@` antes de la puesta en marcha: poner la fecha de inicio.
 
 ```bash
 COMUN="--region $REGION --service-account $SA --cpu 1 --memory 512Mi --max-retries 0 \
   --set-secrets AGENTE_PW=agente-pw:latest,OPENAI_API_KEY=openai-api-key:latest \
-  --set-env-vars MODO=sombra,CASILLA_PRUEBA=$CASILLA_PRUEBA,MODELO=openai:gpt-6.1-sol,ESFUERZO=medium,DESDE=19-Oct-2026"
+  --set-env-vars MODO=vivo,MODELO=openai:gpt-6.1-sol,ESFUERZO=medium,DESDE=19-Oct-2026"
 
 gcloud run jobs deploy clasificador --source . $COMUN --task-timeout 10m --args procesar
 IMAGEN=$(gcloud run jobs describe clasificador --region $REGION --format 'value(spec.template.spec.template.spec.containers[0].image)')
 gcloud run jobs deploy clasificador-resumen --image $IMAGEN $COMUN --task-timeout 5m --args resumen
 ```
 
-## 6. Primera prueba a mano
+## 6. Primera corrida a mano
 
 ```bash
 gcloud run jobs execute clasificador --region $REGION --wait
 gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name="clasificador"' --limit 30 --format 'value(textPayload)'
 ```
 
-Cada correo deja una línea con su categoría, el costo y si quedó para revisar. Los reenvíos llegan a `CASILLA_PRUEBA` con `[SOMBRA]` en el asunto.
+Cada correo deja una línea con su categoría, el costo y si quedó para revisar. Los reenvíos llegan a las casillas reales.
 
 ## 7. Programar
 
@@ -110,15 +108,17 @@ gcloud alpha monitoring policies create --policy-from-file deploy/alerta-errores
 
 Google avisa una vez cuando empieza el problema y otra cuando se resuelve.
 
-## 8. Pasar a producción
+## 8. Modo sombra (opcional)
 
-Cuando el modo sombra lleve un tiempo sin errores graves:
+Si alguna vez se quiere probar un cambio sin tocar las casillas reales, todo se puede mandar a una casilla de prueba (`MODO=sombra,CASILLA_PRUEBA=correo@...`). Para volver:
 
 ```bash
 for J in clasificador clasificador-resumen; do
-  gcloud run jobs update $J --region $REGION --update-env-vars MODO=vivo,RESUMEN_A=asistentetecnico@alzatec.com
+  gcloud run jobs update $J --region $REGION --update-env-vars MODO=vivo
 done
 ```
+
+El resumen diario de lo descartado llega por defecto a los mismos correos de las alertas. Para que le llegue a Andrea: `--update-env-vars "RESUMEN_A=asistentetecnico@alzatec.com"` en el job `clasificador-resumen`.
 
 ## Costos
 
@@ -133,7 +133,7 @@ done
 
 ## Segunda opinión (opcional, apagada)
 
-El código permite que un segundo modelo revise los correos que el principal marca como "acordado". Está apagada. Solo se activaría si la evaluación o el modo sombra muestran errores graves que un segundo modelo atraparía:
+El código permite que un segundo modelo revise los correos que el principal marca como "acordado". Está apagada. Solo se activaría si la evaluación o el uso real muestran errores graves que un segundo modelo atraparía:
 
 ```bash
 gcloud run jobs update clasificador --region $REGION --update-env-vars VERIFICADOR=anthropic:claude-sonnet-5-5

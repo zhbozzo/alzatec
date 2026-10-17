@@ -25,8 +25,8 @@ class Config:
     usuario: str = "agente@alzatec.com"
     contrasena: str = ""
 
-    # Modo: "sombra" reenvía todo a la casilla de prueba; "vivo" a las casillas reales
-    modo: str = "sombra"
+    # Modo: "vivo" reenvía a las casillas reales; "sombra" (opcional) manda todo a una casilla de prueba
+    modo: str = "vivo"
     casilla_prueba: str = ""
     destinos: dict = field(default_factory=lambda: {
         "despacho_acordado": "despachosconfirmados@alzatec.com",

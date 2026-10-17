@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# Instala el clasificador en Google Cloud y hace una primera corrida de prueba.
+# Instala el clasificador en Google Cloud y hace la primera corrida.
+# Reenvía directo a las casillas reales: despachosconfirmados@, retirosconfirmados@ y pendientesdespachoyrecepcion@.
 # Correr en Cloud Shell, desde la carpeta del repositorio:  bash deploy/instalar.sh
 # Las claves se escriben aquí mismo y quedan en Secret Manager; no se muestran ni se guardan en el historial.
 set -euo pipefail
 [ -f Dockerfile ] && [ -d clasificador ] || { echo "Correr desde la carpeta del repositorio (donde está el Dockerfile)."; exit 1; }
 
 read -r -p "ID del proyecto de Google Cloud: " PROYECTO
-read -r -p "Correo para la prueba inicial [zhlidergg29@gmail.com]: " CASILLA
-CASILLA=${CASILLA:-zhlidergg29@gmail.com}
 REGION=${REGION:-southamerica-west1}
 DESDE=$(LC_ALL=C date +%d-%b-%Y)   # solo correos llegados desde hoy
 
@@ -44,13 +43,13 @@ gcloud projects add-iam-policy-binding "$PROYECTO" --member "serviceAccount:$SA"
 echo "== 4/5 Subiendo el clasificador (tarda unos minutos)"
 COMUN=(--region "$REGION" --service-account "$SA" --cpu 1 --memory 512Mi --max-retries 0
   --set-secrets AGENTE_PW=agente-pw:latest,OPENAI_API_KEY=openai-api-key:latest
-  --set-env-vars "MODO=sombra,CASILLA_PRUEBA=$CASILLA,MODELO=openai:gpt-6.1-sol,ESFUERZO=medium,DESDE=$DESDE")
+  --set-env-vars "MODO=vivo,MODELO=openai:gpt-6.1-sol,ESFUERZO=medium,DESDE=$DESDE")
 gcloud run jobs deploy clasificador --source . "${COMUN[@]}" --task-timeout 10m --args procesar
 IMAGEN=$(gcloud run jobs describe clasificador --region "$REGION" \
   --format 'value(spec.template.spec.template.spec.containers[0].image)')
 gcloud run jobs deploy clasificador-resumen --image "$IMAGEN" "${COMUN[@]}" --task-timeout 5m --args resumen
 
-echo "== 5/5 Primera corrida de prueba (correos llegados a agente@ desde hoy, resultados a $CASILLA)"
+echo "== 5/5 Primera corrida (correos llegados a agente@ desde hoy)"
 gcloud run jobs execute clasificador --region "$REGION" --wait || true
 sleep 20
 gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name="clasificador"' \
@@ -58,5 +57,5 @@ gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name=
   --format 'value(jsonPayload.evento,jsonPayload.categoria,jsonPayload.asunto,jsonPayload.costo_usd,jsonPayload.error,textPayload)'
 
 echo
-echo "Listo. Revisa $CASILLA: deberían llegar los correos clasificados con [SOMBRA] en el asunto."
-echo "Si todo se ve bien, el siguiente paso es: bash deploy/activar.sh"
+echo "Listo. Arriba aparece cada correo procesado con su categoría; los despachos, recepciones y pendientes"
+echo "ya se reenviaron a sus casillas. Si se ve bien, el siguiente paso es: bash deploy/activar.sh"

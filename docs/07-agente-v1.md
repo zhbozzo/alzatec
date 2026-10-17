@@ -24,7 +24,7 @@ Código propio en Python ([`clasificador/`](../clasificador)), en Google Cloud: 
 | Alertas | Correo a `lbozzo@fen.uchile.cl` y `lbpiphone4@gmail.com` con **qué pasó y qué hacer** (por ejemplo, "Sin saldo en OpenAI: recargar créditos"). Máximo un aviso cada 3 horas por problema, y un aviso cuando se resuelve. Si falla la propia casilla `agente@`, avisa Google Cloud. |
 | Estado | Marcas IMAP en la propia casilla `agente@` (`Clasificado`, `NoAplica`, etc.). No hay base de datos y no se marca nada como leído. |
 | Resumen diario | A las 17:45 llega la lista de lo descartado como "no aplica", para revisarla en un minuto. |
-| Modo sombra | Con `MODO=sombra`, todo se reenvía a la casilla de prueba con `[SOMBRA]` en el asunto. |
+| Destinos | Reenvía directo a las casillas reales desde el primer día: nadie depende todavía de ellas, así que solo suma. Andrea y Pato siguen trabajando igual mientras se valida. (Existe un modo sombra opcional, `MODO=sombra`, para probar cambios sin tocar las casillas reales.) |
 
 ## Recorrido de un correo
 
@@ -120,7 +120,7 @@ Te llega un correo a ti, el mantenedor. El correo original sigue en `agente@` y 
    - formatos de asunto;
    - remitentes automáticos.
 2. **Prueba offline** con esos correos: medir cuánto acierta antes de conectar nada.
-3. **Modo sombra** de 1–2 semanas: reenvía a una casilla de prueba y Andrea compara con su criterio.
+3. **Validación en uso real** de 1–2 semanas: reenvía a las casillas reales, Andrea compara con su criterio y cada error se corrige en la rúbrica.
 4. **En vivo:** reenvía a las tres casillas reales.
 
 ## Mantenimiento
