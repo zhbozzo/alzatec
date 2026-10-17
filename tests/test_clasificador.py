@@ -379,3 +379,13 @@ def test_los_avisos_no_esperan_resuelto(cfg):
     avisar_si_se_resolvio(cfg, buzon, enviados.append)
     assert "openai_sin_saldo" in enviados[0].get_content() and "aviso_" not in enviados[0].get_content()
     assert buzon.cerradas == ["openai_sin_saldo"]
+
+
+def test_reaccion_de_outlook_se_descarta_sin_llamar_al_modelo():
+    modelo = ModeloFalso(resultado("recepcion_acordada", falta=()))
+    for texto in ("[like] Sebastian Moraga reacted to your message:", "Juan Pérez reaccionó a su mensaje"):
+        d = decidir(leer(correo_crudo(asunto="RE: Hora devolucion", texto=texto)), modelo)
+        assert d.categoria == "no_aplica" and d.fuente == "regla"
+    assert modelo.llamadas == 0
+    d = decidir(leer(correo_crudo(texto="[like] reacted to your message: y además favor cambiar la hora al lunes")), modelo)
+    assert modelo.llamadas == 1

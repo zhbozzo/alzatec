@@ -25,6 +25,8 @@ MARCA_ASISTENCIA = re.compile(r"marca\s+(de\s+)?asistencia", re.I)
 INFORME_RECEPCION = re.compile(r"^\s*RECEPCI[OÓ]N\s+\d+\s*-\s*GU[IÍ]A", re.I)
 AGENDA_JAVIER = re.compile(
     r"agendo su hora de devoluci|se reagenda su hora de devoluci|se asigna sobre\s*cupo|confirmar devoluci[oó]n para el d[ií]a", re.I)
+# Reacción de Outlook ("[like] Fulano reacted to your message:") sin texto propio: no agrega nada al hilo
+REACCION = re.compile(r"^\s*(\[[^\]]{1,20}\]\s*)?.{0,80}\b(reacted to your message|reaccion[oó] a (su|tu) mensaje)\s*:?\s*$", re.I)
 SENAL_MOVIMIENTO = re.compile(
     r"retir|despach|devoluci|devolver|cami[oó]n|agend|cupo|anul|reagend|posterg|hora para|orden de compra|\bo\.?c\b|aprob|acept",
     re.I)
@@ -51,6 +53,8 @@ def prefiltro(correo):
     """
     if REBOTE_REMITENTE.search(correo.remitente_correo) or REBOTE_ASUNTO.search(correo.asunto):
         return "no_aplica", "Rebote automático de correo.", True
+    if REACCION.match(correo.texto_nuevo.strip().split("\n")[0]) and len(correo.texto_nuevo.strip()) < 200:
+        return "no_aplica", "Reacción (me gusta) a un mensaje anterior, sin texto nuevo.", True
     if MARCA_ASISTENCIA.search(correo.asunto):
         return "no_aplica", "Aviso automático de marca de asistencia.", True
     if correo.remitente_correo == JAVIER and INFORME_RECEPCION.search(correo.asunto):

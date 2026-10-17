@@ -145,6 +145,7 @@ Archivo: `datos/validacion/validacion-clasificador.xlsx`. No está en el reposit
 1. Cuando Alzatec asigna día y hora (la plantilla de ejecutivas, *"Es necesario confirmar su hora"*), ¿ya es **acordado** o queda **pendiente** hasta que el cliente confirme? Es la duda más frecuente.
 2. Si el cliente responde solo "gracias" u "ok" a esa hora, ¿cuenta como confirmación?
 3. Si el cliente elige un cupo de la lista de horas de Javier, ¿ya está acordada, o falta el *"agendo su hora"*?
+   - *Decisión provisoria (17-oct, tras revisar los primeros 159 correos reales):* queda **pendiente** hasta el *"agendo su hora"* de Javier, que es el que va a retiros confirmados. Así no se duplica el reenvío y nada se pierde. Confirmar con Javier.
 4. ¿Un despacho sin OC está acordado? Por ejemplo, "se libera el camión con el compromiso de enviar la OC", o clientes que trabajan con estado de pago mensual.
 5. Las **anulaciones**, ¿van a pendientes o a otra casilla?
 6. Los movimientos **en curso** (el camión ya llegó o va en camino) y la agenda consolidada del día, ¿se reenvían?
@@ -194,3 +195,11 @@ Haiku y Sonnet clasificaron por separado los mismos 200 correos, sin ver las eti
 2. **Andrea y Javier:** revisar el archivo de validación y responder las 8 preguntas.
 3. **Ajustar la rúbrica** con sus respuestas. Los 200 correos corregidos pasan a ser el **set de prueba**.
 4. **Prompt y prueba offline:** medir aciertos contra ese set (meta ≥ 95% en despachos y recepciones) antes de conectar.
+
+
+## 8. Primera revisión en producción (17-oct-2026)
+
+- GPT-6.1 Sol clasificó los 159 correos reales del jueves 15 y el viernes 16 (sin contar los rebotes). Cuatro revisores Opus los revisaron uno por uno con la misma rúbrica: hubo **6 desacuerdos**, **1 grave** y 5 leves. Costo: US$0,75 por 234 correos, unos US$0,003 por correo.
+- **Grave (corregido):** un aviso interno de *"saldo pendiente"* (OT de MADA con equipos que faltan por entregar) quedó como no aplica. La rúbrica ahora lo trata explícitamente como despacho pendiente (falta stock).
+- **Leves:** el cliente elige una hora de la lista de Javier (ahora queda pendiente, ver la pregunta 3), y una reacción "me gusta" de Outlook que duplicaba un reenvío (ahora es una regla fija). Otros dos casos se dejaron como estaban porque son discutibles.
+- **Falla de entrega (corregida):** el filtro de cPanel rechazaba los reenvíos porque el original iba adjunto como `correo-original.eml`. Ahora va sin nombre de archivo, y si un reenvío rebota, el clasificador avisa por correo.
