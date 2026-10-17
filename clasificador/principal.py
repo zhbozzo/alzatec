@@ -40,6 +40,29 @@ def _correo_ilegible(crudo):
                   para="", cc="", fecha="", texto_nuevo="", texto_citado="", crudo=crudo, ilegible=True)
 
 
+def _explicacion(resultado):
+    """Lo que dijo el modelo, para poder revisar después por qué clasificó así."""
+    campos = ("movimiento", "fecha_movimiento", "cliente", "obra", "falta", "resumen", "motivo")
+    return {c: (resultado.get(c)[:300] if isinstance(resultado.get(c), str) else resultado.get(c)) for c in campos}
+
+
+def explicar(cfg, buzon, principal, texto, maximo=5):
+    """Vuelve a clasificar los correos cuyo asunto contiene `texto` y registra el detalle.
+
+    No reenvía ni marca nada: sirve para revisar a distancia por qué un correo quedó como quedó.
+    """
+    uids = buzon.buscar_asunto(texto)[-maximo:]
+    for uid in uids:
+        correo = leer(buzon.leer(uid), cfg.max_imagenes)
+        decision = decidir(correo, principal)
+        registrar(evento="explicacion", uid=uid, asunto=correo.asunto[:200], remitente=correo.remitente_correo,
+                  fecha=correo.fecha, categoria=decision.categoria, revisar=decision.revisar, nota=decision.nota[:300],
+                  confianza=decision.resultado.get("confianza"), **_explicacion(decision.resultado),
+                  texto=correo.texto_nuevo[:1500], citado=correo.texto_citado[:800],
+                  adjuntos=[getattr(a, "nombre", str(a)) for a in correo.adjuntos][:10], imagenes=len(correo.imagenes))
+    return len(uids)
+
+
 def procesar(cfg, buzon, principal, verificador, enviar):
     """Procesa los correos nuevos de agente@. Devuelve cuántos procesó."""
     todos = buzon.pendientes()
@@ -101,6 +124,7 @@ def procesar(cfg, buzon, principal, verificador, enviar):
             categoria=decision.categoria, revisar=decision.revisar, fuente=decision.fuente,
             nota=decision.nota[:300], confianza=decision.resultado.get("confianza"),
             n_cotizacion=decision.resultado.get("n_cotizacion"), destino=destino,
+            **_explicacion(decision.resultado),
             modelos=[u.modelo for u in decision.usos],
             tokens=[[u.entrada, u.entrada_cache, u.salida] for u in decision.usos],
             costo_usd=round(sum(c for c in costos if c), 5),
@@ -202,6 +226,9 @@ def main(argv=None):
             resumen_diario(cfg, buzon, enviar)
         elif accion == "estado":  # solo informa, no toca ningún correo
             registrar(evento="estado", desde=cfg.desde, **buzon.estado())
+            return
+        elif accion == "explicar":  # vuelve a clasificar y registra el detalle, sin reenviar ni marcar
+            explicar(cfg, buzon, modelos.crear(cfg.modelo, cfg.esfuerzo), " ".join(argv[1:]))
             return
         else:
             raise SystemExit(f"Acción desconocida: {accion} (usar 'procesar', 'resumen' o 'estado')")

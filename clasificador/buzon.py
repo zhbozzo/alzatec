@@ -109,6 +109,10 @@ class Buzon:
                 return parte[1]
         return b""
 
+    def buscar_asunto(self, texto):
+        """UIDs de los correos cuyo asunto contiene `texto` (solo caracteres ASCII)."""
+        return sorted(self._buscar("HEADER", "Subject", '"' + texto.replace('"', "") + '"'))
+
     def estado(self, n=8):
         """Cuántos correos hay en la bandeja y cuáles son los últimos, para revisar a distancia."""
         from email import message_from_bytes, policy

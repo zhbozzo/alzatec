@@ -18,6 +18,8 @@ Clasificador de correos (etapa 1), código en `clasificador/`:
 - El entorno de Claude Code define `CLOUDSDK_AUTH_ACCESS_TOKEN` con un token de relleno que tapa la cuenta activa: anteponer `unset CLOUDSDK_AUTH_ACCESS_TOKEN;` a los comandos `gcloud` (los scripts de `deploy/` ya lo hacen).
 - Ver qué hizo: `bash deploy/ver.sh` (`HORAS=72` para más atrás).
 - Ver la casilla agente@ (desde aquí no se llega a IMAP): `gcloud run jobs execute clasificador --region southamerica-west1 --args estado --wait` y leer el evento `estado` en los registros (totales y últimos correos, no toca nada).
+- Revisar por qué un correo quedó como quedó: `--args "explicar,TEXTO DEL ASUNTO"` (solo ASCII); registra el evento `explicacion` con el motivo del modelo y el texto, sin reenviar ni marcar. Cada correo clasificado también registra `motivo` y `resumen`.
+- Cloud Scheduler quedó en `southamerica-east1` (no existe en Santiago): `gcloud scheduler jobs pause|resume clasificador-cada-3-min --location southamerica-east1`.
 - Cambiar código: editar, `python3 -m pytest -q`, commit y push a esta rama, y `bash deploy/actualizar.sh` (sube la versión nueva a los dos jobs sin tocar claves ni programación).
 - Instalación desde cero: `deploy/instalar.sh` (interactivo, lo corre el usuario en Cloud Shell). Detalle en `deploy/README.md`.
 

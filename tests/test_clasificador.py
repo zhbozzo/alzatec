@@ -1,6 +1,7 @@
 """Pruebas sin red: buzón, SMTP y modelos falsos."""
 
 import base64
+import json
 from email.message import EmailMessage
 from email import message_from_bytes, policy
 
@@ -308,3 +309,24 @@ def test_en_vivo_sin_casilla_de_prueba_el_resumen_va_a_las_alertas(monkeypatch):
     procesar(c, BuzonFalso([correo_crudo()]), ModeloFalso(resultado()), None, enviados.append)
     assert enviados[0]["To"] == "pendientesdespachoyrecepcion@alzatec.com"
     assert enviados[0]["Subject"].startswith("[PRUEBA] [PENDIENTE]")
+
+
+def test_explicar_registra_el_motivo_sin_reenviar_ni_marcar(cfg, capsys):
+    from clasificador.principal import explicar
+
+    class BuzonConBusqueda(BuzonFalso):
+        def buscar_asunto(self, texto):
+            return [u for u, c in self.crudos.items() if texto.encode() in c.split(b"\n\n")[0]]
+
+    buzon = BuzonConBusqueda([correo_crudo(), correo_crudo(asunto="Otra cosa")])
+    assert explicar(cfg, buzon, ModeloFalso(resultado("despacho_acordado", falta=())), "CYPCO") == 1
+    linea = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert linea["evento"] == "explicacion" and linea["categoria"] == "despacho_acordado"
+    assert linea["motivo"] and linea["texto"] and all(not m for m in buzon.marcas.values())
+
+
+def test_el_registro_de_cada_correo_incluye_el_motivo(cfg, capsys):
+    buzon = BuzonFalso([correo_crudo()])
+    procesar(cfg, buzon, ModeloFalso(resultado()), None, lambda m: None)
+    linea = next(json.loads(l) for l in capsys.readouterr().out.splitlines() if '"clasificado"' in l)
+    assert linea["motivo"] and linea["resumen"] and linea["falta"] == ["fecha_hora"]
