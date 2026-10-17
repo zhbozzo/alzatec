@@ -21,7 +21,7 @@ from .correo import Correo, Imagen
 from .principal import costo
 from .reglas import ACORDADOS, decidir
 
-DATOS = "datos/validacion"
+DATOS = os.environ.get("DATOS_VALIDACION", "datos/validacion")
 MOV = ACORDADOS | {"pendiente"}
 
 
@@ -43,6 +43,9 @@ def correo_de_muestra(x, rutas_imagenes):
     remitentes = getaddresses([x["remitente"]])
     correo_rem = remitentes[0][1].lower() if remitentes else ""
     imagenes = []
+    # Las rutas guardadas son absolutas de la máquina donde se armó la muestra: se buscan dentro de DATOS
+    rutas_imagenes = [r if os.path.exists(r) else os.path.join(DATOS, r.split("datos/validacion/", 1)[-1])
+                      for r in rutas_imagenes]
     for ruta in rutas_imagenes:
         tipo = mimetypes.guess_type(ruta)[0]
         if tipo in ("image/png", "image/jpeg", "image/gif", "image/webp"):
@@ -61,6 +64,7 @@ def main():
     ap.add_argument("--limite", type=int, default=0)
     ap.add_argument("--hilos", type=int, default=6)
     ap.add_argument("--salida", default="")
+    ap.add_argument("--registrar", action="store_true", help="imprimir cada predicción como JSON (para Cloud Run)")
     a = ap.parse_args()
 
     muestra = [json.loads(l) for l in open(f"{DATOS}/muestra.jsonl", encoding="utf-8")]
@@ -73,8 +77,11 @@ def main():
 
     def uno(x):
         d = decidir(correo_de_muestra(x, adjuntos.get(x["id"], [])), principal, verificador)
-        return {"id": x["id"], "categoria": d.categoria, "revisar": d.revisar, "fuente": d.fuente, "nota": d.nota,
-                "resultado": d.resultado, "costo": sum(c for c in (costo(u) for u in d.usos) if c)}
+        p = {"id": x["id"], "categoria": d.categoria, "revisar": d.revisar, "fuente": d.fuente, "nota": d.nota,
+             "resultado": d.resultado, "costo": sum(c for c in (costo(u) for u in d.usos) if c)}
+        if a.registrar:
+            print(json.dumps(dict(p, evento="evaluacion"), ensure_ascii=False), flush=True)
+        return p
 
     with ThreadPoolExecutor(a.hilos) as ex:
         preds = list(ex.map(uno, muestra))
