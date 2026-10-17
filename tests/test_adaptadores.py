@@ -81,7 +81,7 @@ def test_openai_rechazo_o_incompleto_es_error():
 class AnthropicFalso:
     def __init__(self, respuesta):
         self.respuesta, self.pedido = respuesta, None
-        self.beta = NS(messages=self)
+        self.messages = self
 
     def create(self, **kw):
         self.pedido = kw
@@ -100,7 +100,7 @@ def test_anthropic_arma_pedido_y_lee_json():
     assert r["categoria"] == "despacho_acordado" and uso.entrada_cache == 1700
     p = cliente.pedido
     assert p["output_config"]["format"]["type"] == "json_schema" and p["output_config"]["effort"] == "medium"
-    assert p["fallbacks"] == "default" and p["system"][0]["cache_control"] == {"type": "ephemeral"}
+    assert "fallbacks" not in p and p["system"][0]["cache_control"] == {"type": "ephemeral"}
     assert p["messages"][0]["content"][1]["type"] == "image"
 
 
@@ -120,3 +120,87 @@ def test_tomar_respeta_procesados_y_tomas_recientes():
     assert ("STORE", "1", "-FLAGS", "(Toma4)") in b.imap.llamadas
     b.imap.flags = b"1 (UID 1 FLAGS (Clasificado Toma4))"
     assert b.tomar(1, 1100) is False
+
+
+
+def _error_openai(clase, status, body):
+    import httpx2
+    import openai
+    pedido = httpx2.Request("POST", "https://api.openai.com/v1/responses")
+    return getattr(openai, clase)("error", response=httpx2.Response(status, request=pedido), body=body)
+
+
+def test_diagnostico_sin_saldo_clave_y_error_de_un_correo():
+    import openai
+    from clasificador.modelos import ErrorServicio, diagnosticar
+    sin_saldo = diagnosticar(_error_openai("RateLimitError", 429, {"code": "insufficient_quota"}), "openai", "gpt-6.1-sol", openai)
+    assert isinstance(sin_saldo, ErrorServicio) and sin_saldo.tipo == "openai_sin_saldo"
+    assert "Recargar créditos" in sin_saldo.que_hacer
+    clave = diagnosticar(_error_openai("AuthenticationError", 401, None), "openai", "gpt-6.1-sol", openai)
+    assert isinstance(clave, ErrorServicio) and clave.tipo == "openai_clave"
+    limite = diagnosticar(_error_openai("RateLimitError", 429, {"code": "rate_limit_exceeded"}), "openai", "m", openai)
+    assert limite.tipo == "openai_limite"
+    caido = diagnosticar(_error_openai("InternalServerError", 503, None), "openai", "m", openai)
+    assert caido.tipo == "openai_caido"
+    solo_este = diagnosticar(_error_openai("BadRequestError", 400, {"code": "invalid_image"}), "openai", "m", openai)
+    assert isinstance(solo_este, ErrorModelo)
+
+
+def test_openai_sin_saldo_llega_como_error_de_servicio():
+    from clasificador.modelos import ErrorServicio
+
+    class SinSaldo:
+        responses = None
+
+        def __init__(self):
+            self.responses = self
+
+        def create(self, **kw):
+            raise _error_openai("RateLimitError", 429, {"code": "insufficient_quota"})
+
+    with pytest.raises(ErrorServicio) as e:
+        ClasificadorOpenAI("gpt-6.1-sol", cliente=SinSaldo()).clasificar(leer(correo_crudo()))
+    assert e.value.tipo == "openai_sin_saldo"
+
+
+class ImapAlertas(ImapFalso):
+    def __init__(self, fecha_alerta):
+        super().__init__()
+        self.fecha_alerta, self.seleccionada, self.agregados = fecha_alerta, "INBOX", []
+
+    def create(self, carpeta):
+        return "NO", [b"ya existe"]
+
+    def select(self, carpeta):
+        self.seleccionada = carpeta
+        return "OK", [b"1"]
+
+    def append(self, carpeta, flags, fecha, texto):
+        self.agregados.append((carpeta, texto))
+        return "OK", [b""]
+
+    def uid(self, comando, *args):
+        if self.seleccionada == "Alertas" and comando == "SEARCH":
+            return "OK", [b"7"]
+        if self.seleccionada == "Alertas" and comando == "FETCH":
+            meta = f'7 (UID 7 INTERNALDATE "{self.fecha_alerta}" BODY[HEADER.FIELDS (SUBJECT)] {{30}}'.encode()
+            return "OK", [(meta, b"Subject: alerta:openai_sin_saldo\r\n\r\n"), b")"]
+        return super().uid(comando, *args)
+
+
+def test_cuenta_de_alertas_en_la_carpeta_alertas():
+    import imaplib
+    import time
+    hace_una_hora = time.time() - 3600
+    b = Buzon(Config(contrasena="x"))
+    b.imap = ImapAlertas(imaplib.Time2Internaldate(hace_una_hora).strip('"'))
+    ahora = time.time()
+    assert b.alerta_reciente("openai_sin_saldo", ahora) is True
+    assert b.alerta_reciente("openai_clave", ahora) is False
+    assert b.alerta_reciente("openai_sin_saldo", ahora + 3 * 3600) is False
+    assert b.alertas_abiertas() == ["openai_sin_saldo"]
+    assert b.imap.seleccionada == "INBOX"          # siempre vuelve a la bandeja de entrada
+    b.registrar_alerta("openai_clave", ahora)
+    assert b.imap.agregados[0][0] == "Alertas" and b"alerta:openai_clave" in b.imap.agregados[0][1]
+    b.cerrar_alertas()
+    assert ("STORE", "7", "+FLAGS", "(Resuelta)") in b.imap.llamadas

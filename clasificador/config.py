@@ -35,12 +35,12 @@ class Config:
     })
     # A quién va el resumen diario de lo descartado ("no aplica")
     resumen_a: str = ""
-    # A quién avisar si algo falla
-    alertas_a: str = ""
+    # A quién avisar si algo falla (separados por coma en ALERTAS_A)
+    alertas_a: list = field(default_factory=lambda: ["lbozzo@fen.uchile.cl", "lbpiphone4@gmail.com"])
 
-    # Modelos: principal y segunda opinión ("openai:gpt-6.1-sol", "anthropic:claude-sonnet-5-5" o "")
+    # Modelo principal y segunda opinión opcional ("openai:gpt-6.1-sol", "anthropic:claude-sonnet-5-5" o "")
     modelo: str = "openai:gpt-6.1-sol"
-    verificador: str = "anthropic:claude-sonnet-5-5"
+    verificador: str = ""
     esfuerzo: str = "medium"
 
     # Límites por corrida
@@ -66,7 +66,9 @@ class Config:
         if c.modo == "sombra" and not c.casilla_prueba:
             raise RuntimeError("En modo sombra hay que definir CASILLA_PRUEBA")
         c.resumen_a = _env("RESUMEN_A", c.casilla_prueba)
-        c.alertas_a = _env("ALERTAS_A", c.casilla_prueba)
+        alertas = _env("ALERTAS_A", "")
+        if alertas:
+            c.alertas_a = [a.strip() for a in alertas.split(",") if a.strip()]
         c.modelo = _env("MODELO", c.modelo)
         c.verificador = _env("VERIFICADOR", c.verificador)
         c.esfuerzo = _env("ESFUERZO", c.esfuerzo)

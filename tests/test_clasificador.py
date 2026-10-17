@@ -59,6 +59,9 @@ class BuzonFalso:
     def tomar(self, uid, ahora_min):
         return "Clasificado" not in self.marcas[uid]
 
+    def soltar(self, uid):
+        self.marcas[uid].add("Soltado")
+
     def ya_procesado(self, mid):
         return any("Clasificado" in self.marcas[u] and f"Message-ID: {mid}".encode() in c
                    for u, c in self.crudos.items())
@@ -213,3 +216,64 @@ def test_adjunto_original_es_un_mensaje_valido(cfg):
     assert adjunto["Content-Transfer-Encoding"] in (None, "7bit", "8bit")
     interno = adjunto.get_content()
     assert "despachar" in interno.get_body(("plain",)).get_content()
+
+
+
+def test_sin_servicio_el_correo_queda_esperando(cfg):
+    from clasificador.modelos import ErrorServicio
+
+    class SinSaldo:
+        def clasificar(self, correo):
+            raise ErrorServicio("openai_sin_saldo", "Sin saldo en OpenAI", "Recargar créditos")
+
+    buzon = BuzonFalso([correo_crudo()])
+    enviados = []
+    with pytest.raises(ErrorServicio):
+        procesar(cfg, buzon, SinSaldo(), None, enviados.append)
+    assert enviados == [] and "Clasificado" not in buzon.marcas[1] and "Soltado" in buzon.marcas[1]
+
+
+class BuzonAlertas:
+    def __init__(self, reciente=False, abiertas=()):
+        self.reciente, self.abiertas, self.registradas, self.cerradas = reciente, list(abiertas), [], False
+
+    def alerta_reciente(self, tipo, ahora):
+        return self.reciente
+
+    def registrar_alerta(self, tipo, ahora):
+        self.registradas.append(tipo)
+
+    def alertas_abiertas(self):
+        return self.abiertas
+
+    def cerrar_alertas(self):
+        self.cerradas = True
+
+
+def test_alerta_llega_a_los_dos_correos_con_que_hacer(cfg):
+    from clasificador.principal import avisar
+    cfg.alertas_a = ["lbozzo@fen.uchile.cl", "lbpiphone4@gmail.com"]
+    buzon, enviados = BuzonAlertas(), []
+    avisar(cfg, buzon, enviados.append, "openai_sin_saldo", "Sin saldo en OpenAI",
+           "Recargar créditos en https://platform.openai.com", "RateLimitError", "procesar")
+    m = enviados[0]
+    assert m["To"] == "lbozzo@fen.uchile.cl, lbpiphone4@gmail.com"
+    assert "Sin saldo en OpenAI" in m["Subject"] and "Recargar créditos" in m.get_content()
+    assert buzon.registradas == ["openai_sin_saldo"]
+
+
+def test_alerta_no_se_repite_antes_de_3_horas(cfg):
+    from clasificador.principal import avisar
+    enviados = []
+    avisar(cfg, BuzonAlertas(reciente=True), enviados.append, "x", "t", "h", "d", "procesar")
+    assert enviados == []
+
+
+def test_aviso_de_resuelto(cfg):
+    from clasificador.principal import avisar_si_se_resolvio
+    buzon, enviados = BuzonAlertas(abiertas=["openai_sin_saldo"]), []
+    avisar_si_se_resolvio(cfg, buzon, enviados.append)
+    assert "[RESUELTO]" in enviados[0]["Subject"] and buzon.cerradas
+    enviados.clear()
+    avisar_si_se_resolvio(cfg, BuzonAlertas(), enviados.append)
+    assert enviados == []

@@ -1,0 +1,24 @@
+{
+  "displayName": "Clasificador de correos: corrida con error",
+  "documentation": {
+    "content": "El clasificador de correos de Alzatec terminó con error. Si no llegó también un correo de alerta desde agente@, lo más probable es que falle la casilla agente@ (contraseña cambiada o caída del hosting). Revisar Cloud Run → Jobs → clasificador → Registros. Los correos no se pierden: quedan en agente@.",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "Errores en los registros del clasificador",
+      "conditionThreshold": {
+        "filter": "resource.type = \"cloud_run_job\" AND metric.type = \"logging.googleapis.com/user/clasificador-errores\"",
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0,
+        "duration": "0s",
+        "aggregations": [
+          {"alignmentPeriod": "600s", "perSeriesAligner": "ALIGN_SUM", "crossSeriesReducer": "REDUCE_SUM"}
+        ],
+        "trigger": {"count": 1}
+      }
+    }
+  ],
+  "alertStrategy": {"autoClose": "21600s"}
+}

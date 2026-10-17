@@ -11,11 +11,16 @@ clasificador no necesita base de datos:
   se cae, se libera a los 30 minutos. Son solo 6 marcas que rotan, porque
   Dovecot (el servidor de cPanel) admite pocas marcas distintas por casilla.
 No marca nada como leído: si alguien abre agente@ por webmail, ve todo igual.
+
+La carpeta "Alertas" de agente@ guarda cuándo se avisó cada problema, para no
+mandar el mismo aviso cada 3 minutos y para avisar cuando se resuelve.
 """
 
 import imaplib
 import re
 import ssl
+import time
+from email.utils import formatdate
 
 CLASIFICADO, NO_APLICA, RESUMIDO, DUPLICADO = "Clasificado", "NoAplica", "Resumido", "Duplicado"
 
@@ -101,3 +106,50 @@ class Buzon:
             if isinstance(parte, tuple):
                 return parte[1]
         return b""
+
+    def soltar(self, uid):
+        """Libera la reserva para que la próxima corrida lo vuelva a tomar."""
+        self.imap.uid("STORE", str(uid), "-FLAGS", "(" + " ".join(f"Toma{i}" for i in range(6)) + ")")
+
+    # --- Alertas -------------------------------------------------------------
+    CARPETA_ALERTAS = "Alertas"
+
+    def _en_alertas(self, funcion):
+        self.imap.create(self.CARPETA_ALERTAS)  # si ya existe, el servidor responde NO y no pasa nada
+        typ, _ = self.imap.select(self.CARPETA_ALERTAS)
+        try:
+            if typ != "OK":
+                raise RuntimeError("No se pudo abrir la carpeta Alertas")
+            return funcion()
+        finally:
+            self.imap.select("INBOX")
+
+    def _alertas(self):
+        """[(uid, tipo, epoch)] de las alertas no resueltas."""
+        salida = []
+        for uid in self._buscar("UNKEYWORD", "Resuelta"):
+            typ, data = self.imap.uid("FETCH", str(uid), "(INTERNALDATE BODY.PEEK[HEADER.FIELDS (SUBJECT)])")
+            meta = next((d[0] for d in data or [] if isinstance(d, tuple)), b"")
+            asunto = next((d[1] for d in data or [] if isinstance(d, tuple)), b"").decode(errors="replace")
+            m = re.search(r"alerta:(\S+)", asunto)
+            fecha = imaplib.Internaldate2tuple(meta)
+            if m and fecha:
+                salida.append((uid, m.group(1), time.mktime(fecha)))
+        return salida
+
+    def alerta_reciente(self, tipo, ahora, horas=3):
+        """True si este problema ya se avisó en las últimas `horas`."""
+        return self._en_alertas(lambda: any(t == tipo and ahora - f < horas * 3600 for _, t, f in self._alertas()))
+
+    def registrar_alerta(self, tipo, ahora):
+        texto = f"Subject: alerta:{tipo}\r\nDate: {formatdate(ahora)}\r\n\r\n{tipo}\r\n".encode()
+        self.imap.append(self.CARPETA_ALERTAS, None, imaplib.Time2Internaldate(ahora), texto)
+
+    def alertas_abiertas(self):
+        return self._en_alertas(lambda: sorted({t for _, t, _ in self._alertas()}))
+
+    def cerrar_alertas(self):
+        def f():
+            for uid, _, _ in self._alertas():
+                self.marcar(uid, "Resuelta")
+        self._en_alertas(f)

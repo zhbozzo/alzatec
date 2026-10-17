@@ -7,6 +7,7 @@ from email import message_from_bytes, policy
 
 from . import modelos
 from .buzon import CLASIFICADO, DUPLICADO, NO_APLICA, RESUMIDO
+from .modelos import ErrorServicio
 from .correo import Correo, leer
 from .envio import ETIQUETAS, armar_aviso, armar_reenvio
 from .reglas import Decision, VACIO, decidir
@@ -28,7 +29,9 @@ def costo(uso):
 
 
 def registrar(**datos):
-    """Una línea JSON por evento (Cloud Logging la indexa)."""
+    """Una línea JSON por evento (Cloud Logging la indexa; "severity" marca los errores)."""
+    if datos.get("evento") in ("error", "alerta"):
+        datos.setdefault("severity", "ERROR")
     print(json.dumps(datos, ensure_ascii=False), flush=True)
 
 
@@ -74,13 +77,20 @@ def procesar(cfg, buzon, principal, verificador, enviar):
         else:
             try:
                 decision = decidir(correo, principal, verificador)
-            except Exception as e:  # cualquier error inesperado: a pendientes, nunca se pierde
+            except ErrorServicio:
+                buzon.soltar(uid)  # el servicio no está disponible: el correo espera en agente@
+                raise
+            except Exception as e:  # cualquier error inesperado con este correo: a pendientes, nunca se pierde
                 decision = Decision("pendiente", dict(VACIO), revisar=True, fuente="error",
                                     nota=f"Error interno del clasificador ({type(e).__name__}: {e}). Revisar a mano.")
 
         destino = cfg.destino(decision.categoria)
         if destino:
-            enviar(armar_reenvio(cfg, correo, decision, destino))  # si falla el SMTP, no se marca y se reintenta
+            try:
+                enviar(armar_reenvio(cfg, correo, decision, destino))
+            except Exception:
+                buzon.soltar(uid)  # si falla el envío, no se marca y se reintenta en la próxima corrida
+                raise
         buzon.marcar(uid, CLASIFICADO, *([NO_APLICA] if decision.categoria == "no_aplica" else []))
 
         costos = [costo(u) for u in decision.usos]
@@ -119,6 +129,45 @@ def resumen_diario(cfg, buzon, enviar):
     return len(uids)
 
 
+def _destinatarios(cfg):
+    return ", ".join(cfg.alertas_a)
+
+
+def avisar(cfg, buzon, enviar, tipo, titulo, que_hacer, detalle, accion):
+    """Manda una alerta con qué pasó y qué hacer. El mismo problema se avisa como máximo cada 3 horas."""
+    ahora = time.time()
+    try:
+        if buzon.alerta_reciente(tipo, ahora):
+            registrar(evento="alerta_omitida", tipo=tipo)
+            return
+    except Exception:
+        pass  # sin acceso a agente@ no se puede llevar la cuenta: se avisa igual
+    texto = (
+        f"Qué pasó: {titulo}.\n\n"
+        f"Qué hacer: {que_hacer}\n\n"
+        "Los correos NO se pierden: quedan en agente@ y se procesan apenas se arregle. "
+        "Este aviso no se repite por 3 horas; cuando se resuelva llega un correo de confirmación.\n\n"
+        f"Detalle técnico ({accion}): {detalle}"
+    )
+    enviar(armar_aviso(cfg, _destinatarios(cfg), f"[ALERTA] Clasificador de correos: {titulo}", texto))
+    registrar(evento="alerta", tipo=tipo, titulo=titulo)
+    try:
+        buzon.registrar_alerta(tipo, ahora)
+    except Exception:
+        pass
+
+
+def avisar_si_se_resolvio(cfg, buzon, enviar):
+    abiertas = buzon.alertas_abiertas()
+    if not abiertas:
+        return
+    enviar(armar_aviso(cfg, _destinatarios(cfg), "[RESUELTO] Clasificador de correos funcionando de nuevo",
+                       "El clasificador volvió a funcionar y está procesando los correos que quedaron esperando.\n\n"
+                       f"Problemas resueltos: {', '.join(abiertas)}"))
+    buzon.cerrar_alertas()
+    registrar(evento="resuelto", tipos=abiertas)
+
+
 def main(argv=None):
     from .buzon import Buzon
     from .config import Config
@@ -130,7 +179,14 @@ def main(argv=None):
     buzon = Buzon(cfg)
     enviar = EnviadorSMTP(cfg)
     try:
-        buzon.conectar()
+        try:
+            buzon.conectar()
+        except Exception as e:
+            raise ErrorServicio(
+                "correo_imap", "No se pudo entrar a la casilla agente@",
+                "Revisar si cambió la contraseña de agente@ y, si cambió, actualizar el secreto 'agente-pw' en "
+                "Google Cloud. Si la contraseña está bien, puede ser una caída del hosting (HostingPlus).",
+                f"{type(e).__name__}: {e}") from e
         if accion == "procesar":
             principal = modelos.crear(cfg.modelo, cfg.esfuerzo)
             verificador = modelos.crear(cfg.verificador, cfg.esfuerzo)
@@ -139,15 +195,20 @@ def main(argv=None):
             resumen_diario(cfg, buzon, enviar)
         else:
             raise SystemExit(f"Acción desconocida: {accion} (usar 'procesar' o 'resumen')")
+        avisar_si_se_resolvio(cfg, buzon, enviar)
     except Exception as e:
         registrar(evento="error", accion=accion, error=f"{type(e).__name__}: {e}")
+        if isinstance(e, ErrorServicio):
+            tipo, titulo, que_hacer, detalle = e.tipo, e.titulo, e.que_hacer, e.detalle
+        else:
+            tipo, titulo = f"otro_{type(e).__name__}", "Error inesperado del clasificador"
+            que_hacer = ("Revisar los registros en Google Cloud (Cloud Run → Jobs → clasificador → Registros) "
+                         "o avisar al mantenedor.")
+            detalle = f"{type(e).__name__}: {e}"
         try:
-            if cfg.alertas_a:
-                enviar(armar_aviso(cfg, cfg.alertas_a, "[ALERTA] Falla del clasificador de correos",
-                                   f"Acción: {accion}\nError: {type(e).__name__}: {e}\n\n"
-                                   "Los correos no se pierden: siguen en agente@ y se reprocesan en la próxima corrida."))
+            avisar(cfg, buzon, enviar, tipo, titulo, que_hacer, detalle, accion)
         except Exception:
-            pass
+            pass  # si tampoco se puede enviar correo, avisa la alerta de Google Cloud
         raise
     finally:
         enviar.cerrar()

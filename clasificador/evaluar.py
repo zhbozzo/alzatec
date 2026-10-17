@@ -4,8 +4,8 @@ Usa el mismo código que producción (reglas, modelo, segunda opinión) sobre la
 muestra de validación y compara con las etiquetas. Los datos reales están en
 datos/ (fuera del repositorio).
 
-    python -m clasificador.evaluar --modelo openai:gpt-6.1-sol --verificador anthropic:claude-sonnet-5-5
-    python -m clasificador.evaluar --modelo openai:gpt-6.1-sol --verificador "" --limite 10
+    python -m clasificador.evaluar --modelo openai:gpt-6.1-sol
+    python -m clasificador.evaluar --modelo openai:gpt-6.1-sol --limite 10      # prueba rápida
 """
 
 import argparse
