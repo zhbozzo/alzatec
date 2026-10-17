@@ -121,8 +121,16 @@ class Buzon:
             fecha = re.search(r'INTERNALDATE "([^"]+)"', meta)
             ultimos.append({"uid": uid, "llegada": fecha.group(1) if fecha else "", "de": str(h.get("From", ""))[:80],
                             "asunto": str(h.get("Subject", ""))[:80], "clasificado": CLASIFICADO in meta})
+        from datetime import date, timedelta
+        por_dia = {}
+        for atras in range(13, -1, -1):
+            dia = date.today() - timedelta(days=atras)
+            cuantos = len(self._buscar("ON", dia.strftime("%d-%b-%Y")))
+            if cuantos:
+                por_dia[dia.isoformat()] = cuantos
         return {
             "total": len(todos),
+            "por_dia": por_dia,
             "sin_clasificar": len(self._buscar("UNKEYWORD", CLASIFICADO, "NOT", "DELETED")),
             "sin_clasificar_desde": len(self.pendientes()) if self.cfg.desde else None,
             "clasificados": len(self._buscar("KEYWORD", CLASIFICADO)),
