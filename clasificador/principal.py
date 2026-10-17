@@ -42,7 +42,8 @@ def _correo_ilegible(crudo):
 
 def procesar(cfg, buzon, principal, verificador, enviar):
     """Procesa los correos nuevos de agente@. Devuelve cuántos procesó."""
-    uids = buzon.pendientes()[: cfg.max_por_corrida]
+    todos = buzon.pendientes()
+    uids = todos[: cfg.max_por_corrida]
     vistos = set()
     t0 = time.time()
     hechos = 0
@@ -105,6 +106,7 @@ def procesar(cfg, buzon, principal, verificador, enviar):
             costo_usd=round(sum(c for c in costos if c), 5),
             segundos=round(time.time() - inicio, 1),
         )
+    registrar(evento="corrida", procesados=hechos, en_espera=len(todos) - hechos)
     return hechos
 
 

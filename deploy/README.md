@@ -6,10 +6,21 @@ Todo se hace desde [Cloud Shell](https://shell.cloud.google.com), la terminal en
 
 ## Forma rápida (recomendada)
 
-1. Abrir [Cloud Shell](https://shell.cloud.google.com) con la cuenta dueña del proyecto.
-2. Traer el repositorio: en GitHub, elegir la rama `claude/automatizacion-empresa-papa-1a1tca`, **Code → Download ZIP**; en Cloud Shell, menú ⋮ → **Upload** y subir el ZIP; luego `unzip alzatec-*.zip && cd alzatec-*`.
-3. `bash deploy/instalar.sh`: pide el ID del proyecto, la contraseña de `agente@` y la API key de OpenAI (las claves no se muestran y quedan en Secret Manager). Sube el clasificador y hace la primera corrida, que ya reenvía a las casillas reales. Si pregunta si crear un repositorio de Artifact Registry, responder **Y**.
-4. Si la corrida se ve bien: `bash deploy/activar.sh`. Programa las corridas cada 3 minutos, el resumen diario y la alerta de respaldo.
+1. Abrir [Cloud Shell](https://shell.cloud.google.com) con la cuenta dueña del proyecto (si pide "Autorizar", aceptar).
+2. Pegar este comando y apretar Enter:
+
+   ```bash
+   git clone -b claude/automatizacion-empresa-papa-1a1tca https://github.com/zhbozzo/alzatec.git 2>/dev/null || git -C alzatec pull; bash alzatec/deploy/instalar.sh
+   ```
+
+3. Responder lo que pregunta:
+   - el proyecto (Enter si es el que muestra);
+   - la contraseña de `agente@` y la API key de OpenAI (al pegarlas no se ve nada; después Enter). Cada una se prueba antes de guardarla en Secret Manager: si está mala, lo dice y la pide de nuevo;
+   - al final, si dejarlo funcionando solo (Enter = sí).
+
+Sube el clasificador (3 a 5 minutos), hace una primera corrida que ya reenvía a las casillas reales, muestra qué hizo con cada correo y lo programa cada 3 minutos, con el resumen diario y la alerta de respaldo.
+
+Si algo falla, el script dice qué arreglar (facturación, saldo de OpenAI, contraseña). Una vez arreglado, se vuelve a pegar el mismo comando: lo que ya está hecho se salta, y las claves guardadas se prueban de nuevo sin volver a pedirlas.
 
 Los pasos de abajo son lo mismo, a mano.
 
@@ -123,7 +134,7 @@ El resumen diario de lo descartado llega por defecto a los mismos correos de las
 ## Costos
 
 - **Google Cloud:** casi nada (unos US$0–5 al mes) con una corrida cada 3 minutos.
-- **Modelo:** según la evaluación, unos US$40–50 al mes con ~2.000 correos. Poner el tope de gasto mensual (US$50) en la cuenta de OpenAI.
+- **Modelo:** unos US$40–60 al mes con ~2.000 correos. La cuenta de OpenAI tiene un tope de gasto mensual de US$65.
 
 ## Si algo falla
 
