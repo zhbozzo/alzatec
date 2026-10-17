@@ -4,6 +4,15 @@ El clasificador corre como un **Cloud Run Job** que un **Cloud Scheduler** lanza
 
 Todo se hace desde [Cloud Shell](https://shell.cloud.google.com), la terminal en el navegador de Google Cloud. No hay que instalar nada.
 
+## Forma rápida (recomendada)
+
+1. Abrir [Cloud Shell](https://shell.cloud.google.com) con la cuenta dueña del proyecto.
+2. Traer el repositorio: en GitHub, elegir la rama `claude/automatizacion-empresa-papa-1a1tca`, **Code → Download ZIP**; en Cloud Shell, menú ⋮ → **Upload** y subir el ZIP; luego `unzip alzatec-*.zip && cd alzatec-*`.
+3. `bash deploy/instalar.sh`: pide el ID del proyecto, el correo de prueba, la contraseña de `agente@` y la API key de OpenAI (las claves no se muestran y quedan en Secret Manager). Sube el clasificador y hace una primera corrida de prueba. Si pregunta si crear un repositorio de Artifact Registry, responder **Y**.
+4. Revisar el correo de prueba. Si todo se ve bien: `bash deploy/activar.sh`. Programa las corridas cada 3 minutos, el resumen diario y la alerta de respaldo, y permite pasar a las casillas reales.
+
+Los pasos de abajo son lo mismo, a mano.
+
 ## 0. Antes de empezar
 
 - Un proyecto de Google Cloud con facturación activa.

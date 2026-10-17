@@ -21,6 +21,8 @@ FALTAS = {
 
 def asunto_reenvio(cfg, correo, decision):
     partes = []
+    if cfg.prefijo:
+        partes.append(cfg.prefijo)
     if cfg.modo == "sombra":
         partes.append("[SOMBRA]")
     partes.append(f"[{ETIQUETAS[decision.categoria]}]")

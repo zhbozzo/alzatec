@@ -33,8 +33,10 @@ class Config:
         "recepcion_acordada": "retirosconfirmados@alzatec.com",
         "pendiente": "pendientesdespachoyrecepcion@alzatec.com",
     })
-    # A quién va el resumen diario de lo descartado ("no aplica")
+    # A quién va el resumen diario de lo descartado ("no aplica"); por defecto, a los de las alertas
     resumen_a: str = ""
+    # Etiqueta opcional al inicio del asunto de los reenvíos, por ejemplo "[PRUEBA]" las primeras semanas
+    prefijo: str = ""
     # A quién avisar si algo falla (separados por coma en ALERTAS_A)
     alertas_a: list = field(default_factory=lambda: ["lbozzo@fen.uchile.cl", "lbpiphone4@gmail.com"])
 
@@ -65,10 +67,11 @@ class Config:
         c.casilla_prueba = _env("CASILLA_PRUEBA", "")
         if c.modo == "sombra" and not c.casilla_prueba:
             raise RuntimeError("En modo sombra hay que definir CASILLA_PRUEBA")
-        c.resumen_a = _env("RESUMEN_A", c.casilla_prueba)
         alertas = _env("ALERTAS_A", "")
         if alertas:
             c.alertas_a = [a.strip() for a in alertas.split(",") if a.strip()]
+        c.resumen_a = _env("RESUMEN_A", "") or c.casilla_prueba or ", ".join(c.alertas_a)
+        c.prefijo = _env("PREFIJO", c.prefijo)
         c.modelo = _env("MODELO", c.modelo)
         c.verificador = _env("VERIFICADOR", c.verificador)
         c.esfuerzo = _env("ESFUERZO", c.esfuerzo)

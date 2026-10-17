@@ -277,3 +277,16 @@ def test_aviso_de_resuelto(cfg):
     enviados.clear()
     avisar_si_se_resolvio(cfg, BuzonAlertas(), enviados.append)
     assert enviados == []
+
+
+
+def test_en_vivo_sin_casilla_de_prueba_el_resumen_va_a_las_alertas(monkeypatch):
+    monkeypatch.setenv("AGENTE_PW", "x")
+    monkeypatch.setenv("MODO", "vivo")
+    monkeypatch.setenv("PREFIJO", "[PRUEBA]")
+    c = Config.desde_entorno()
+    assert c.resumen_a == "lbozzo@fen.uchile.cl, lbpiphone4@gmail.com"
+    enviados = []
+    procesar(c, BuzonFalso([correo_crudo()]), ModeloFalso(resultado()), None, enviados.append)
+    assert enviados[0]["To"] == "pendientesdespachoyrecepcion@alzatec.com"
+    assert enviados[0]["Subject"].startswith("[PRUEBA] [PENDIENTE]")
