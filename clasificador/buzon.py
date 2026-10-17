@@ -109,6 +109,16 @@ class Buzon:
                 return parte[1]
         return b""
 
+    def todos_desde(self):
+        """UIDs de todos los correos desde la fecha de inicio, clasificados o no."""
+        return sorted(self._buscar("NOT", "DELETED", *(["SINCE", self.cfg.desde] if self.cfg.desde else [])))
+
+    def marcas(self, uid):
+        typ, data = self.imap.uid("FETCH", str(uid), "(FLAGS)")
+        texto = b" ".join(d if isinstance(d, bytes) else d[0] for d in (data or []) if d).decode(errors="replace")
+        m = re.search(r"FLAGS \(([^)]*)\)", texto)
+        return m.group(1).split() if m else []
+
     def buscar_asunto(self, texto):
         """UIDs de los correos cuyo asunto contiene `texto` (solo caracteres ASCII)."""
         return sorted(self._buscar("HEADER", "Subject", '"' + texto.replace('"', "") + '"'))

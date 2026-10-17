@@ -330,3 +330,25 @@ def test_el_registro_de_cada_correo_incluye_el_motivo(cfg, capsys):
     procesar(cfg, buzon, ModeloFalso(resultado()), None, lambda m: None)
     linea = next(json.loads(l) for l in capsys.readouterr().out.splitlines() if '"clasificado"' in l)
     assert linea["motivo"] and linea["resumen"] and linea["falta"] == ["fecha_hora"]
+
+
+def test_exportar_registra_el_texto_sin_llamar_al_modelo_ni_marcar(cfg, capsys):
+    from clasificador.principal import exportar
+
+    class BuzonExportable:
+        def __init__(self, crudos):
+            self.crudos = dict(enumerate(crudos, 1))
+
+        def todos_desde(self):
+            return list(self.crudos)
+
+        def leer(self, uid):
+            return self.crudos[uid]
+
+        def marcas(self, uid):
+            return ["\\Seen", "Clasificado"]
+
+    assert exportar(cfg, BuzonExportable([correo_crudo(), correo_crudo(asunto="Otra cosa")])) == 2
+    lineas = [json.loads(l) for l in capsys.readouterr().out.splitlines()]
+    assert [l["evento"] for l in lineas] == ["export", "export"]
+    assert lineas[0]["texto"] and lineas[0]["marcas"] == ["Clasificado"] and lineas[1]["asunto"] == "Otra cosa"

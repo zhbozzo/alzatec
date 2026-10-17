@@ -59,7 +59,27 @@ def explicar(cfg, buzon, principal, texto, maximo=5):
                   fecha=correo.fecha, categoria=decision.categoria, revisar=decision.revisar, nota=decision.nota[:300],
                   confianza=decision.resultado.get("confianza"), **_explicacion(decision.resultado),
                   texto=correo.texto_nuevo[:1500], citado=correo.texto_citado[:800],
-                  adjuntos=[getattr(a, "nombre", str(a)) for a in correo.adjuntos][:10], imagenes=len(correo.imagenes))
+                  adjuntos=correo.adjuntos[:10], imagenes=len(correo.imagenes))
+    return len(uids)
+
+
+def exportar(cfg, buzon):
+    """Registra el texto de los correos desde la fecha de inicio, para revisar a distancia la clasificación.
+
+    No llama al modelo ni marca nada.
+    """
+    uids = buzon.todos_desde()
+    for uid in uids:
+        try:
+            correo = leer(buzon.leer(uid), cfg.max_imagenes)
+        except Exception as e:
+            registrar(evento="export", uid=uid, error=f"{type(e).__name__}: {e}")
+            continue
+        registrar(evento="export", uid=uid, message_id=correo.message_id, fecha=correo.fecha,
+                  remitente=correo.remitente, para=correo.para[:300], cc=correo.cc[:300], asunto=correo.asunto[:200],
+                  marcas=[m for m in buzon.marcas(uid) if not m.startswith("\\")],
+                  texto=correo.texto_nuevo[:4000], citado=correo.texto_citado[:2500],
+                  adjuntos=correo.adjuntos[:10], imagenes=len(correo.imagenes))
     return len(uids)
 
 
@@ -226,6 +246,9 @@ def main(argv=None):
             resumen_diario(cfg, buzon, enviar)
         elif accion == "estado":  # solo informa, no toca ningún correo
             registrar(evento="estado", desde=cfg.desde, **buzon.estado())
+            return
+        elif accion == "exportar":  # registra el texto de los correos, sin llamar al modelo ni marcar
+            exportar(cfg, buzon)
             return
         elif accion == "explicar":  # vuelve a clasificar y registra el detalle, sin reenviar ni marcar
             explicar(cfg, buzon, modelos.crear(cfg.modelo, cfg.esfuerzo), " ".join(argv[1:]))
