@@ -21,6 +21,7 @@ Clasificador de correos (etapa 1), código en `clasificador/`:
 - Revisar por qué un correo quedó como quedó: `--args "explicar,TEXTO DEL ASUNTO"` (solo ASCII); registra el evento `explicacion` con el motivo del modelo y el texto, sin reenviar ni marcar. Cada correo clasificado también registra `motivo` y `resumen`.
 - Cloud Scheduler quedó en `southamerica-east1` (no existe en Santiago): `gcloud scheduler jobs pause|resume clasificador-cada-3-min --location southamerica-east1`.
 - Cambiar código: editar, `python3 -m pytest -q`, commit y push a esta rama, y `bash deploy/actualizar.sh` (sube la versión nueva a los dos jobs sin tocar claves ni programación).
+- **"Revisa hoy"**: seguir `docs/10-revision-diaria.md` (exportar el día, revisar con Opus, verificar, `corregir` cada correo, guardar casos y correr la regresión con `herramientas/revision.py`, arreglar la causa si se repite, informar). Historial en `docs/11-revisiones.md`. El usuario eligió revisión a pedido, no programada.
 - Instalación desde cero: `deploy/instalar.sh` (interactivo, lo corre el usuario en Cloud Shell). Detalle en `deploy/README.md`.
 
 ## Reglas
