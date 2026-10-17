@@ -37,6 +37,7 @@ if ! gcloud services enable run.googleapis.com cloudscheduler.googleapis.com sec
   echo "   https://console.cloud.google.com/billing/linkedaccount?project=$PROYECTO"
   exit 1
 fi
+echo "   Preparando Compute Engine (puede tardar un par de minutos sin mostrar nada)..."
 # Crea la cuenta con la que Cloud Build arma la imagen en los proyectos nuevos
 gcloud services enable compute.googleapis.com >/dev/null 2>&1 || true
 
@@ -94,11 +95,14 @@ for S in agente-pw openai-api-key; do
 done
 reintentar gcloud projects add-iam-policy-binding "$PROYECTO" --member "serviceAccount:$SA" \
   --role roles/run.invoker --condition None
+# Cloud Build arma la imagen con la cuenta de Compute Engine. En proyectos dentro de una organización
+# esa cuenta nace sin permisos, así que se le dan los justos para armar la imagen.
 NUM=$(gcloud projects describe "$PROYECTO" --format 'value(projectNumber)')
-for _ in 1 2 3 4 5 6; do   # en proyectos nuevos a la cuenta de Cloud Build a veces le falta este permiso
-  gcloud projects add-iam-policy-binding "$PROYECTO" --member "serviceAccount:$NUM-compute@developer.gserviceaccount.com" \
-    --role roles/run.builder --condition None >/dev/null 2>&1 && break
-  sleep 10
+CB=$NUM-compute@developer.gserviceaccount.com
+for _ in $(seq 18); do gcloud iam service-accounts describe "$CB" >/dev/null 2>&1 && break; sleep 10; done
+for ROL in roles/run.builder roles/logging.logWriter roles/artifactregistry.writer roles/storage.objectViewer; do
+  reintentar gcloud projects add-iam-policy-binding "$PROYECTO" --member "serviceAccount:$CB" \
+    --role "$ROL" --condition None 2>/dev/null || echo "   (no se pudo dar $ROL a la cuenta de Cloud Build; si falla el paso 5, avisar)"
 done
 
 echo "== 5/6 Subiendo el clasificador (tarda 3 a 5 minutos)"
