@@ -164,14 +164,22 @@ def test_openai_sin_saldo_llega_como_error_de_servicio():
 
 
 class ImapAlertas(ImapFalso):
+    """Como el Dovecot de cPanel: las carpetas van dentro de INBOX ("INBOX.Alertas")."""
+    CARPETA = "INBOX.Alertas"
+
     def __init__(self, fecha_alerta):
         super().__init__()
         self.fecha_alerta, self.seleccionada, self.agregados = fecha_alerta, "INBOX", []
 
+    def namespace(self):
+        return "OK", [b'(("INBOX." ".")) NIL NIL']
+
     def create(self, carpeta):
-        return "NO", [b"ya existe"]
+        return "NO", [b"ya existe" if carpeta == self.CARPETA else b"nonexistent namespace"]
 
     def select(self, carpeta):
+        if carpeta not in ("INBOX", self.CARPETA):
+            return "NO", [b"Mailbox doesn't exist"]
         self.seleccionada = carpeta
         return "OK", [b"1"]
 
@@ -180,20 +188,28 @@ class ImapAlertas(ImapFalso):
         return "OK", [b""]
 
     def uid(self, comando, *args):
-        if self.seleccionada == "Alertas" and comando == "SEARCH":
+        if self.seleccionada == self.CARPETA and comando == "SEARCH":
             return "OK", [b"7"]
-        if self.seleccionada == "Alertas" and comando == "FETCH":
+        if self.seleccionada == self.CARPETA and comando == "FETCH":
             meta = f'7 (UID 7 INTERNALDATE "{self.fecha_alerta}" BODY[HEADER.FIELDS (SUBJECT)] {{30}}'.encode()
             return "OK", [(meta, b"Subject: alerta:openai_sin_saldo\r\n\r\n"), b")"]
         return super().uid(comando, *args)
 
 
-def test_cuenta_de_alertas_en_la_carpeta_alertas():
+class ImapAlertasSinPrefijo(ImapAlertas):
+    CARPETA = "Alertas"
+
+    def namespace(self):
+        return "OK", [b'(("" "/")) NIL NIL']
+
+
+@pytest.mark.parametrize("imap", [ImapAlertas, ImapAlertasSinPrefijo])
+def test_cuenta_de_alertas_en_la_carpeta_alertas(imap):
     import imaplib
     import time
     hace_una_hora = time.time() - 3600
     b = Buzon(Config(contrasena="x"))
-    b.imap = ImapAlertas(imaplib.Time2Internaldate(hace_una_hora).strip('"'))
+    b.imap = imap(imaplib.Time2Internaldate(hace_una_hora).strip('"'))
     ahora = time.time()
     assert b.alerta_reciente("openai_sin_saldo", ahora) is True
     assert b.alerta_reciente("openai_clave", ahora) is False
@@ -201,6 +217,7 @@ def test_cuenta_de_alertas_en_la_carpeta_alertas():
     assert b.alertas_abiertas() == ["openai_sin_saldo"]
     assert b.imap.seleccionada == "INBOX"          # siempre vuelve a la bandeja de entrada
     b.registrar_alerta("openai_clave", ahora)
-    assert b.imap.agregados[0][0] == "Alertas" and b"alerta:openai_clave" in b.imap.agregados[0][1]
+    assert b.imap.agregados[0][0] == imap.CARPETA and b"alerta:openai_clave" in b.imap.agregados[0][1]
+    assert b.imap.seleccionada == "INBOX"
     b.cerrar_alertas()
     assert ("STORE", "7", "+FLAGS", "(Resuelta)") in b.imap.llamadas

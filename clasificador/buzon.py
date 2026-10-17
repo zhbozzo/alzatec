@@ -13,7 +13,8 @@ clasificador no necesita base de datos:
 No marca nada como leído: si alguien abre agente@ por webmail, ve todo igual.
 
 La carpeta "Alertas" de agente@ guarda cuándo se avisó cada problema, para no
-mandar el mismo aviso cada 3 minutos y para avisar cuando se resuelve.
+mandar el mismo aviso cada 3 minutos y para avisar cuando se resuelve. En cPanel
+las carpetas van dentro de la bandeja de entrada, así que se llama "INBOX.Alertas".
 """
 
 import imaplib
@@ -29,6 +30,7 @@ class Buzon:
     def __init__(self, cfg):
         self.cfg = cfg
         self.imap = None
+        self._carpeta_alertas = None
 
     def conectar(self):
         self.imap = imaplib.IMAP4_SSL(self.cfg.imap_host, self.cfg.imap_puerto,
@@ -112,15 +114,27 @@ class Buzon:
         self.imap.uid("STORE", str(uid), "-FLAGS", "(" + " ".join(f"Toma{i}" for i in range(6)) + ")")
 
     # --- Alertas -------------------------------------------------------------
-    CARPETA_ALERTAS = "Alertas"
+    def _nombres_alertas(self):
+        """Nombres posibles de la carpeta, empezando por el que indica el servidor (NAMESPACE)."""
+        prefijo = ""
+        try:
+            typ, data = self.imap.namespace()
+            m = re.match(rb'\(\("([^"]*)"', (data or [b""])[0] or b"")
+            if typ == "OK" and m:
+                prefijo = m.group(1).decode()
+        except Exception:
+            pass
+        return list(dict.fromkeys([prefijo + "Alertas", "INBOX.Alertas", "INBOX/Alertas", "Alertas"]))
 
     def _en_alertas(self, funcion):
-        self.imap.create(self.CARPETA_ALERTAS)  # si ya existe, el servidor responde NO y no pasa nada
-        typ, _ = self.imap.select(self.CARPETA_ALERTAS)
         try:
-            if typ != "OK":
-                raise RuntimeError("No se pudo abrir la carpeta Alertas")
-            return funcion()
+            for nombre in [self._carpeta_alertas] if self._carpeta_alertas else self._nombres_alertas():
+                self.imap.create(nombre)  # si ya existe, el servidor responde NO y no pasa nada
+                typ, _ = self.imap.select(nombre)
+                if typ == "OK":
+                    self._carpeta_alertas = nombre
+                    return funcion()
+            raise RuntimeError("No se pudo abrir la carpeta Alertas")
         finally:
             self.imap.select("INBOX")
 
@@ -143,7 +157,8 @@ class Buzon:
 
     def registrar_alerta(self, tipo, ahora):
         texto = f"Subject: alerta:{tipo}\r\nDate: {formatdate(ahora)}\r\n\r\n{tipo}\r\n".encode()
-        self.imap.append(self.CARPETA_ALERTAS, None, imaplib.Time2Internaldate(ahora), texto)
+        self._en_alertas(lambda: self.imap.append(self._carpeta_alertas, None,
+                                                  imaplib.Time2Internaldate(ahora), texto))
 
     def alertas_abiertas(self):
         return self._en_alertas(lambda: sorted({t for _, t, _ in self._alertas()}))

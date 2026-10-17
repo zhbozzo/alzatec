@@ -143,7 +143,12 @@ def avisar(cfg, buzon, enviar, tipo, titulo, que_hacer, detalle, accion):
             registrar(evento="alerta_omitida", tipo=tipo)
             return
     except Exception:
-        pass  # sin acceso a agente@ no se puede llevar la cuenta: se avisa igual
+        # Sin acceso al registro de alertas no se puede llevar la cuenta: para no mandar un correo
+        # cada 3 minutos, se avisa solo en la primera corrida de cada hora (la alerta de Google Cloud
+        # avisa de inmediato igual).
+        if (ahora // 60) % 60 >= 3:
+            registrar(evento="alerta_omitida", tipo=tipo, motivo="sin registro de alertas")
+            return
     texto = (
         f"Qué pasó: {titulo}.\n\n"
         f"Qué hacer: {que_hacer}\n\n"
@@ -197,7 +202,10 @@ def main(argv=None):
             resumen_diario(cfg, buzon, enviar)
         else:
             raise SystemExit(f"Acción desconocida: {accion} (usar 'procesar' o 'resumen')")
-        avisar_si_se_resolvio(cfg, buzon, enviar)
+        try:
+            avisar_si_se_resolvio(cfg, buzon, enviar)
+        except Exception as e:  # el registro de alertas no debe frenar la clasificación
+            registrar(evento="aviso_resuelto_fallido", severity="WARNING", error=f"{type(e).__name__}: {e}")
     except Exception as e:
         registrar(evento="error", accion=accion, error=f"{type(e).__name__}: {e}")
         if isinstance(e, ErrorServicio):

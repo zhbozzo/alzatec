@@ -269,6 +269,24 @@ def test_alerta_no_se_repite_antes_de_3_horas(cfg):
     assert enviados == []
 
 
+def test_sin_registro_de_alertas_avisa_solo_una_vez_por_hora(cfg, monkeypatch):
+    from clasificador import principal
+
+    class SinRegistro(BuzonAlertas):
+        def alerta_reciente(self, tipo, ahora):
+            raise RuntimeError("No se pudo abrir la carpeta Alertas")
+
+        def registrar_alerta(self, tipo, ahora):
+            raise RuntimeError("No se pudo abrir la carpeta Alertas")
+
+    enviados = []
+    for minuto, avisa in [(0, True), (3, False), (30, False), (61, True)]:
+        monkeypatch.setattr(principal.time, "time", lambda m=minuto: 1_800_000_000 - 1_800_000_000 % 3600 + m * 60)
+        antes = len(enviados)
+        principal.avisar(cfg, SinRegistro(), enviados.append, "x", "t", "h", "d", "procesar")
+        assert (len(enviados) > antes) is avisa
+
+
 def test_aviso_de_resuelto(cfg):
     from clasificador.principal import avisar_si_se_resolvio
     buzon, enviados = BuzonAlertas(abiertas=["openai_sin_saldo"]), []
