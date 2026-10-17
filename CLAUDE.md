@@ -15,7 +15,9 @@ Clasificador de correos (etapa 1), código en `clasificador/`:
 
 - Proyecto `alzatec`, región `southamerica-west1`. Jobs de Cloud Run: `clasificador` (args `procesar`) y `clasificador-resumen` (args `resumen`). Cloud Scheduler: `clasificador-cada-3-min` y `clasificador-resumen-diario`. Secretos: `agente-pw`, `openai-api-key`.
 - Conectarse: `bash deploy/claude-login.sh` (usa la variable de entorno `GCP_SA_KEY`; cuenta `claude-operador`, Editor solo en el proyecto). Si falta, el usuario corre `deploy/acceso-claude.sh` en Cloud Shell y la agrega en la configuración del entorno.
+- El entorno de Claude Code define `CLOUDSDK_AUTH_ACCESS_TOKEN` con un token de relleno que tapa la cuenta activa: anteponer `unset CLOUDSDK_AUTH_ACCESS_TOKEN;` a los comandos `gcloud` (los scripts de `deploy/` ya lo hacen).
 - Ver qué hizo: `bash deploy/ver.sh` (`HORAS=72` para más atrás).
+- Ver la casilla agente@ (desde aquí no se llega a IMAP): `gcloud run jobs execute clasificador --region southamerica-west1 --args estado --wait` y leer el evento `estado` en los registros (totales y últimos correos, no toca nada).
 - Cambiar código: editar, `python3 -m pytest -q`, commit y push a esta rama, y `bash deploy/actualizar.sh` (sube la versión nueva a los dos jobs sin tocar claves ni programación).
 - Instalación desde cero: `deploy/instalar.sh` (interactivo, lo corre el usuario en Cloud Shell). Detalle en `deploy/README.md`.
 

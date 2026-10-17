@@ -3,6 +3,7 @@
 # Correr en Cloud Shell:  bash alzatec/deploy/ver.sh        (últimas 24 horas)
 #                         HORAS=72 bash alzatec/deploy/ver.sh
 set -euo pipefail
+unset CLOUDSDK_AUTH_ACCESS_TOKEN   # en Claude Code el entorno pone un token de relleno que tapa la cuenta activa
 REGION=${REGION:-southamerica-west1}
 HORAS=${HORAS:-24}
 DESDE=$(date -u -d "-$HORAS hours" +%Y-%m-%dT%H:%M:%SZ)

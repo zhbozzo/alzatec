@@ -109,6 +109,27 @@ class Buzon:
                 return parte[1]
         return b""
 
+    def estado(self, n=8):
+        """Cuántos correos hay en la bandeja y cuáles son los últimos, para revisar a distancia."""
+        from email import message_from_bytes, policy
+        todos = sorted(self._buscar("ALL"))
+        ultimos = []
+        for uid in todos[-n:]:
+            typ, data = self.imap.uid("FETCH", str(uid), "(FLAGS INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM SUBJECT)])")
+            meta = next((d[0] for d in data or [] if isinstance(d, tuple)), b"").decode(errors="replace")
+            h = message_from_bytes(next((d[1] for d in data or [] if isinstance(d, tuple)), b""), policy=policy.default)
+            fecha = re.search(r'INTERNALDATE "([^"]+)"', meta)
+            ultimos.append({"uid": uid, "llegada": fecha.group(1) if fecha else "", "de": str(h.get("From", ""))[:80],
+                            "asunto": str(h.get("Subject", ""))[:80], "clasificado": CLASIFICADO in meta})
+        return {
+            "total": len(todos),
+            "sin_clasificar": len(self._buscar("UNKEYWORD", CLASIFICADO, "NOT", "DELETED")),
+            "sin_clasificar_desde": len(self.pendientes()) if self.cfg.desde else None,
+            "clasificados": len(self._buscar("KEYWORD", CLASIFICADO)),
+            "no_aplica": len(self._buscar("KEYWORD", NO_APLICA)),
+            "ultimos": ultimos,
+        }
+
     def soltar(self, uid):
         """Libera la reserva para que la próxima corrida lo vuelva a tomar."""
         self.imap.uid("STORE", str(uid), "-FLAGS", "(" + " ".join(f"Toma{i}" for i in range(6)) + ")")

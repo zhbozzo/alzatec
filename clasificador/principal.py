@@ -200,8 +200,11 @@ def main(argv=None):
             procesar(cfg, buzon, principal, verificador, enviar)
         elif accion == "resumen":
             resumen_diario(cfg, buzon, enviar)
+        elif accion == "estado":  # solo informa, no toca ningún correo
+            registrar(evento="estado", desde=cfg.desde, **buzon.estado())
+            return
         else:
-            raise SystemExit(f"Acción desconocida: {accion} (usar 'procesar' o 'resumen')")
+            raise SystemExit(f"Acción desconocida: {accion} (usar 'procesar', 'resumen' o 'estado')")
         try:
             avisar_si_se_resolvio(cfg, buzon, enviar)
         except Exception as e:  # el registro de alertas no debe frenar la clasificación

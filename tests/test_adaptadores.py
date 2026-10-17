@@ -221,3 +221,11 @@ def test_cuenta_de_alertas_en_la_carpeta_alertas(imap):
     assert b.imap.seleccionada == "INBOX"
     b.cerrar_alertas()
     assert ("STORE", "7", "+FLAGS", "(Resuelta)") in b.imap.llamadas
+
+
+def test_estado_cuenta_y_lista_los_ultimos_sin_tocar_nada():
+    b = Buzon(Config(contrasena="x"))
+    b.imap = ImapFalso()
+    e = b.estado(n=2)
+    assert e["total"] == 3 and len(e["ultimos"]) == 2 and e["sin_clasificar_desde"] is None
+    assert not any(c[0] == "STORE" for c in b.imap.llamadas)
