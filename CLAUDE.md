@@ -33,8 +33,7 @@ Clasificador de correos (etapa 1), código en `clasificador/`:
 
 ## Pendientes
 
-- Cambiar la contraseña de agente@ (circuló por WhatsApp) y actualizar el secreto `agente-pw`.
-- Confirmar que el correo de alertas es lbozzo@fen.uchile.cl.
 - Respaldo de enviados de Andrea (Víctor, sin apuro) y copia de salida en el servidor cuando Javier use celular.
 - Validación de Andrea/Javier (Excel de validación y preguntas en `docs/09-analisis-correos.md`).
 - Revisar los primeros días: `[REVISAR]`, resumen diario de descartados, gasto.
+- Primera revisión (17-oct, 159 correos): 96,2% de coincidencia con la revisión de Opus (1 grave); tras corregir la rúbrica, 98,7% y 0 graves. Detalle en `docs/09-analisis-correos.md` §8.
