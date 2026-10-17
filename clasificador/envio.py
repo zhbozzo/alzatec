@@ -67,12 +67,13 @@ def armar_reenvio(cfg, correo, decision, destino):
     m["Message-ID"] = make_msgid(domain=cfg.usuario.split("@")[-1])
     m.set_content(cuerpo_reenvio(correo, decision))
     try:
-        # Como mensaje adjunto (message/rfc822): Outlook lo abre como correo y se puede responder desde ahí
-        m.add_attachment(message_from_bytes(correo.crudo, policy=policy.SMTP), filename="correo-original.eml")
+        # Como mensaje adjunto (message/rfc822): Outlook lo abre como correo y se puede responder desde ahí.
+        # Sin nombre de archivo: el filtro de cPanel rechaza cualquier adjunto que se llame "*.eml".
+        m.add_attachment(message_from_bytes(correo.crudo, policy=policy.SMTP))
         m.as_bytes()  # verifica que se pueda serializar
     except Exception:
         m.get_payload().pop()
-        m.add_attachment(correo.crudo, maintype="application", subtype="octet-stream", filename="correo-original.eml")
+        m.add_attachment(correo.crudo, maintype="application", subtype="octet-stream", filename="correo-original.txt")
     return m
 
 

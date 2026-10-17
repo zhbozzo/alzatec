@@ -217,6 +217,7 @@ def test_adjunto_original_es_un_mensaje_valido(cfg):
     assert adjunto["Content-Transfer-Encoding"] in (None, "7bit", "8bit")
     interno = adjunto.get_content()
     assert "despachar" in interno.get_body(("plain",)).get_content()
+    assert ".eml" not in m.as_string()  # el filtro de cPanel rechaza adjuntos "*.eml"
 
 
 
@@ -247,8 +248,8 @@ class BuzonAlertas:
     def alertas_abiertas(self):
         return self.abiertas
 
-    def cerrar_alertas(self):
-        self.cerradas = True
+    def cerrar_alertas(self, tipos=None):
+        self.cerradas = tipos if tipos is not None else True
 
 
 def test_alerta_llega_a_los_dos_correos_con_que_hacer(cfg):
@@ -352,3 +353,29 @@ def test_exportar_registra_el_texto_sin_llamar_al_modelo_ni_marcar(cfg, capsys):
     lineas = [json.loads(l) for l in capsys.readouterr().out.splitlines()]
     assert [l["evento"] for l in lineas] == ["export", "export"]
     assert lineas[0]["texto"] and lineas[0]["marcas"] == ["Clasificado"] and lineas[1]["asunto"] == "Otra cosa"
+
+
+def test_rebote_de_un_reenvio_avisa_y_no_va_al_resumen(cfg):
+    rebote = correo_crudo(asunto="Mail delivery failed: returning message to sender",
+                          de="Mail Delivery System <Mailer-Daemon@rhino.hostingplus.cl>",
+                          texto="The following address(es) failed:\n\n  despachosconfirmados@alzatec.com\n"
+                                "    This message has been rejected because it has a potentially executable attachment")
+
+    class BuzonConAlertas(BuzonFalso, BuzonAlertas):
+        def __init__(self, crudos):
+            BuzonFalso.__init__(self, crudos)
+            BuzonAlertas.__init__(self)
+
+    buzon, enviados, modelo = BuzonConAlertas([rebote]), [], ModeloFalso(resultado())
+    procesar(cfg, buzon, modelo, None, enviados.append)
+    assert modelo.llamadas == 0 and {"Clasificado", "Resumido"} <= buzon.marcas[1]
+    assert len(enviados) == 1 and "devueltos" in enviados[0]["Subject"]
+    assert buzon.registradas == ["aviso_reenvio_rebotado"]
+
+
+def test_los_avisos_no_esperan_resuelto(cfg):
+    from clasificador.principal import avisar_si_se_resolvio
+    buzon, enviados = BuzonAlertas(abiertas=["aviso_reenvio_rebotado", "openai_sin_saldo"]), []
+    avisar_si_se_resolvio(cfg, buzon, enviados.append)
+    assert "openai_sin_saldo" in enviados[0].get_content() and "aviso_" not in enviados[0].get_content()
+    assert buzon.cerradas == ["openai_sin_saldo"]

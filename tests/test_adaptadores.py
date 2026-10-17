@@ -229,3 +229,13 @@ def test_estado_cuenta_y_lista_los_ultimos_sin_tocar_nada():
     e = b.estado(n=2)
     assert e["total"] == 3 and len(e["ultimos"]) == 2 and e["sin_clasificar_desde"] is None
     assert not any(c[0] == "STORE" for c in b.imap.llamadas)
+
+
+def test_cambiar_marcas_solo_las_del_clasificador():
+    b = Buzon(Config(contrasena="x"))
+    b.imap = ImapFalso()
+    b.cambiar_marcas(["-Clasificado", "+Resumido"], [7])
+    assert ("STORE", "7", "-FLAGS", "(Clasificado)") in b.imap.llamadas
+    assert ("STORE", "7", "+FLAGS", "(Resumido)") in b.imap.llamadas
+    with pytest.raises(ValueError):
+        b.cambiar_marcas(["+\\Deleted"], [7])

@@ -63,6 +63,17 @@ def explicar(cfg, buzon, principal, texto, maximo=5):
     return len(uids)
 
 
+AVISO_REBOTE = "aviso_reenvio_rebotado"  # los tipos "aviso_" no esperan un "resuelto"
+
+
+def es_rebote_de_reenvio(cfg, correo):
+    """El servidor devolvió un reenvío del propio clasificador (no llegó a su casilla)."""
+    if not correo.remitente_correo.startswith(("mailer-daemon@", "postmaster@")):
+        return False
+    texto = f"{correo.asunto}\n{correo.texto_nuevo}\n{correo.texto_citado}".lower()
+    return any(d.lower() in texto for d in cfg.destinos.values())
+
+
 def exportar(cfg, buzon):
     """Registra el texto de los correos desde la fecha de inicio, para revisar a distancia la clasificación.
 
@@ -88,6 +99,7 @@ def procesar(cfg, buzon, principal, verificador, enviar):
     todos = buzon.pendientes()
     uids = todos[: cfg.max_por_corrida]
     vistos = set()
+    rebotes = []
     t0 = time.time()
     hechos = 0
     for uid in uids:
@@ -112,6 +124,13 @@ def procesar(cfg, buzon, principal, verificador, enviar):
 
         if correo.remitente_correo == cfg.usuario.lower():
             buzon.marcar(uid, CLASIFICADO)  # nunca reprocesar lo que envía el propio agente
+            continue
+
+        if es_rebote_de_reenvio(cfg, correo):
+            buzon.marcar(uid, CLASIFICADO, RESUMIDO)  # no va al resumen diario: se avisa aparte
+            rebotes.append(f"{correo.fecha}: {' '.join(correo.texto_nuevo.split())[:400]}")
+            registrar(evento="rebote_reenvio", severity="WARNING", uid=uid, asunto=correo.asunto[:200],
+                      texto=correo.texto_nuevo[:500])
             continue
 
         inicio = time.time()
@@ -151,6 +170,11 @@ def procesar(cfg, buzon, principal, verificador, enviar):
             segundos=round(time.time() - inicio, 1),
         )
     registrar(evento="corrida", procesados=hechos, en_espera=len(todos) - hechos)
+    if rebotes:
+        avisar(cfg, buzon, enviar, AVISO_REBOTE, f"{len(rebotes)} reenvíos fueron devueltos por el servidor",
+               "Esos correos NO llegaron a su casilla. Avisar al mantenedor para revisar el motivo y volver a "
+               "enviarlos (siguen en agente@).", "\n\n".join(rebotes[:5]), "procesar",
+               pie="Este aviso no se repite por 3 horas.")
     return hechos
 
 
@@ -179,7 +203,11 @@ def _destinatarios(cfg):
     return ", ".join(cfg.alertas_a)
 
 
-def avisar(cfg, buzon, enviar, tipo, titulo, que_hacer, detalle, accion):
+PIE_ALERTA = ("Los correos NO se pierden: quedan en agente@ y se procesan apenas se arregle. "
+              "Este aviso no se repite por 3 horas; cuando se resuelva llega un correo de confirmación.")
+
+
+def avisar(cfg, buzon, enviar, tipo, titulo, que_hacer, detalle, accion, pie=PIE_ALERTA):
     """Manda una alerta con qué pasó y qué hacer. El mismo problema se avisa como máximo cada 3 horas."""
     ahora = time.time()
     try:
@@ -196,8 +224,7 @@ def avisar(cfg, buzon, enviar, tipo, titulo, que_hacer, detalle, accion):
     texto = (
         f"Qué pasó: {titulo}.\n\n"
         f"Qué hacer: {que_hacer}\n\n"
-        "Los correos NO se pierden: quedan en agente@ y se procesan apenas se arregle. "
-        "Este aviso no se repite por 3 horas; cuando se resuelva llega un correo de confirmación.\n\n"
+        f"{pie}\n\n"
         f"Detalle técnico ({accion}): {detalle}"
     )
     enviar(armar_aviso(cfg, _destinatarios(cfg), f"[ALERTA] Clasificador de correos: {titulo}", texto))
@@ -209,13 +236,13 @@ def avisar(cfg, buzon, enviar, tipo, titulo, que_hacer, detalle, accion):
 
 
 def avisar_si_se_resolvio(cfg, buzon, enviar):
-    abiertas = buzon.alertas_abiertas()
+    abiertas = [t for t in buzon.alertas_abiertas() if not t.startswith("aviso_")]
     if not abiertas:
         return
     enviar(armar_aviso(cfg, _destinatarios(cfg), "[RESUELTO] Clasificador de correos funcionando de nuevo",
                        "El clasificador volvió a funcionar y está procesando los correos que quedaron esperando.\n\n"
                        f"Problemas resueltos: {', '.join(abiertas)}"))
-    buzon.cerrar_alertas()
+    buzon.cerrar_alertas(abiertas)
     registrar(evento="resuelto", tipos=abiertas)
 
 
@@ -246,6 +273,12 @@ def main(argv=None):
             resumen_diario(cfg, buzon, enviar)
         elif accion == "estado":  # solo informa, no toca ningún correo
             registrar(evento="estado", desde=cfg.desde, **buzon.estado())
+            return
+        elif accion == "marcas":  # mantención: marcas +Resumido -Clasificado 120 121 ...
+            cambios = [a for a in argv[1:] if a[:1] in "+-"]
+            uids = [int(a) for a in argv[1:] if a.isdigit()]
+            buzon.cambiar_marcas(cambios, uids)
+            registrar(evento="marcas", cambios=cambios, uids=uids)
             return
         elif accion == "exportar":  # registra el texto de los correos, sin llamar al modelo ni marcar
             exportar(cfg, buzon)

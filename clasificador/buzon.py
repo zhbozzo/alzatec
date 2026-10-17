@@ -119,6 +119,17 @@ class Buzon:
         m = re.search(r"FLAGS \(([^)]*)\)", texto)
         return m.group(1).split() if m else []
 
+    MARCAS_EDITABLES = {CLASIFICADO, NO_APLICA, RESUMIDO, DUPLICADO} | {f"Toma{i}" for i in range(6)}
+
+    def cambiar_marcas(self, cambios, uids):
+        """Pone (+Marca) o quita (-Marca) marcas propias del clasificador; nunca toca las del sistema."""
+        for cambio in cambios:
+            if cambio[:1] not in "+-" or cambio[1:] not in self.MARCAS_EDITABLES:
+                raise ValueError(f"Cambio de marca no permitido: {cambio}")
+        for uid in uids:
+            for cambio in cambios:
+                self.imap.uid("STORE", str(uid), ("+" if cambio[0] == "+" else "-") + "FLAGS", f"({cambio[1:]})")
+
     def buscar_asunto(self, texto):
         """UIDs de los correos cuyo asunto contiene `texto` (solo caracteres ASCII)."""
         return sorted(self._buscar("HEADER", "Subject", '"' + texto.replace('"', "") + '"'))
@@ -206,8 +217,9 @@ class Buzon:
     def alertas_abiertas(self):
         return self._en_alertas(lambda: sorted({t for _, t, _ in self._alertas()}))
 
-    def cerrar_alertas(self):
+    def cerrar_alertas(self, tipos=None):
         def f():
-            for uid, _, _ in self._alertas():
-                self.marcar(uid, "Resuelta")
+            for uid, tipo, _ in self._alertas():
+                if tipos is None or tipo in tipos:
+                    self.marcar(uid, "Resuelta")
         self._en_alertas(f)
