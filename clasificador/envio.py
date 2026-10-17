@@ -20,7 +20,7 @@ FALTAS = {
 
 
 def asunto_reenvio(cfg, correo, decision):
-    partes = []
+    partes = ["[CORREGIDO]"] if decision.fuente == "correccion" else []
     if cfg.prefijo:
         partes.append(cfg.prefijo)
     if cfg.modo == "sombra":
@@ -34,6 +34,8 @@ def asunto_reenvio(cfg, correo, decision):
 def cuerpo_reenvio(correo, decision):
     r = decision.resultado
     lineas = [f"Categoría: {ETIQUETAS[decision.categoria]}"]
+    if decision.fuente == "correccion":
+        lineas.append(f"Corrección: {decision.nota}")
     if decision.revisar:
         lineas.append(f"REVISAR: {decision.nota}")
     if decision.categoria == "pendiente" and r.get("falta"):
@@ -47,7 +49,7 @@ def cuerpo_reenvio(correo, decision):
         lineas.append(f"Resumen: {r['resumen']}")
     if r.get("motivo"):
         lineas.append(f"Por qué: {r['motivo']}")
-    if decision.nota and not decision.revisar:
+    if decision.nota and not decision.revisar and decision.fuente != "correccion":
         lineas.append(f"Nota: {decision.nota}")
     lineas += [
         "",
@@ -75,6 +77,18 @@ def armar_reenvio(cfg, correo, decision, destino):
         m.get_payload().pop()
         m.add_attachment(correo.crudo, maintype="application", subtype="octet-stream", filename="correo-original.txt")
     return m
+
+
+def armar_correccion(cfg, correo, antes, ahora, destino_ahora, nota):
+    """Aviso a la casilla que recibió un reenvío equivocado: ese reenvío hay que ignorarlo."""
+    texto = (
+        f"El clasificador reenvió a esta casilla el correo \"{correo.asunto}\" (de {correo.remitente}, {correo.fecha}) "
+        f"como {ETIQUETAS[antes]}. Fue un error: corresponde {ETIQUETAS[ahora]}"
+        + (f" y ya se reenvió a {destino_ahora}." if destino_ahora else ", así que no va a ninguna casilla.")
+        + (f"\n\nMotivo: {nota}" if nota else "")
+        + "\n\nSi ya se actuó sobre ese reenvío, revisarlo."
+    )
+    return armar_aviso(cfg, cfg.destino(antes), f"[CORRECCIÓN] Ignorar: [{ETIQUETAS[antes]}] {correo.asunto}", texto)
 
 
 def armar_aviso(cfg, destino, asunto, texto):

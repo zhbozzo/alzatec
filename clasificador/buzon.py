@@ -109,9 +109,14 @@ class Buzon:
                 return parte[1]
         return b""
 
-    def todos_desde(self):
-        """UIDs de todos los correos desde la fecha de inicio, clasificados o no."""
-        return sorted(self._buscar("NOT", "DELETED", *(["SINCE", self.cfg.desde] if self.cfg.desde else [])))
+    def todos_desde(self, desde=None, hasta=None):
+        """UIDs de todos los correos desde `desde` (o la fecha de inicio) y antes de `hasta`, clasificados o no."""
+        desde = desde or self.cfg.desde
+        criterio = ["NOT", "DELETED"] + (["SINCE", desde] if desde else []) + (["BEFORE", hasta] if hasta else [])
+        return sorted(self._buscar(*criterio))
+
+    def desmarcar(self, uid, *marcas):
+        self.imap.uid("STORE", str(uid), "-FLAGS", "(" + " ".join(marcas) + ")")
 
     def marcas(self, uid):
         typ, data = self.imap.uid("FETCH", str(uid), "(FLAGS)")

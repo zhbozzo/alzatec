@@ -70,6 +70,9 @@ class BuzonFalso:
     def marcar(self, uid, *m):
         self.marcas[uid].update(m)
 
+    def desmarcar(self, uid, *m):
+        self.marcas[uid].difference_update(m)
+
     def descartados_sin_resumir(self):
         return [u for u, m in self.marcas.items() if "NoAplica" in m and "Resumido" not in m]
 
@@ -340,7 +343,7 @@ def test_exportar_registra_el_texto_sin_llamar_al_modelo_ni_marcar(cfg, capsys):
         def __init__(self, crudos):
             self.crudos = dict(enumerate(crudos, 1))
 
-        def todos_desde(self):
+        def todos_desde(self, desde=None, hasta=None):
             return list(self.crudos)
 
         def leer(self, uid):
@@ -389,3 +392,33 @@ def test_reaccion_de_outlook_se_descarta_sin_llamar_al_modelo():
     assert modelo.llamadas == 0
     d = decidir(leer(correo_crudo(texto="[like] reacted to your message: y además favor cambiar la hora al lunes")), modelo)
     assert modelo.llamadas == 1
+
+
+def test_corregir_un_movimiento_descartado_lo_reenvia_con_corregido(cfg):
+    from clasificador.principal import corregir
+    buzon, enviados = BuzonFalso([correo_crudo()]), []
+    buzon.marcar(1, "Clasificado", "NoAplica")
+    corregir(cfg, buzon, ModeloFalso(resultado("no_aplica", falta=())), enviados.append, 1, "pendiente", "no_aplica",
+             "saldo por despachar")
+    assert len(enviados) == 1 and enviados[0]["To"] == cfg.destino("pendiente")
+    assert enviados[0]["Subject"].startswith("[CORREGIDO]") and "[PENDIENTE]" in enviados[0]["Subject"]
+    assert "se había clasificado como NO APLICA" in enviados[0].get_body(("plain",)).get_content()
+    assert "NoAplica" not in buzon.marcas[1] and "Clasificado" in buzon.marcas[1]
+
+
+def test_corregir_un_acordado_falso_avisa_a_la_casilla_equivocada(cfg):
+    from clasificador.principal import corregir
+    buzon, enviados = BuzonFalso([correo_crudo()]), []
+    corregir(cfg, buzon, ModeloFalso(resultado()), enviados.append, 1, "no_aplica", "despacho_acordado", "era una cotización")
+    assert len(enviados) == 1 and enviados[0]["To"] == cfg.destino("despacho_acordado")
+    assert enviados[0]["Subject"].startswith("[CORRECCIÓN] Ignorar: [DESPACHO ACORDADO]")
+    assert "no va a ninguna casilla" in enviados[0].get_content() and "NoAplica" in buzon.marcas[1]
+
+
+def test_corregir_tipo_cambiado_reenvia_y_avisa(cfg):
+    from clasificador.principal import corregir
+    buzon, enviados = BuzonFalso([correo_crudo()]), []
+    corregir(cfg, buzon, ModeloFalso(resultado()), enviados.append, 1, "recepcion_acordada", "despacho_acordado")
+    assert [m["To"] for m in enviados] == [cfg.destino("recepcion_acordada"), cfg.destino("despacho_acordado")]
+    with pytest.raises(ValueError):
+        corregir(cfg, buzon, ModeloFalso(resultado()), enviados.append, 1, "pendiente", "pendiente")

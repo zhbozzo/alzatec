@@ -9,7 +9,7 @@ from . import modelos
 from .buzon import CLASIFICADO, DUPLICADO, NO_APLICA, RESUMIDO
 from .modelos import ErrorServicio
 from .correo import Correo, leer
-from .envio import ETIQUETAS, armar_aviso, armar_reenvio
+from .envio import ETIQUETAS, armar_aviso, armar_correccion, armar_reenvio
 from .reglas import Decision, VACIO, decidir
 
 # US$ por millón de tokens: entrada, entrada en caché, salida
@@ -46,12 +46,14 @@ def _explicacion(resultado):
     return {c: (resultado.get(c)[:300] if isinstance(resultado.get(c), str) else resultado.get(c)) for c in campos}
 
 
-def explicar(cfg, buzon, principal, texto, maximo=5):
-    """Vuelve a clasificar los correos cuyo asunto contiene `texto` y registra el detalle.
+def explicar(cfg, buzon, principal, texto="", uids=None, maximo=5):
+    """Vuelve a clasificar los correos indicados (por UID, o los últimos cuyo asunto contiene `texto`)
+    y registra el detalle.
 
-    No reenvía ni marca nada: sirve para revisar a distancia por qué un correo quedó como quedó.
+    No reenvía ni marca nada: sirve para revisar a distancia por qué un correo quedó como quedó y para
+    la prueba de regresión.
     """
-    uids = buzon.buscar_asunto(texto)[-maximo:]
+    uids = uids or buzon.buscar_asunto(texto)[-maximo:]
     for uid in uids:
         correo = leer(buzon.leer(uid), cfg.max_imagenes)
         decision = decidir(correo, principal)
@@ -74,12 +76,36 @@ def es_rebote_de_reenvio(cfg, correo):
     return any(d.lower() in texto for d in cfg.destinos.values())
 
 
-def exportar(cfg, buzon):
-    """Registra el texto de los correos desde la fecha de inicio, para revisar a distancia la clasificación.
+def corregir(cfg, buzon, principal, enviar, uid, ahora, antes, nota=""):
+    """Corrige un correo mal clasificado, después de revisarlo.
 
-    No llama al modelo ni marca nada.
+    Lo reenvía a la casilla correcta con [CORREGIDO] y, si antes se reenvió a otra casilla, manda ahí
+    un aviso para ignorar ese reenvío.
     """
-    uids = buzon.todos_desde()
+    if ahora not in ETIQUETAS or antes not in ETIQUETAS or ahora == antes:
+        raise ValueError(f"Corrección no válida: {antes} -> {ahora}")
+    correo = leer(buzon.leer(uid), cfg.max_imagenes)
+    base = decidir(correo, principal).resultado  # fecha, resumen y datos para el reenvío
+    resultado = dict(base, categoria=ahora, falta=base.get("falta", []) if ahora == "pendiente" else [])
+    decision = Decision(ahora, resultado, fuente="correccion",
+                        nota=f"se había clasificado como {ETIQUETAS[antes]}. {nota}".strip())
+    destino, destino_antes = cfg.destino(ahora), cfg.destino(antes)
+    if destino:
+        enviar(armar_reenvio(cfg, correo, decision, destino))
+    if destino_antes:
+        enviar(armar_correccion(cfg, correo, antes, ahora, destino, nota))
+    buzon.marcar(uid, CLASIFICADO, *([NO_APLICA] if ahora == "no_aplica" else []))
+    if ahora != "no_aplica":
+        buzon.desmarcar(uid, NO_APLICA)
+    registrar(evento="correccion", uid=uid, asunto=correo.asunto[:200], antes=antes, ahora=ahora,
+              destino=destino, aviso_a=destino_antes, nota=nota[:300])
+
+
+def exportar(cfg, buzon, desde=None, hasta=None):
+    """Registra el texto de los correos (desde la fecha de inicio, o del rango dado en formato IMAP:
+    19-Oct-2026), para revisar a distancia la clasificación. No llama al modelo ni marca nada.
+    """
+    uids = buzon.todos_desde(desde, hasta)
     for uid in uids:
         try:
             correo = leer(buzon.leer(uid), cfg.max_imagenes)
@@ -280,11 +306,19 @@ def main(argv=None):
             buzon.cambiar_marcas(cambios, uids)
             registrar(evento="marcas", cambios=cambios, uids=uids)
             return
-        elif accion == "exportar":  # registra el texto de los correos, sin llamar al modelo ni marcar
-            exportar(cfg, buzon)
+        elif accion == "exportar":  # exportar [desde] [hasta]: registra el texto, sin llamar al modelo ni marcar
+            exportar(cfg, buzon, *(argv[1:3]))
             return
-        elif accion == "explicar":  # vuelve a clasificar y registra el detalle, sin reenviar ni marcar
-            explicar(cfg, buzon, modelos.crear(cfg.modelo, cfg.esfuerzo), " ".join(argv[1:]))
+        elif accion == "explicar":  # explicar UID UID... | explicar TEXTO DEL ASUNTO (sin reenviar ni marcar)
+            principal = modelos.crear(cfg.modelo, cfg.esfuerzo)
+            if argv[1:] and all(a.isdigit() for a in argv[1:]):
+                explicar(cfg, buzon, principal, uids=[int(a) for a in argv[1:]])
+            else:
+                explicar(cfg, buzon, principal, " ".join(argv[1:]))
+            return
+        elif accion == "corregir":  # corregir UID CATEGORIA_CORRECTA CATEGORIA_ANTERIOR [motivo]
+            corregir(cfg, buzon, modelos.crear(cfg.modelo, cfg.esfuerzo), enviar,
+                     int(argv[1]), argv[2], argv[3], ", ".join(argv[4:]))
             return
         else:
             raise SystemExit(f"Acción desconocida: {accion} (usar 'procesar', 'resumen' o 'estado')")
