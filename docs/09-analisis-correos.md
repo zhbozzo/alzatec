@@ -204,3 +204,18 @@ Haiku y Sonnet clasificaron por separado los mismos 200 correos, sin ver las eti
 - **Porcentaje:** antes de corregir, GPT coincidió con la revisión en 153 de 159 correos (**96,2%**; graves: 1 de 159). Después de corregir la rúbrica coincide en 157 de 159 (**98,7%**, sin graves). Los 2 que quedan son discutibles y van a pendientes, el lado seguro. Ojo: se midió sobre los mismos correos que sirvieron para corregir, los revisores no vieron las imágenes y la referencia es Opus, no Andrea ni Javier.
 - **Leves:** el cliente elige una hora de la lista de Javier (ahora queda pendiente, ver la pregunta 3), y una reacción "me gusta" de Outlook que duplicaba un reenvío (ahora es una regla fija). Otros dos casos se dejaron como estaban porque son discutibles.
 - **Falla de entrega (corregida):** el filtro de cPanel rechazaba los reenvíos porque el original iba adjunto como `correo-original.eml`. Ahora va sin nombre de archivo, y si un reenvío rebota, el clasificador avisa por correo.
+
+## 9. GPT-6.1 Sol en los 200 correos de validación (18-oct-2026)
+
+GPT-6.1 Sol no se había medido con la muestra histórica. Se corrió dentro de Google Cloud (el job `clasificador-eval`, que tiene la API key y los 200 correos), con el mismo código de producción:
+
+| Corrida | Rúbrica | Coincide | Graves | Comentario |
+|---|---|---|---|---|
+| 1 | la del 17-oct | 184/200 (92%) | 4 | 8 de los 16 desacuerdos son el criterio nuevo (hora elegida de la lista de Javier = pendiente); las etiquetas antiguas decían acordado |
+| 2 | + parcial, OC, "favor agendar" | 194/200 (97%) | 2 | la regla de la OC se pasó: dos acuerdos con "procederemos con la OC" quedaron pendientes |
+| 3 | OC afinada | 195/200 (97,5%) | 3 | un caso límite (A056) cambió por la variabilidad del modelo |
+| 4 y 5 | + "sin cotización enviada no hay acuerdo" | **197/200 (98,5%)** las dos | 2 | las dos corridas fallan en los mismos 3 casos: estable |
+
+Ajustes a los datos: en 35 correos de muestra la dirección de Javier venía sin "@" (un problema del archivo de muestra, no de producción), y las 8 etiquetas del criterio 3 se pasaron a pendiente según la decisión del 17-oct. Los originales quedaron respaldados en `datos/validacion/*_antes_17oct.*`.
+
+Los 3 desacuerdos que quedan son preguntas de criterio para Andrea y Javier, y ninguno pierde un movimiento real: (1) el día de la devolución el cliente avisa "el camión está en su planta" (el acuerdo ya se había reenviado); (2) Javier pregunta "¿van a venir hoy?" sobre una hora ya agendada; (3) "devuelva cuando quiera" y el cliente responde "OK". Comparación: Sonnet 5.5 sacó 190/200 y Haiku 5.5 177/200 con la rúbrica anterior. Costo: US$0,75 por los 200 correos.

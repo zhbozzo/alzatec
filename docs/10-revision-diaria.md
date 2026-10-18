@@ -59,6 +59,7 @@ Conviene guardar también uno o dos aciertos difíciles del día, para que un ar
 2. `python3 -m pytest -q`, luego commit y push.
 3. `bash deploy/actualizar.sh`
 4. `python3 herramientas/revision.py regresion` tiene que dar **todos los casos bien**. Si alguno falla, ajustar o revertir antes de dar por terminado.
+5. `python3 herramientas/revision.py evaluar` corre los 200 correos históricos de validación (unos 10 minutos y US$0,75). El resultado no puede quedar bajo **197/200**. Los 3 desacuerdos conocidos son J008, E020 y J047, todos de criterio. Si aparecen otros, revisarlos antes de dejar el cambio.
 
 ## 6. Informe al usuario
 

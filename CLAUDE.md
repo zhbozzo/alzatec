@@ -38,3 +38,4 @@ Clasificador de correos (etapa 1), código en `clasificador/`:
 - Validación de Andrea/Javier (Excel de validación y preguntas en `docs/09-analisis-correos.md`).
 - Revisar los primeros días: `[REVISAR]`, resumen diario de descartados, gasto.
 - Primera revisión (17-oct, 159 correos): 96,2% de coincidencia con la revisión de Opus (1 grave); tras corregir la rúbrica, 98,7% y 0 graves. Detalle en `docs/09-analisis-correos.md` §8.
+- Validación histórica (18-oct, 200 correos): GPT-6.1 Sol 98,5% (197/200, estable en dos corridas). Los 3 restantes son de criterio (J008, E020, J047). Se reevalúa con `python3 herramientas/revision.py evaluar`. Detalle en `docs/09-analisis-correos.md` §9.

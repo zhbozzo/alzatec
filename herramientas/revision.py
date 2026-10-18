@@ -9,12 +9,14 @@ verificados a un bucket privado del proyecto.
     python3 herramientas/revision.py caso 93 pendiente "Saldo pendiente de despacho (OT de MADA)"
     python3 herramientas/revision.py casos
     python3 herramientas/revision.py regresion
+    python3 herramientas/revision.py evaluar        # los 200 correos históricos de validación
 """
 
 import argparse
 import datetime
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -44,17 +46,17 @@ def ejecutar(*argumentos):
     gcloud("run", "jobs", "execute", JOB, "--region", REGION, "--args", ",".join(argumentos), "--wait", "--quiet")
 
 
-def registros(filtro, desde, limite=5000):
-    f = (f'resource.type="cloud_run_job" AND resource.labels.job_name="{JOB}" '
+def registros(filtro, desde, limite=5000, job=JOB):
+    f = (f'resource.type="cloud_run_job" AND resource.labels.job_name="{job}" '
          f'AND timestamp>="{desde}" AND {filtro}')
     return [e["jsonPayload"] for e in json.loads(gcloud("logging", "read", f, "--limit", str(limite), "--format", "json"))]
 
 
-def esperar_registros(filtro, desde, cuantos=None, maximo=240):
+def esperar_registros(filtro, desde, cuantos=None, maximo=240, job=JOB):
     """Los registros tardan unos segundos en aparecer: espera a tener `cuantos` o a que dejen de llegar."""
     fin, antes = time.time() + maximo, -1
     while True:
-        r = registros(filtro, desde)
+        r = registros(filtro, desde, job=job)
         if (cuantos is not None and len(r) >= cuantos) or (cuantos is None and len(r) == antes and r) \
                 or time.time() > fin:
             return r
@@ -178,6 +180,39 @@ def regresion(por_ejecucion=20):
     return 1 if malos else 0
 
 
+# --- Evaluación con los 200 correos históricos ------------------------------------------------
+
+EVAL = "clasificador-eval"
+
+
+def evaluar():
+    """Sube el código actual al job de evaluación y lo corre sobre los 200 correos de validación.
+
+    Los correos y sus etiquetas viven dentro de la imagen del job (privada, en el proyecto), no en git:
+    la imagen nueva parte de la anterior y solo reemplaza el código.
+    """
+    base = gcloud("run", "jobs", "describe", EVAL, "--region", REGION, "--format",
+                  "value(spec.template.spec.template.spec.containers[0].image)").strip()
+    raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with tempfile.TemporaryDirectory() as tmp:
+        shutil.copytree(os.path.join(raiz, "clasificador"), os.path.join(tmp, "clasificador"),
+                        ignore=shutil.ignore_patterns("__pycache__"))
+        with open(os.path.join(tmp, "Dockerfile"), "w") as f:
+            f.write(f"FROM {base}\nCOPY clasificador /app/clasificador\n")
+        gcloud("run", "jobs", "deploy", EVAL, "--source", tmp, "--region", REGION, "--quiet")
+    t0 = ahora()
+    gcloud("run", "jobs", "execute", EVAL, "--region", REGION, "--wait", "--quiet")
+    lineas = esperar_registros('textPayload:"Coincide con la etiqueta"', t0, cuantos=1, job=EVAL)
+    resumen = [e for e in json.loads(gcloud("logging", "read",
+               f'resource.type="cloud_run_job" AND resource.labels.job_name="{EVAL}" AND timestamp>="{t0}" '
+               'AND (textPayload:"Coincide" OR textPayload:"Errores" OR textPayload:"GRAVE" OR textPayload:"Costo")',
+               "--limit", "50", "--format", "json"))]
+    for e in sorted(resumen, key=lambda e: e["timestamp"]):
+        print(e.get("textPayload", "").rstrip())
+    if not lineas:
+        print("No llegó el resumen de la evaluación; revisar los registros del job clasificador-eval.")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="accion", required=True)
@@ -192,6 +227,7 @@ def main():
     c.add_argument("nota")
     sub.add_parser("casos")
     sub.add_parser("regresion")
+    sub.add_parser("evaluar")
     a = ap.parse_args()
     if a.accion == "exportar":
         hasta = (datetime.date.fromisoformat(a.hasta) + datetime.timedelta(days=1)).isoformat() if a.hasta else None
@@ -200,6 +236,8 @@ def main():
         caso(a.uid, a.categoria, a.nota)
     elif a.accion == "casos":
         listar()
+    elif a.accion == "evaluar":
+        evaluar()
     else:
         sys.exit(regresion())
 
