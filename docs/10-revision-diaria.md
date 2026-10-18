@@ -13,7 +13,7 @@ Cuando el usuario pide **"revisa hoy"** (o "revisa del lunes al miércoles"), Cl
 python3 herramientas/revision.py exportar --dia AAAA-MM-DD --salida <carpeta de scratchpad>/revision --lotes 2
 ```
 
-Deja los correos del día (texto, hilo citado, adjuntos, cuántas imágenes) junto con lo que decidió GPT, en archivos `revision_N.json` **fuera del repositorio**. No llama al modelo ni marca nada. Ojo: los correos reales nunca van a git, porque el repositorio es público.
+Deja los correos del día (texto, hilo citado, adjuntos, cuántas imágenes) junto con lo que decidió GPT, en archivos `revision_N.json` **fuera del repositorio**. Además imprime la **cobertura**: cuántos correos enviados por Andrea y Javier (los que aparecen citados en los hilos) llegaron como copia a agente@. Si faltan, la copia de enviados no está funcionando y se pierden justo las confirmaciones: avisar al usuario para que lo vea Víctor. No llama al modelo ni marca nada. Ojo: los correos reales nunca van a git, porque el repositorio es público.
 
 ## 2. Revisar
 

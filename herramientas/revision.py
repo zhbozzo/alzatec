@@ -102,11 +102,57 @@ def exportar(dia, hasta, salida, lotes):
         with open(ruta, "w") as f:
             json.dump(filas[i:i + tam], f, ensure_ascii=False, indent=1)
         print(f"{ruta}: {len(filas[i:i + tam])} correos")
+    cobertura(list(textos.values()), d, h)
     categorias = {}
     for f in filas:
         cat = f["gpt"].get("ahora") or f["gpt"].get("categoria") or f["gpt"].get("evento") or "sin clasificar"
         categorias[cat] = categorias.get(cat, 0) + 1
     print(f"Total {len(filas)} correos del {d} al {h - datetime.timedelta(days=1)}: {categorias}")
+
+
+# --- Cobertura: ¿llegan a agente@ las copias de lo que envían Andrea y Javier? -----------------
+
+REMITENTES = {"Andrea": r"(?:Andrea Salcedo|asistentetecnico@alzatec\.com)",
+              "Javier": r"(?:Devoluciones Alzatec|devoluciones@alzatec\.com)"}
+MESES = {"enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6, "julio": 7, "agosto": 8,
+         "septiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12, "january": 1, "february": 2,
+         "march": 3, "april": 4, "may": 5, "june": 6, "july": 7, "august": 8, "september": 9, "october": 10,
+         "november": 11, "december": 12}
+
+
+def cobertura(correos, desde, hasta):
+    """Busca en los hilos citados los correos que mandaron Andrea y Javier (De: … Enviado: fecha y hora)
+    y revisa si su copia llegó a agente@. Si faltan, la regla de copia de su Outlook no está funcionando."""
+    import re
+    for quien, rx in REMITENTES.items():
+        enviados = []
+        for x in correos:
+            if re.search(rx, x.get("remitente") or "", re.I):
+                try:
+                    enviados.append(datetime.datetime.fromisoformat(x["fecha"]).astimezone(datetime.timezone.utc))
+                except (KeyError, TypeError, ValueError):
+                    pass
+        citados = set()
+        for x in correos:
+            texto = " ".join((x.get("citado") or "").split())
+            patron = (rx + r"[^\n]{0,150}?(?:Enviado(?: el)?|Sent|Fecha|Date):\s*\w+,?\s*(\d{1,2})\s*(?:de\s*)?(\w+)"
+                      r"\s*(?:de\s*)?(\d{4})\s*(?:a las\s*)?(\d{1,2}):(\d{2})")
+            for m in re.finditer(patron, texto, re.I):
+                mes = MESES.get(m.group(2).lower())
+                if not mes:
+                    continue
+                local = datetime.datetime(int(m.group(3)), mes, int(m.group(1)), int(m.group(4)), int(m.group(5)))
+                if desde <= local.date() < hasta:
+                    citados.add(local)
+        faltan = []
+        for local in sorted(citados):
+            # la hora citada es de Chile; se compara con las copias recibidas (±2 minutos, UTC-3 o UTC-4)
+            if not any(abs((e.replace(tzinfo=None) - (local + datetime.timedelta(hours=dh))).total_seconds()) <= 120
+                       for e in enviados for dh in (3, 4)):
+                faltan.append(local.strftime("%d-%m %H:%M"))
+        if citados:
+            print(f"Cobertura {quien}: {len(citados) - len(faltan)} de {len(citados)} correos suyos citados en hilos "
+                  f"llegaron a agente@." + (f" Faltan: {', '.join(faltan)}" if faltan else ""))
 
 
 # --- Casos verificados (bucket privado) --------------------------------------------------------
