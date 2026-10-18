@@ -241,3 +241,12 @@ Archivo: `datos/validacion/preguntas-andrea-javier.xlsx`. No está en el reposit
 - **Resumen:** el % de acierto por pregunta se calcula solo a medida que se llena.
 
 Con sus respuestas se ajusta la rúbrica, se corrigen las etiquetas de la muestra y se vuelve a correr `herramientas/revision.py evaluar` para tener el % definitivo.
+
+## 12. Criterio de la plantilla y decisiones sin preguntar (18-oct-2026)
+
+De las 22 preguntas armadas para Andrea y Javier, ninguna resultó necesaria: se resolvieron con los datos o con la regla de no perder nada (ante la duda, a pendientes).
+
+- **Plantilla de ejecutivas:** la misma plantilla dice *"Es necesario confirmar su hora por este medio para poder agendarle y mandar a preparar el equipo"*. Por eso queda **pendiente (falta confirmación)**, y la respuesta del cliente que acepta (aunque sea "gracias", "ok" o mandando chofer y patente) pasa a **despacho acordado**. Con la memoria, el modelo sabe qué fecha está confirmando el cliente. Se cambiaron 9 etiquetas de la muestra (los 8 correos que son la plantilla y A025, "¿me confirmas?").
+- **OC:** cada correo dice si la OC bloquea o no, y el clasificador sigue lo que dice ese correo.
+- **Resultado con memoria y la regla nueva:** 199/200 en las dos corridas, sin errores graves. El que queda (A086, la plantilla con la fecha mal escrita) se va a pendientes por precaución.
+- **Pendiente técnico:** un correo con dos movimientos va a una sola casilla (2 de 200). Si aparece en la operación, se reenvía a las dos.
