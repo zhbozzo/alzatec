@@ -231,3 +231,13 @@ Pruebas antes de subirlo:
 - **Regresión de casos reales**: detectó que un correo ya precargado se encontraba a sí mismo en la memoria. Se corrigió: cada correo solo ve decisiones anteriores a él. Después: 13/13.
 
 Reglas agregadas en la misma jornada: "cuando quiera" solo es pendiente si el día quedó abierto. La memoria se precargó con los 74 reenvíos ya revisados del 15 y 16-oct.
+
+## 11. Casos dudosos para Andrea y Javier (18-oct-2026)
+
+Archivo: `datos/validacion/preguntas-andrea-javier.xlsx`. No está en el repositorio porque contiene correos reales.
+
+- **Preguntas:** 16 reglas de criterio. Cada una dice cómo clasifica hoy el clasificador y por qué. Andrea y Javier marcan si están de acuerdo y, si no, cómo debería ser. Incluye las 8 preguntas originales y las reglas que se agregaron el 17 y 18 de octubre: saldo pendiente, OC reenviada, "cuando quiera", "favor agendar" interno, cotización sin enviar, memoria y material ajeno.
+- **Casos:** 57 ejemplos, cada uno con cómo lo clasificamos y la duda. Son los 47 casos con "duda de criterio" de la muestra histórica más 10 correos reales del 15 y 16 de octubre.
+- **Resumen:** el % de acierto por pregunta se calcula solo a medida que se llena.
+
+Con sus respuestas se ajusta la rúbrica, se corrigen las etiquetas de la muestra y se vuelve a correr `herramientas/revision.py evaluar` para tener el % definitivo.
