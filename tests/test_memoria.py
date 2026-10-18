@@ -88,3 +88,11 @@ def test_procesar_recuerda_lo_reenviado_y_no_repite(cfg):
     procesar(cfg, buzon, Modelo(), None, enviados.append)
     assert len(enviados) == 1                                   # el "gracias" no se reenvía
     assert "NoAplica" in buzon.marcas[2] and len(buzon.memoria.entradas) == 1
+
+
+def test_un_correo_no_se_ve_a_si_mismo_ni_a_lo_posterior():
+    c = leer(correo_crudo())                                   # fecha 13-08-2026 16:37 -04:00
+    propio = dict(acordado(fecha="2026-08-13T16:37:50-04:00"), uid=7)
+    posterior = dict(acordado(fecha="2026-08-14T09:00:00-03:00"), uid=8)
+    anterior = dict(acordado(fecha="2026-08-12T10:00:00-03:00"), uid=6)
+    assert memoria.anteriores([anterior, propio, posterior], c, uid=7) == [anterior]

@@ -65,6 +65,29 @@ def entrada(correo, decision, uid=None):
     }
 
 
+def _instante(fecha):
+    from datetime import datetime, timezone
+    try:
+        d = datetime.fromisoformat(fecha)
+        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def anteriores(historial, correo, uid=None):
+    """Solo lo decidido ANTES de este correo y nunca su propia decisión (al reprocesar o en pruebas
+    el correo ya puede estar en el registro)."""
+    propio, salida = _instante(correo.fecha), []
+    for h in historial:
+        if uid is not None and h.get("uid") == uid:
+            continue
+        cuando = _instante(h.get("fecha"))
+        if propio and cuando and cuando > propio:
+            continue
+        salida.append(h)
+    return salida
+
+
 def texto_historial(historial):
     if not historial:
         return ""

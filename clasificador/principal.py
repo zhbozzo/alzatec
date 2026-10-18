@@ -46,10 +46,10 @@ def _explicacion(resultado):
     return {c: (resultado.get(c)[:300] if isinstance(resultado.get(c), str) else resultado.get(c)) for c in campos}
 
 
-def _historial(buzon, correo):
+def _historial(buzon, correo, uid=None):
     """Lo que ya se reenvió en el hilo de este correo. Si la memoria falla, se sigue sin ella."""
     try:
-        return buzon.historial(memoria.claves_buscar(correo))
+        return memoria.anteriores(buzon.historial(memoria.claves_buscar(correo)), correo, uid)
     except Exception as e:
         registrar(evento="memoria_fallida", severity="WARNING", accion="leer", error=f"{type(e).__name__}: {e}")
         return []
@@ -103,7 +103,7 @@ def explicar(cfg, buzon, principal, texto="", uids=None, maximo=5):
     uids = uids or buzon.buscar_asunto(texto)[-maximo:]
     for uid in uids:
         correo = leer(buzon.leer(uid), cfg.max_imagenes)
-        correo.historial = _historial(buzon, correo)
+        correo.historial = _historial(buzon, correo, uid)
         decision = decidir(correo, principal)
         registrar(evento="explicacion", uid=uid, asunto=correo.asunto[:200], remitente=correo.remitente_correo,
                   fecha=correo.fecha, categoria=decision.categoria, revisar=decision.revisar, nota=decision.nota[:300],
@@ -213,7 +213,7 @@ def procesar(cfg, buzon, principal, verificador, enviar):
             decision = Decision("pendiente", dict(VACIO), revisar=True, fuente="error",
                                 nota="No se pudo leer el formato del correo. Revisar a mano.")
         else:
-            correo.historial = _historial(buzon, correo)
+            correo.historial = _historial(buzon, correo, uid)
             try:
                 decision = decidir(correo, principal, verificador)
             except ErrorServicio:
