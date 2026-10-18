@@ -49,7 +49,8 @@ def ejecutar(*argumentos):
 def registros(filtro, desde, limite=5000, job=JOB):
     f = (f'resource.type="cloud_run_job" AND resource.labels.job_name="{job}" '
          f'AND timestamp>="{desde}" AND {filtro}')
-    return [e["jsonPayload"] for e in json.loads(gcloud("logging", "read", f, "--limit", str(limite), "--format", "json"))]
+    entradas = json.loads(gcloud("logging", "read", f, "--limit", str(limite), "--format", "json"))
+    return [e.get("jsonPayload") or {"texto": e.get("textPayload", "")} for e in entradas]
 
 
 def esperar_registros(filtro, desde, cuantos=None, maximo=240, job=JOB):
@@ -202,6 +203,10 @@ def evaluar():
         gcloud("run", "jobs", "deploy", EVAL, "--source", tmp, "--region", REGION, "--quiet")
     t0 = ahora()
     gcloud("run", "jobs", "execute", EVAL, "--region", REGION, "--wait", "--quiet")
+    resumen_evaluacion(t0)
+
+
+def resumen_evaluacion(t0):
     lineas = esperar_registros('textPayload:"Coincide con la etiqueta"', t0, cuantos=1, job=EVAL)
     resumen = [e for e in json.loads(gcloud("logging", "read",
                f'resource.type="cloud_run_job" AND resource.labels.job_name="{EVAL}" AND timestamp>="{t0}" '
