@@ -5,7 +5,7 @@ import sys
 import time
 from email import message_from_bytes, policy
 
-from . import modelos
+from . import memoria, modelos
 from .buzon import CLASIFICADO, DUPLICADO, NO_APLICA, RESUMIDO
 from .modelos import ErrorServicio
 from .correo import Correo, leer
@@ -46,6 +46,53 @@ def _explicacion(resultado):
     return {c: (resultado.get(c)[:300] if isinstance(resultado.get(c), str) else resultado.get(c)) for c in campos}
 
 
+def _historial(buzon, correo):
+    """Lo que ya se reenvió en el hilo de este correo. Si la memoria falla, se sigue sin ella."""
+    try:
+        return buzon.historial(memoria.claves_buscar(correo))
+    except Exception as e:
+        registrar(evento="memoria_fallida", severity="WARNING", accion="leer", error=f"{type(e).__name__}: {e}")
+        return []
+
+
+def _recordar(buzon, correo, decision, uid):
+    try:
+        buzon.registrar_decision(memoria.claves_guardar(correo), memoria.entrada(correo, decision, uid))
+    except Exception as e:
+        registrar(evento="memoria_fallida", severity="WARNING", accion="guardar", error=f"{type(e).__name__}: {e}")
+
+
+def simular(cfg, buzon, principal, desde=None, hasta=None):
+    """Clasifica de nuevo, en orden de llegada y con memoria, los correos del rango. No reenvía, no marca y
+    no escribe en la memoria real: sirve para probar cambios antes de subirlos."""
+    local = memoria.MemoriaLocal()
+    for uid in buzon.todos_desde(desde, hasta):
+        try:
+            correo = leer(buzon.leer(uid), cfg.max_imagenes)
+        except Exception:
+            continue
+        if correo.remitente_correo == cfg.usuario.lower() or es_rebote_de_reenvio(cfg, correo):
+            continue
+        correo.historial = local.historial(memoria.claves_buscar(correo))
+        decision = decidir(correo, principal)
+        if cfg.destino(decision.categoria):
+            local.registrar_decision(memoria.claves_guardar(correo), memoria.entrada(correo, decision, uid))
+        registrar(evento="simulacion", uid=uid, asunto=correo.asunto[:200], remitente=correo.remitente_correo,
+                  categoria=decision.categoria, fuente=decision.fuente, nota=decision.nota[:300],
+                  historial=len(correo.historial), repite=decision.resultado.get("repite"),
+                  confianza=decision.resultado.get("confianza"), **_explicacion(decision.resultado))
+
+
+def precargar(cfg, buzon, decisiones):
+    """Carga en la memoria decisiones ya revisadas (uid, categoria, movimiento, fecha_movimiento, resumen)."""
+    from .reglas import Decision as D
+    for d in decisiones:
+        correo = leer(buzon.leer(int(d["uid"])), cfg.max_imagenes)
+        decision = D(d["categoria"], {k: d.get(k, "") for k in ("movimiento", "fecha_movimiento", "n_cotizacion", "resumen")})
+        buzon.registrar_decision(memoria.claves_guardar(correo), memoria.entrada(correo, decision, int(d["uid"])))
+    registrar(evento="precarga", decisiones=len(decisiones))
+
+
 def explicar(cfg, buzon, principal, texto="", uids=None, maximo=5):
     """Vuelve a clasificar los correos indicados (por UID, o los últimos cuyo asunto contiene `texto`)
     y registra el detalle.
@@ -56,6 +103,7 @@ def explicar(cfg, buzon, principal, texto="", uids=None, maximo=5):
     uids = uids or buzon.buscar_asunto(texto)[-maximo:]
     for uid in uids:
         correo = leer(buzon.leer(uid), cfg.max_imagenes)
+        correo.historial = _historial(buzon, correo)
         decision = decidir(correo, principal)
         registrar(evento="explicacion", uid=uid, asunto=correo.asunto[:200], remitente=correo.remitente_correo,
                   fecha=correo.fecha, categoria=decision.categoria, revisar=decision.revisar, nota=decision.nota[:300],
@@ -97,6 +145,7 @@ def corregir(cfg, buzon, principal, enviar, uid, ahora, antes, nota=""):
     buzon.marcar(uid, CLASIFICADO, *([NO_APLICA] if ahora == "no_aplica" else []))
     if ahora != "no_aplica":
         buzon.desmarcar(uid, NO_APLICA)
+        _recordar(buzon, correo, decision, uid)
     registrar(evento="correccion", uid=uid, asunto=correo.asunto[:200], antes=antes, ahora=ahora,
               destino=destino, aviso_a=destino_antes, nota=nota[:300])
 
@@ -164,6 +213,7 @@ def procesar(cfg, buzon, principal, verificador, enviar):
             decision = Decision("pendiente", dict(VACIO), revisar=True, fuente="error",
                                 nota="No se pudo leer el formato del correo. Revisar a mano.")
         else:
+            correo.historial = _historial(buzon, correo)
             try:
                 decision = decidir(correo, principal, verificador)
             except ErrorServicio:
@@ -181,6 +231,8 @@ def procesar(cfg, buzon, principal, verificador, enviar):
                 buzon.soltar(uid)  # si falla el envío, no se marca y se reintenta en la próxima corrida
                 raise
         buzon.marcar(uid, CLASIFICADO, *([NO_APLICA] if decision.categoria == "no_aplica" else []))
+        if destino:
+            _recordar(buzon, correo, decision, uid)
 
         costos = [costo(u) for u in decision.usos]
         registrar(
@@ -189,6 +241,7 @@ def procesar(cfg, buzon, principal, verificador, enviar):
             categoria=decision.categoria, revisar=decision.revisar, fuente=decision.fuente,
             nota=decision.nota[:300], confianza=decision.resultado.get("confianza"),
             n_cotizacion=decision.resultado.get("n_cotizacion"), destino=destino,
+            historial=len(correo.historial), repite=decision.resultado.get("repite"),
             **_explicacion(decision.resultado),
             modelos=[u.modelo for u in decision.usos],
             tokens=[[u.entrada, u.entrada_cache, u.salida] for u in decision.usos],
@@ -315,6 +368,13 @@ def main(argv=None):
                 explicar(cfg, buzon, principal, uids=[int(a) for a in argv[1:]])
             else:
                 explicar(cfg, buzon, principal, " ".join(argv[1:]))
+            return
+        elif accion == "simular":  # simular [desde] [hasta]: reclasifica con memoria sin reenviar ni marcar
+            simular(cfg, buzon, modelos.crear(cfg.modelo, cfg.esfuerzo), *(argv[1:3]))
+            return
+        elif accion == "precargar":  # precargar BASE64(JSON con decisiones revisadas)
+            import base64
+            precargar(cfg, buzon, json.loads(base64.b64decode("".join(argv[1:])).decode()))
             return
         elif accion == "corregir":  # corregir UID CATEGORIA_CORRECTA CATEGORIA_ANTERIOR [motivo]
             corregir(cfg, buzon, modelos.crear(cfg.modelo, cfg.esfuerzo), enviar,

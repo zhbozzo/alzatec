@@ -239,3 +239,46 @@ def test_cambiar_marcas_solo_las_del_clasificador():
     assert ("STORE", "7", "+FLAGS", "(Resumido)") in b.imap.llamadas
     with pytest.raises(ValueError):
         b.cambiar_marcas(["+\\Deleted"], [7])
+
+
+class ImapRegistro(ImapFalso):
+    """Carpeta INBOX.Registro con búsqueda por asunto, como Dovecot."""
+
+    def __init__(self):
+        super().__init__()
+        self.seleccionada, self.mensajes = "INBOX", {}
+
+    def namespace(self):
+        return "OK", [b'(("INBOX." ".")) NIL NIL']
+
+    def create(self, carpeta):
+        return "NO", [b"ya existe"]
+
+    def select(self, carpeta):
+        if carpeta not in ("INBOX", "INBOX.Registro"):
+            return "NO", [b"no existe"]
+        self.seleccionada = carpeta
+        return "OK", [b"1"]
+
+    def append(self, carpeta, flags, fecha, texto):
+        self.mensajes[len(self.mensajes) + 1] = texto
+        return "OK", [b""]
+
+    def uid(self, comando, *args):
+        if self.seleccionada == "INBOX.Registro" and comando == "SEARCH":
+            buscado = args[-1].strip('"').encode()
+            return "OK", [b" ".join(str(u).encode() for u, t in self.mensajes.items() if buscado in t.split(b"\r\n")[0])]
+        if self.seleccionada == "INBOX.Registro" and comando == "FETCH":
+            cuerpo = self.mensajes[int(args[0])].split(b"\r\n\r\n", 1)[1]
+            return "OK", [(b"1 (BODY[TEXT] {10}", cuerpo), b")"]
+        return super().uid(comando, *args)
+
+
+def test_registro_guarda_y_encuentra_por_clave():
+    b = Buzon(Config(contrasena="x"))
+    b.imap = ImapRegistro()
+    b.registrar_decision(["c:28204", "h:abc"], {"fecha": "2026-10-16T10:00", "categoria": "despacho_acordado"})
+    b.registrar_decision(["c:99999"], {"fecha": "2026-10-16T11:00", "categoria": "pendiente"})
+    assert [h["categoria"] for h in b.historial(["c:28204"])] == ["despacho_acordado"]
+    assert b.historial(["c:11111"]) == [] and b.imap.seleccionada == "INBOX"
+    assert b.historial([]) == []

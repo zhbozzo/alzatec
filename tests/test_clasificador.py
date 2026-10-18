@@ -28,11 +28,11 @@ def correo_crudo(asunto="Re: Cotización Alzatec N°27801 - CYPCO - ECOPARK", de
     return m.as_bytes()
 
 
-def resultado(categoria="pendiente", falta=("fecha_hora",), confianza="alta", movimiento="despacho"):
+def resultado(categoria="pendiente", falta=("fecha_hora",), confianza="alta", movimiento="despacho", repite=False):
     return {"categoria": categoria, "movimiento": movimiento, "falta": list(falta),
             "fecha_movimiento": "", "n_cotizacion": "27801", "cliente": "CYPCO", "obra": "ECOPARK",
             "resumen": "Cliente aprueba y pide despachar; falta fecha.", "motivo": "\"Por favor despachar\"",
-            "confianza": confianza}
+            "confianza": confianza, "repite": repite}
 
 
 class ModeloFalso:

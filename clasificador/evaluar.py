@@ -16,7 +16,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from email.utils import getaddresses
 
-from . import modelos
+from . import memoria, modelos
 from .correo import Correo, Imagen
 from .principal import costo
 from .reglas import ACORDADOS, decidir
@@ -56,6 +56,49 @@ def correo_de_muestra(x, rutas_imagenes):
                   adjuntos=[a for a in rutas_imagenes if a.endswith(".pdf")])
 
 
+def con_memoria(muestra, adjuntos, principal, verificador, a):
+    """Agrupa los correos por hilo (claves de memoria.py) y procesa cada hilo en orden cronológico."""
+    correos = {x["id"]: correo_de_muestra(x, adjuntos.get(x["id"], [])) for x in muestra}
+    padre = {i: i for i in correos}
+
+    def raiz(i):
+        while padre[i] != i:
+            padre[i] = padre[padre[i]]
+            i = padre[i]
+        return i
+    duenos = {}
+    for i, c in correos.items():
+        for k in memoria.claves_buscar(c) + memoria.claves_guardar(c):
+            if k in duenos:
+                padre[raiz(i)] = raiz(duenos[k])
+            else:
+                duenos[k] = i
+    hilos = {}
+    for i in sorted(correos, key=lambda i: correos[i].fecha or ""):
+        hilos.setdefault(raiz(i), []).append(i)
+
+    def hilo(ids):
+        local, salida = memoria.MemoriaLocal(), []
+        for i in ids:
+            c = correos[i]
+            c.historial = local.historial(memoria.claves_buscar(c))
+            d = decidir(c, principal, verificador)
+            if d.categoria != "no_aplica":
+                local.registrar_decision(memoria.claves_guardar(c), memoria.entrada(c, d))
+            p = {"id": i, "categoria": d.categoria, "revisar": d.revisar, "fuente": d.fuente, "nota": d.nota,
+                 "historial": len(c.historial), "resultado": d.resultado,
+                 "costo": sum(x for x in (costo(u) for u in d.usos) if x)}
+            if a.registrar:
+                print(json.dumps(dict(p, evento="evaluacion"), ensure_ascii=False), flush=True)
+            salida.append(p)
+        return salida
+    with ThreadPoolExecutor(a.hilos) as ex:
+        resultados = [p for grupo in ex.map(hilo, hilos.values()) for p in grupo]
+    print(f"Hilos: {len(hilos)} (con más de un correo: {sum(len(v) > 1 for v in hilos.values())})")
+    orden = {x["id"]: n for n, x in enumerate(muestra)}
+    return sorted(resultados, key=lambda p: orden[p["id"]])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--modelo", required=True)
@@ -65,6 +108,8 @@ def main():
     ap.add_argument("--hilos", type=int, default=6)
     ap.add_argument("--salida", default="")
     ap.add_argument("--registrar", action="store_true", help="imprimir cada predicción como JSON (para Cloud Run)")
+    ap.add_argument("--memoria", action="store_true",
+                    help="cada hilo en orden cronológico, con memoria de lo reenviado antes (como en producción)")
     a = ap.parse_args()
 
     muestra = [json.loads(l) for l in open(f"{DATOS}/muestra.jsonl", encoding="utf-8")]
@@ -83,8 +128,11 @@ def main():
             print(json.dumps(dict(p, evento="evaluacion"), ensure_ascii=False), flush=True)
         return p
 
-    with ThreadPoolExecutor(a.hilos) as ex:
-        preds = list(ex.map(uno, muestra))
+    if a.memoria:
+        preds = con_memoria(muestra, adjuntos, principal, verificador, a)
+    else:
+        with ThreadPoolExecutor(a.hilos) as ex:
+            preds = list(ex.map(uno, muestra))
 
     salida = a.salida or f"{DATOS}/eval_{a.modelo.replace(':', '_')}_{a.verificador.replace(':', '_') or 'solo'}.json"
     json.dump(preds, open(salida, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

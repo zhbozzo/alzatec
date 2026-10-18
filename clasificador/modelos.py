@@ -72,6 +72,7 @@ def diagnosticar(e, proveedor, modelo, sdk):
 
 
 def _validar(resultado):
+    resultado.setdefault("repite", False)  # campo nuevo: si un proveedor no lo trae, se asume que no repite
     faltan = [k for k in ESQUEMA["required"] if k not in resultado]
     if faltan:
         raise ErrorModelo(f"respuesta sin los campos {faltan}")

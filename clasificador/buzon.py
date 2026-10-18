@@ -18,6 +18,7 @@ las carpetas van dentro de la bandeja de entrada, así que se llama "INBOX.Alert
 """
 
 import imaplib
+import json
 import re
 import ssl
 import time
@@ -30,7 +31,7 @@ class Buzon:
     def __init__(self, cfg):
         self.cfg = cfg
         self.imap = None
-        self._carpeta_alertas = None
+        self._carpetas = {}
 
     def conectar(self):
         self.imap = imaplib.IMAP4_SSL(self.cfg.imap_host, self.cfg.imap_puerto,
@@ -172,8 +173,8 @@ class Buzon:
         """Libera la reserva para que la próxima corrida lo vuelva a tomar."""
         self.imap.uid("STORE", str(uid), "-FLAGS", "(" + " ".join(f"Toma{i}" for i in range(6)) + ")")
 
-    # --- Alertas -------------------------------------------------------------
-    def _nombres_alertas(self):
+    # --- Carpetas propias (Alertas, Registro) -------------------------------------
+    def _nombres_carpeta(self, base):
         """Nombres posibles de la carpeta, empezando por el que indica el servidor (NAMESPACE)."""
         prefijo = ""
         try:
@@ -183,19 +184,51 @@ class Buzon:
                 prefijo = m.group(1).decode()
         except Exception:
             pass
-        return list(dict.fromkeys([prefijo + "Alertas", "INBOX.Alertas", "INBOX/Alertas", "Alertas"]))
+        return list(dict.fromkeys([prefijo + base, f"INBOX.{base}", f"INBOX/{base}", base]))
 
-    def _en_alertas(self, funcion):
+    def _en_carpeta(self, base, funcion):
         try:
-            for nombre in [self._carpeta_alertas] if self._carpeta_alertas else self._nombres_alertas():
+            for nombre in [self._carpetas[base]] if base in self._carpetas else self._nombres_carpeta(base):
                 self.imap.create(nombre)  # si ya existe, el servidor responde NO y no pasa nada
                 typ, _ = self.imap.select(nombre)
                 if typ == "OK":
-                    self._carpeta_alertas = nombre
+                    self._carpetas[base] = nombre
                     return funcion()
-            raise RuntimeError("No se pudo abrir la carpeta Alertas")
+            raise RuntimeError(f"No se pudo abrir la carpeta {base}")
         finally:
             self.imap.select("INBOX")
+
+    def _en_alertas(self, funcion):
+        return self._en_carpeta("Alertas", funcion)
+
+    # --- Memoria entre correos (ver memoria.py) -------------------------------------
+    def registrar_decision(self, claves, datos):
+        asunto = "registro " + " ".join(f"[{c}]" for c in claves)
+        texto = (f"Subject: {asunto}\r\nDate: {formatdate()}\r\nContent-Type: application/json\r\n\r\n"
+                 f"{json.dumps(datos, ensure_ascii=True)}\r\n").encode()
+        self._en_carpeta("Registro", lambda: self.imap.append(
+            self._carpetas["Registro"], None, imaplib.Time2Internaldate(time.time()), texto))
+
+    def historial(self, claves, maximo=6, dias=45):
+        """Decisiones registradas para estas claves en los últimos `dias`, de la más antigua a la más nueva."""
+        if not claves:
+            return []
+        desde = time.strftime("%d-%b-%Y", time.gmtime(time.time() - dias * 86400))
+
+        def buscar():
+            uids = set()
+            for c in claves:
+                uids.update(self._buscar("SINCE", desde, "HEADER", "Subject", f'"[{c}]"'))
+            datos = []
+            for uid in sorted(uids)[-40:]:
+                typ, data = self.imap.uid("FETCH", str(uid), "(BODY.PEEK[TEXT])")
+                cuerpo = next((d[1] for d in data or [] if isinstance(d, tuple)), b"")
+                try:
+                    datos.append(json.loads(cuerpo.decode("utf-8", "replace").strip()))
+                except ValueError:
+                    pass
+            return sorted(datos, key=lambda d: d.get("fecha") or "")[-maximo:]
+        return self._en_carpeta("Registro", buscar)
 
     def _alertas(self):
         """[(uid, tipo, epoch)] de las alertas no resueltas."""
@@ -216,7 +249,7 @@ class Buzon:
 
     def registrar_alerta(self, tipo, ahora):
         texto = f"Subject: alerta:{tipo}\r\nDate: {formatdate(ahora)}\r\n\r\n{tipo}\r\n".encode()
-        self._en_alertas(lambda: self.imap.append(self._carpeta_alertas, None,
+        self._en_alertas(lambda: self.imap.append(self._carpetas["Alertas"], None,
                                                   imaplib.Time2Internaldate(ahora), texto))
 
     def alertas_abiertas(self):

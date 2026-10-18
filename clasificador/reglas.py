@@ -32,7 +32,8 @@ SENAL_MOVIMIENTO = re.compile(
     re.I)
 
 VACIO = {"categoria": "pendiente", "movimiento": "ninguno", "falta": [], "fecha_movimiento": "",
-         "n_cotizacion": "", "cliente": "", "obra": "", "resumen": "", "motivo": "", "confianza": "baja"}
+         "n_cotizacion": "", "cliente": "", "obra": "", "resumen": "", "motivo": "", "confianza": "baja",
+         "repite": False}
 
 
 @dataclass
@@ -41,7 +42,7 @@ class Decision:
     resultado: dict
     revisar: bool = False
     nota: str = ""
-    fuente: str = "modelo"            # regla | modelo | verificado | error
+    fuente: str = "modelo"            # regla | modelo | verificado | memoria | correccion | error
     usos: list = field(default_factory=list)
 
 
@@ -91,6 +92,17 @@ def decidir(correo, principal, verificador=None):
             notas.append(f"El modelo decía {cat}; se aplicó la regla fija ({pre[1]}).")
         cat = r["categoria"] = pre[0]
         return Decision(cat, r, nota=" ".join(notas), fuente="regla", usos=usos)
+
+    # Memoria: un correo que solo repite un acuerdo ya reenviado (gracias, recibido, recordatorio) no se reenvía.
+    # Se exige que el historial tenga de verdad ese acuerdo; si el modelo ve algo pendiente, se reenvía igual.
+    acordado_antes = [h for h in correo.historial
+                      if h.get("categoria") in ACORDADOS and h.get("movimiento") == r.get("movimiento")]
+    if r.get("repite") and acordado_antes and cat in ACORDADOS | {"no_aplica"}:
+        h = acordado_antes[-1]
+        notas.append(f"Repite un acuerdo que ya se reenvió el {(h.get('fecha') or '')[:10]} "
+                     f"({h.get('fecha_movimiento') or 'misma fecha'}); no se vuelve a reenviar.")
+        r["categoria"] = "no_aplica"
+        return Decision("no_aplica", r, nota=" ".join(notas), fuente="memoria", usos=usos)
 
     if cat in ACORDADOS and r["falta"]:
         notas.append(f"El modelo marcó {cat} pero indicó que falta: {', '.join(r['falta'])}.")

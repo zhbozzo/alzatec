@@ -43,6 +43,8 @@ class Correo:
     adjuntos: list = field(default_factory=list)  # nombres de los adjuntos que no son imagen
     crudo: bytes = b""
     ilegible: bool = False
+    referencias: list = field(default_factory=list)  # Message-ID de In-Reply-To y References
+    historial: list = field(default_factory=list)    # decisiones anteriores del mismo hilo (memoria.py)
 
 
 def html_a_texto(h):
@@ -118,4 +120,5 @@ def leer(crudo, max_imagenes=8):
         imagenes=imagenes,
         adjuntos=adjuntos,
         crudo=crudo,
+        referencias=re.findall(r"<[^<>\s]+>", f"{msg.get('References', '')} {msg.get('In-Reply-To', '')}"),
     )
