@@ -219,3 +219,15 @@ GPT-6.1 Sol no se había medido con la muestra histórica. Se corrió dentro de 
 Ajustes a los datos: en 35 correos de muestra la dirección de Javier venía sin "@" (un problema del archivo de muestra, no de producción), y las 8 etiquetas del criterio 3 se pasaron a pendiente según la decisión del 17-oct. Los originales quedaron respaldados en `datos/validacion/*_antes_17oct.*`.
 
 Los 3 desacuerdos que quedan son preguntas de criterio para Andrea y Javier, y ninguno pierde un movimiento real: (1) el día de la devolución el cliente avisa "el camión está en su planta" (el acuerdo ya se había reenviado); (2) Javier pregunta "¿van a venir hoy?" sobre una hora ya agendada; (3) "devuelva cuando quiera" y el cliente responde "OK". Comparación: Sonnet 5.5 sacó 190/200 y Haiku 5.5 177/200 con la rúbrica anterior. Costo: US$0,75 por los 200 correos.
+
+## 10. Memoria entre correos (18-oct-2026)
+
+El clasificador ahora recuerda qué reenvió antes en el mismo hilo o cotización. Cada reenvío deja una entrada en la carpeta `INBOX.Registro` de agente@, y cuando llega un correo se le pasan al modelo las decisiones anteriores de su hilo. El hilo se reconoce por el número de cotización, por el asunto junto con el dominio del cliente (así un asunto genérico como "Hora devolución" no mezcla clientes distintos) y por las referencias del correo. Si un correo solo repite un acuerdo que ya se reenvió (gracias, recibido, un recordatorio), no se vuelve a reenviar. Esto solo pasa si el historial tiene de verdad ese acuerdo. Costo: casi igual, unos US$0,001 más por correo con historial.
+
+Pruebas antes de subirlo:
+
+- **200 históricos con memoria** (cada hilo en orden cronológico): 199/200 y 198/200 en dos corridas, contra 197/200 sin memoria. Los casos que fallan cambian de una corrida a otra (J047, A086, A092): es el ruido del modelo en casos límite, no un error sistemático.
+- **164 correos reales del 15 y 16-oct, simulados con memoria** sin reenviar: 158/162 iguales a la decisión ya revisada. 1 duplicado evitado (un "Gracias" a un despacho ya reenviado), 1 caso discutible que quedó en acordado (la ejecutiva confirma la fecha y la aprobación que pide es para facturar) y 2 que suman ruido en pendientes (el lado seguro). Ningún movimiento perdido.
+- **Regresión de casos reales**: detectó que un correo ya precargado se encontraba a sí mismo en la memoria. Se corrigió: cada correo solo ve decisiones anteriores a él. Después: 13/13.
+
+Reglas agregadas en la misma jornada: "cuando quiera" solo es pendiente si el día quedó abierto. La memoria se precargó con los 74 reenvíos ya revisados del 15 y 16-oct.
