@@ -377,6 +377,10 @@ def main(argv=None):
         elif accion == "estado":  # solo informa, no toca ningún correo
             registrar(evento="estado", desde=cfg.desde, **buzon.estado())
             return
+        elif accion == "buscar":  # buscar DESDE termino...: en todas las carpetas, solo lectura
+            registrar(evento="busqueda", desde=argv[1], terminos=argv[2:],
+                      carpetas=buzon.buscar_en_carpetas(argv[1], argv[2:]))
+            return
         elif accion == "marcas":  # mantención: marcas +Resumido -Clasificado 120 121 ...
             cambios = [a for a in argv[1:] if a[:1] in "+-"]
             uids = [int(a) for a in argv[1:] if a.isdigit()]

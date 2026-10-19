@@ -169,6 +169,40 @@ class Buzon:
             "ultimos": ultimos,
         }
 
+    def buscar_en_carpetas(self, desde, terminos, maximo=15):
+        """Diagnóstico de solo lectura: en TODAS las carpetas de agente@ (Spam incluida) busca correos desde
+        `desde` (formato IMAP) por remitente (término con @) o por texto del asunto. Sirve para saber si una
+        copia no llegó o llegó a otra carpeta que el clasificador no lee."""
+        from email import message_from_bytes, policy
+        typ, data = self.imap.list()
+        carpetas = []
+        for linea in data or []:
+            linea = linea.decode(errors="replace") if isinstance(linea, bytes) else str(linea)
+            m = re.search(r'"([^"]+)"\s*$', linea) or re.search(r"(\S+)\s*$", linea)
+            if m:
+                carpetas.append(m.group(1))
+        salida = {}
+        try:
+            for carpeta in carpetas:
+                typ, _ = self.imap.select(f'"{carpeta}"', readonly=True)
+                if typ != "OK":
+                    continue
+                hallados = []
+                for t in terminos:
+                    criterio = ("FROM", t) if "@" in t else ("SUBJECT", '"' + t.replace('"', "") + '"')
+                    for uid in self._buscar("SINCE", desde, *criterio)[-maximo:]:
+                        typ, d = self.imap.uid("FETCH", str(uid), "(INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT)])")
+                        meta = next((x[0] for x in d or [] if isinstance(x, tuple)), b"").decode(errors="replace")
+                        h = message_from_bytes(next((x[1] for x in d or [] if isinstance(x, tuple)), b""), policy=policy.default)
+                        fecha = re.search(r'INTERNALDATE "([^"]+)"', meta)
+                        hallados.append({"termino": t, "uid": uid, "llegada": fecha.group(1) if fecha else "",
+                                         "de": str(h.get("From", ""))[:80], "para": str(h.get("To", ""))[:80],
+                                         "asunto": str(h.get("Subject", ""))[:90]})
+                salida[carpeta] = {"total": len(self._buscar("ALL")), "hallados": hallados}
+        finally:
+            self.imap.select("INBOX")
+        return salida
+
     def soltar(self, uid):
         """Libera la reserva para que la próxima corrida lo vuelva a tomar."""
         self.imap.uid("STORE", str(uid), "-FLAGS", "(" + " ".join(f"Toma{i}" for i in range(6)) + ")")
