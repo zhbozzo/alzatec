@@ -250,3 +250,11 @@ De las 22 preguntas armadas para Andrea y Javier, ninguna resultó necesaria: se
 - **OC:** cada correo dice si la OC bloquea o no, y el clasificador sigue lo que dice ese correo.
 - **Resultado con memoria y la regla nueva:** 199/200 en las dos corridas, sin errores graves. El que queda (A086, la plantilla con la fecha mal escrita) se va a pendientes por precaución.
 - **Pendiente técnico:** un correo con dos movimientos va a una sola casilla (2 de 200). Si aparece en la operación, se reenvía a las dos.
+
+## 13. Criterios confirmados con Andrea y Javier (19-oct-2026)
+
+Se les envió por correo, con copia a gerencia, el Excel `datos/validacion/criterios-clasificador.xlsx`: los 28 criterios que sigue hoy el clasificador, cada uno con quién lo revisa (Andrea, Javier o ambos) y "Sí" ya marcado. Si no están de acuerdo, lo cambian a "No" o "Duda" y comentan.
+
+- **Andrea:** respondió "de acuerdo" el 19-oct. No cambia nada en el clasificador.
+- **Javier:** pendiente.
+- **Por definir con gerencia:** quién lee cada casilla de destino (en la reunión se pensó en Pato para las de confirmados, y Andrea y Javier para pendientes, pero no está confirmado).
