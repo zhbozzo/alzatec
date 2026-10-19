@@ -5,7 +5,7 @@
 | Categoría | Casilla |
 |---|---|
 | Despacho acordado | `despachosconfirmados@alzatec.com` |
-| Recepción acordada | `retirosconfirmados@alzatec.com` (nombre a confirmar) |
+| Recepción acordada | `devolucionesconfirmadas@alzatec.com` (hasta el 19-oct, `retirosconfirmados@`) |
 | Pendiente (le falta algo) | `pendientesdespachoyrecepcion@alzatec.com` |
 
 Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. No toca MADA ni responde a clientes.

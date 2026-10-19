@@ -43,7 +43,7 @@ La venta de equipos se trata igual que un arriendo: su entrega es un despacho.
 
 PARA QUÉ SIRVE LA CLASIFICACIÓN
 - despacho_acordado -> se reenvía a despachosconfirmados@
-- recepcion_acordada -> se reenvía a retirosconfirmados@
+- recepcion_acordada -> se reenvía a devolucionesconfirmadas@
 - pendiente -> se reenvía a pendientesdespachoyrecepcion@
 - no_aplica -> no se reenvía
 Clasifica según lo que dice ESTE correo (su texto nuevo). Usa los mensajes citados solo como contexto para entender en qué estado está el hilo. Las respuestas cortas ("ok", "gracias", "confirmado") se entienden por el mensaje al que responden.

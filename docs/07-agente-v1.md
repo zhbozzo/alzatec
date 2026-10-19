@@ -38,7 +38,7 @@ flowchart TD
   D -->|no| E["IA: clasificar y extraer (JSON)"]
   E --> F["Reglas"]
   F -->|despacho acordado| G1["Reenviar a despachosconfirmados@"]
-  F -->|recepción acordada| G2["Reenviar a retirosconfirmados@"]
+  F -->|recepción acordada| G2["Reenviar a devolucionesconfirmadas@"]
   F -->|pendiente o dudoso| G3["Reenviar a pendientesdespachoyrecepcion@"]
   F -->|no aplica| L
   G1 --> L2["Registro"]

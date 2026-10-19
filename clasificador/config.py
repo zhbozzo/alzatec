@@ -30,7 +30,7 @@ class Config:
     casilla_prueba: str = ""
     destinos: dict = field(default_factory=lambda: {
         "despacho_acordado": "despachosconfirmados@alzatec.com",
-        "recepcion_acordada": "retirosconfirmados@alzatec.com",
+        "recepcion_acordada": "devolucionesconfirmadas@alzatec.com",
         "pendiente": "pendientesdespachoyrecepcion@alzatec.com",
     })
     # A quién va el resumen diario de lo descartado ("no aplica"); por defecto, a los de las alertas

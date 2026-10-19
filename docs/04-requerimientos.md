@@ -12,7 +12,7 @@ A los correos de Andrea y de Javier llegan diariamente unas **25–35 cotizacion
 | Categoría | Casilla de destino |
 |---|---|
 | **Despacho acordado** | `despachosconfirmados@alzatec.com` |
-| **Recepción acordada** | `retirosconfirmados@alzatec.com` **[validar nombre]** |
+| **Recepción acordada** | `devolucionesconfirmadas@alzatec.com` (desde el 19-oct; antes `retirosconfirmados@`) |
 | **Pendiente**: despacho o recepción al que le falta algo | `pendientesdespachoyrecepcion@alzatec.com` |
 
 Las cotizaciones y el resto de los correos **no se mueven**: siguen donde están.
@@ -94,6 +94,6 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 ## 8. Supuestos y pendientes
 
 - ✓ Andrea usa `asistentetecnico@alzatec.com` (y recibe copia en `departamentotecnico@`); Javier usa `devoluciones@alzatec.com`. Se confirmó con la base de correos.
-- El nombre final de la casilla de recepciones (`retirosconfirmados@`), y si conviene usar la `devoluciones@` que ya existe **[validar]**.
+- El nombre final de la casilla de recepciones: `devolucionesconfirmadas@` (19-oct, a propuesta de Paola Briceño; "retiro" en Alzatec es despacho).
 - Quién lee cada casilla de destino: lo define Alzatec internamente (19-oct).
 - La frase incompleta de la reunión: "cuando un vendedor coordina un despacho en la misma llamada debe…" **[completar]**.

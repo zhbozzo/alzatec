@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Instala el clasificador en Google Cloud: prueba las claves, sube el código, hace la primera corrida
 # y lo deja revisando agente@ cada 3 minutos.
-# Reenvía directo a las casillas reales: despachosconfirmados@, retirosconfirmados@ y pendientesdespachoyrecepcion@.
+# Reenvía directo a las casillas reales: despachosconfirmados@, devolucionesconfirmadas@ y pendientesdespachoyrecepcion@.
 # Correr en Cloud Shell:  bash alzatec/deploy/instalar.sh
 # Se puede volver a correr cuantas veces haga falta: lo que ya está hecho se salta.
 # Las claves se escriben aquí mismo, se prueban y quedan en Secret Manager; no se muestran ni se guardan en el historial.
