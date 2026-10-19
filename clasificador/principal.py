@@ -150,6 +150,30 @@ def corregir(cfg, buzon, principal, enviar, uid, ahora, antes, nota=""):
               destino=destino, aviso_a=destino_antes, nota=nota[:300])
 
 
+TRASPASO = ("Ya se había reenviado a retirosconfirmados@. Desde el 19-oct las devoluciones acordadas "
+            "llegan a esta casilla.")
+
+
+def traspasar(cfg, buzon, principal, enviar, uids, nota=TRASPASO):
+    """Reenvía a la casilla actual de recepciones acordadas las que ya se habían reenviado a la anterior
+    (cambio de casilla). Usa los datos que guardó la memoria en ese reenvío; si no están, vuelve a
+    resumir el correo. No cambia marcas ni memoria."""
+    destino = cfg.destino("recepcion_acordada")
+    for uid in uids:
+        correo = leer(buzon.leer(uid), cfg.max_imagenes)
+        previo = next((h for h in buzon.historial(memoria.claves_guardar(correo), maximo=50)
+                       if h.get("uid") == uid and h.get("categoria") == "recepcion_acordada"), None)
+        if previo:
+            resultado = dict(VACIO, categoria="recepcion_acordada", movimiento="recepcion",
+                             **{k: previo.get(k, "") for k in ("fecha_movimiento", "n_cotizacion", "resumen")})
+        else:
+            resultado = dict(decidir(correo, principal).resultado, categoria="recepcion_acordada", falta=[])
+        enviar(armar_reenvio(cfg, correo, Decision("recepcion_acordada", resultado, fuente="traspaso", nota=nota),
+                             destino))
+        registrar(evento="traspaso", uid=uid, asunto=correo.asunto[:200], destino=destino, memoria=bool(previo),
+                  fecha_movimiento=resultado.get("fecha_movimiento"))
+
+
 def exportar(cfg, buzon, desde=None, hasta=None):
     """Registra el texto de los correos (desde la fecha de inicio, o del rango dado en formato IMAP:
     19-Oct-2026), para revisar a distancia la clasificación. No llama al modelo ni marca nada.
@@ -375,6 +399,10 @@ def main(argv=None):
         elif accion == "precargar":  # precargar BASE64(JSON con decisiones revisadas)
             import base64
             precargar(cfg, buzon, json.loads(base64.b64decode("".join(argv[1:])).decode()))
+            return
+        elif accion == "traspasar":  # traspasar UID UID...: recepciones ya reenviadas, a la casilla actual
+            traspasar(cfg, buzon, modelos.crear(cfg.modelo, cfg.esfuerzo), enviar,
+                      [int(a) for a in argv[1:] if a.isdigit()])
             return
         elif accion == "corregir":  # corregir UID CATEGORIA_CORRECTA CATEGORIA_ANTERIOR [motivo]
             corregir(cfg, buzon, modelos.crear(cfg.modelo, cfg.esfuerzo), enviar,

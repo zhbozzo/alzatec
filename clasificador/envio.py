@@ -20,7 +20,7 @@ FALTAS = {
 
 
 def asunto_reenvio(cfg, correo, decision):
-    partes = ["[CORREGIDO]"] if decision.fuente == "correccion" else []
+    partes = {"correccion": ["[CORREGIDO]"], "traspaso": ["[TRASPASO]"]}.get(decision.fuente, [])
     if cfg.prefijo:
         partes.append(cfg.prefijo)
     if cfg.modo == "sombra":
@@ -36,6 +36,8 @@ def cuerpo_reenvio(correo, decision):
     lineas = [f"Categoría: {ETIQUETAS[decision.categoria]}"]
     if decision.fuente == "correccion":
         lineas.append(f"Corrección: {decision.nota}")
+    if decision.fuente == "traspaso":
+        lineas.append(f"Traspaso: {decision.nota}")
     if decision.revisar:
         lineas.append(f"REVISAR: {decision.nota}")
     if decision.categoria == "pendiente" and r.get("falta"):
@@ -49,7 +51,7 @@ def cuerpo_reenvio(correo, decision):
         lineas.append(f"Resumen: {r['resumen']}")
     if r.get("motivo"):
         lineas.append(f"Por qué: {r['motivo']}")
-    if decision.nota and not decision.revisar and decision.fuente != "correccion":
+    if decision.nota and not decision.revisar and decision.fuente not in ("correccion", "traspaso"):
         lineas.append(f"Nota: {decision.nota}")
     lineas += [
         "",

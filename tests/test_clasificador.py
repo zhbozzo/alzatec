@@ -422,3 +422,34 @@ def test_corregir_tipo_cambiado_reenvia_y_avisa(cfg):
     assert [m["To"] for m in enviados] == [cfg.destino("recepcion_acordada"), cfg.destino("despacho_acordado")]
     with pytest.raises(ValueError):
         corregir(cfg, buzon, ModeloFalso(resultado()), enviados.append, 1, "pendiente", "pendiente")
+
+
+class BuzonConMemoria(BuzonFalso):
+    def __init__(self, crudos, historial):
+        super().__init__(crudos)
+        self.entradas = historial
+
+    def historial(self, claves, maximo=6, dias=45):
+        return self.entradas
+
+
+def test_traspasar_reenvia_con_los_datos_de_la_memoria_sin_llamar_al_modelo(cfg):
+    from clasificador.principal import traspasar
+    previo = {"uid": 1, "categoria": "recepcion_acordada", "fecha_movimiento": "jue 22-10-2026 12:00",
+              "n_cotizacion": "", "resumen": "Javier agenda la devolución para el jueves a las 12:00."}
+    buzon, enviados, modelo = BuzonConMemoria([correo_crudo()], [previo]), [], ModeloFalso(resultado())
+    traspasar(cfg, buzon, modelo, enviados.append, [1])
+    assert modelo.llamadas == 0 and len(enviados) == 1
+    m = enviados[0]
+    assert m["To"] == cfg.destino("recepcion_acordada")
+    assert m["Subject"].startswith("[TRASPASO]") and "[RECEPCIÓN ACORDADA]" in m["Subject"]
+    cuerpo = m.get_body(("plain",)).get_content()
+    assert "jue 22-10-2026 12:00" in cuerpo and "retirosconfirmados@" in cuerpo
+    assert buzon.marcas[1] == set()
+
+
+def test_traspasar_sin_memoria_vuelve_a_resumir(cfg):
+    from clasificador.principal import traspasar
+    buzon, enviados, modelo = BuzonConMemoria([correo_crudo()], []), [], ModeloFalso(resultado("recepcion_acordada", falta=()))
+    traspasar(cfg, buzon, modelo, enviados.append, [1])
+    assert modelo.llamadas == 1 and "[RECEPCIÓN ACORDADA]" in enviados[0]["Subject"]
