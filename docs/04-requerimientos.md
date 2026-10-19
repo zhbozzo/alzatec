@@ -95,5 +95,5 @@ Prioridad: **I** = imprescindible, **M** = importante, **D** = deseable.
 
 - ✓ Andrea usa `asistentetecnico@alzatec.com` (y recibe copia en `departamentotecnico@`); Javier usa `devoluciones@alzatec.com`. Se confirmó con la base de correos.
 - El nombre final de la casilla de recepciones (`retirosconfirmados@`), y si conviene usar la `devoluciones@` que ya existe **[validar]**.
-- Quién lee cada casilla de destino **[validar]**.
+- Quién lee cada casilla de destino: lo define Alzatec internamente (19-oct).
 - La frase incompleta de la reunión: "cuando un vendedor coordina un despacho en la misma llamada debe…" **[completar]**.

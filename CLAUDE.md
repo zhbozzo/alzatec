@@ -36,7 +36,6 @@ Clasificador de correos (etapa 1), código en `clasificador/`:
 ## Pendientes
 
 - **Copia de enviados incompleta (18-oct):** el 15 y 16-oct llegaron a agente@ solo 1 de 11 correos enviados por Andrea y 3 de 8 de Javier (las reglas de Outlook se probaron el viernes ~11:30). Verificar el lunes con la cobertura de `revision.py exportar`; lo recomendado es que Víctor haga la copia de salida en el servidor para ambos.
-- **Quién lee cada casilla de destino:** por definir con gerencia (docs/04, "[validar]").
 - Revisar los primeros días: `[REVISAR]`, resumen diario de descartados, gasto.
 - Primera revisión (17-oct, 159 correos): 96,2% de coincidencia con la revisión de Opus (1 grave); tras corregir la rúbrica, 98,7% y 0 graves. Detalle en `docs/09-analisis-correos.md` §8.
 - Validación histórica (18-oct, 200 correos): sin memoria 197/200; con memoria y la regla de la plantilla, 199/200 en dos corridas (casos límite: A086, y a veces J047 y A092). Criterios (28) enviados a Andrea y Javier el 19-oct: Andrea y Javier respondieron "de acuerdo" con todos (§13). Se reevalúa con `python3 herramientas/revision.py evaluar`. Simulación con los correos reales: job `clasificador-prueba`. Detalle en `docs/09-analisis-correos.md` §9 y §10.

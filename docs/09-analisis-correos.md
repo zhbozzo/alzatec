@@ -257,4 +257,4 @@ Se les envió por correo, con copia a gerencia, el Excel `datos/validacion/crite
 
 - **Andrea:** respondió "de acuerdo" el 19-oct. No cambia nada en el clasificador.
 - **Javier:** respondió "de acuerdo" el 19-oct. Con eso los 28 criterios quedan confirmados por los dos.
-- **Por definir con gerencia:** quién lee cada casilla de destino (en la reunión se pensó en Pato para las de confirmados, y Andrea y Javier para pendientes, pero no está confirmado).
+- **Quién lee cada casilla de destino:** lo define Alzatec internamente; no es parte del proyecto.
