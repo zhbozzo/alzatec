@@ -27,7 +27,10 @@ REGION = "southamerica-west1"
 JOB = "clasificador"
 CATEGORIAS = ("despacho_acordado", "recepcion_acordada", "pendiente", "no_aplica")
 # En Claude Code el entorno define un token de relleno que tapa la cuenta activa de gcloud
-ENTORNO = {k: v for k, v in os.environ.items() if k != "CLOUDSDK_AUTH_ACCESS_TOKEN"}
+# Con la clave en GCP_SA_KEY se usa la cuenta activada y se quita el token de relleno del entorno;
+# con la clave como secreto de red, ese token se deja porque el entorno lo cambia por uno real.
+ENTORNO = {k: v for k, v in os.environ.items()
+           if k != "CLOUDSDK_AUTH_ACCESS_TOKEN" or not os.environ.get("GCP_SA_KEY")}
 
 
 def gcloud(*args):

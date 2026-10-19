@@ -15,8 +15,8 @@ Clasificador de correos (etapa 1), código en `clasificador/`:
 ## Operar en Google Cloud
 
 - Proyecto `alzatec`, región `southamerica-west1`. Jobs de Cloud Run: `clasificador` (args `procesar`) y `clasificador-resumen` (args `resumen`). Cloud Scheduler: `clasificador-cada-3-min` y `clasificador-resumen-diario`. Secretos: `agente-pw`, `openai-api-key`.
-- Conectarse: `bash deploy/claude-login.sh` (usa la variable de entorno `GCP_SA_KEY`; cuenta `claude-operador`, Editor solo en el proyecto). Si falta, el usuario corre `deploy/acceso-claude.sh` en Cloud Shell y la agrega en la configuración del entorno.
-- El entorno de Claude Code define `CLOUDSDK_AUTH_ACCESS_TOKEN` con un token de relleno que tapa la cuenta activa: anteponer `unset CLOUDSDK_AUTH_ACCESS_TOKEN;` a los comandos `gcloud` (los scripts de `deploy/` ya lo hacen).
+- Conectarse: `bash deploy/claude-login.sh` (cuenta `claude-operador`, Editor solo en el proyecto). La clave va como **secreto de red** del entorno, tipo "GCP access token (with Service Account Key)": el entorno cambia el token de relleno `CLOUDSDK_AUTH_ACCESS_TOKEN` por uno real y la clave nunca entra a la sesión. Si falta, el usuario corre `deploy/acceso-claude.sh` en Cloud Shell y la agrega ahí (Entorno → engranaje → Secretos de red); la toma una sesión nueva.
+- Con la clave en la variable `GCP_SA_KEY` (forma antigua) hay que quitar el token de relleno: los scripts de `deploy/` y `revision.py` lo hacen solos; en comandos `gcloud` sueltos, anteponer `unset CLOUDSDK_AUTH_ACCESS_TOKEN;` solo en ese caso.
 - Ver qué hizo: `bash deploy/ver.sh` (`HORAS=72` para más atrás).
 - Ver la casilla agente@ (desde aquí no se llega a IMAP): `gcloud run jobs execute clasificador --region southamerica-west1 --args estado --wait` y leer el evento `estado` en los registros (totales y últimos correos, no toca nada).
 - Revisar por qué un correo quedó como quedó: `--args "explicar,TEXTO DEL ASUNTO"` (solo ASCII); registra el evento `explicacion` con el motivo del modelo y el texto, sin reenviar ni marcar. Cada correo clasificado también registra `motivo` y `resumen`.

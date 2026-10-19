@@ -157,7 +157,7 @@ gcloud run jobs update clasificador --region $REGION --update-env-vars VERIFICAD
 Para que Claude (Claude Code en la nube) pueda operar el clasificador sin pasar por Cloud Shell:
 
 1. En Cloud Shell: `git -C alzatec pull -q; bash alzatec/deploy/acceso-claude.sh`. Crea la cuenta `claude-operador` con permiso de Editor solo en este proyecto y una clave. Si la organización bloquea las claves, pregunta antes de permitirlas solo en este proyecto.
-2. Copiar la clave que muestra y agregarla en la configuración del entorno de Claude Code como variable `GCP_SA_KEY` (nunca en el chat).
+2. Copiar la clave que muestra y agregarla en la configuración del entorno de Claude Code (nunca en el chat): Entorno → engranaje → **Secretos de red** → Agregar secreto → tipo **"GCP access token (with Service Account Key)"**. La clave queda en el entorno y no entra a la sesión.
 3. Abrir una sesión nueva de Claude Code en el mismo entorno. Claude se conecta con `bash deploy/claude-login.sh`.
 
 Para quitar el acceso: `gcloud iam service-accounts delete claude-operador@alzatec.iam.gserviceaccount.com`.

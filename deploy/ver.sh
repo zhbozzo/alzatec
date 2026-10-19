@@ -3,7 +3,9 @@
 # Correr en Cloud Shell:  bash alzatec/deploy/ver.sh        (últimas 24 horas)
 #                         HORAS=72 bash alzatec/deploy/ver.sh
 set -euo pipefail
-unset CLOUDSDK_AUTH_ACCESS_TOKEN   # en Claude Code el entorno pone un token de relleno que tapa la cuenta activa
+# En Claude Code: con la clave en la variable GCP_SA_KEY se usa la cuenta activada y hay que quitar el token de relleno;
+# con la clave como secreto de red, ese token es el que el entorno cambia por uno real y se deja.
+if [ -n "${GCP_SA_KEY:-}" ]; then unset CLOUDSDK_AUTH_ACCESS_TOKEN; fi
 REGION=${REGION:-southamerica-west1}
 HORAS=${HORAS:-24}
 DESDE=$(date -u -d "-$HORAS hours" +%Y-%m-%dT%H:%M:%SZ)

@@ -68,16 +68,15 @@ EOF
   for _ in $(seq 18); do crear_clave && break; sleep 10; done
   [ -s "$DIR/clave.json" ] || { echo "   No se pudo crear la clave:"; cat "$DIR/error"; exit 1; }
 fi
-base64 -w0 "$DIR/clave.json" > "$ARCHIVO"
+cp "$DIR/clave.json" "$ARCHIVO"
 
 cat <<'EOF'
 
 Clave creada. Ahora:
  1. Arriba se abre el archivo clave-claude.txt: selecciona todo (Cmd+A) y copia (Cmd+C).
  2. NO la pegues en el chat de Claude: va en la CONFIGURACIÓN DEL ENTORNO de Claude Code.
-    Arriba, en la barra de título de la sesión, haz clic en el nombre del entorno (ícono de nube) → Edit
-    → Variables de entorno. Agrega una línea que empiece con  GCP_SA_KEY=  y pega la clave justo
-    después del =, sin espacios. Guarda.
+    En el panel Entorno, el engranaje al lado del nombre del entorno → Secretos de red → Agregar secreto
+    → Tipo de secreto: "GCP access token (with Service Account Key)" → pega la clave. Guarda los cambios.
  3. Vuelve aquí y aprieta Enter: el archivo se borra de Cloud Shell. Cierra la pestaña del archivo sin guardar.
 EOF
 cloudshell edit "$ARCHIVO" 2>/dev/null || echo "   (No se abrió solo: ábrelo con  cloudshell edit ~/clave-claude.txt)"

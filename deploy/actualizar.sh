@@ -2,7 +2,9 @@
 # Sube una versión nueva del código a los dos jobs, sin tocar claves, variables ni programación. No pregunta nada.
 # Uso, desde la carpeta del repositorio:  bash deploy/actualizar.sh
 set -euo pipefail
-unset CLOUDSDK_AUTH_ACCESS_TOKEN   # en Claude Code el entorno pone un token de relleno que tapa la cuenta activa
+# En Claude Code: con la clave en la variable GCP_SA_KEY se usa la cuenta activada y hay que quitar el token de relleno;
+# con la clave como secreto de red, ese token es el que el entorno cambia por uno real y se deja.
+if [ -n "${GCP_SA_KEY:-}" ]; then unset CLOUDSDK_AUTH_ACCESS_TOKEN; fi
 cd "$(dirname "$0")/.."
 REGION=${REGION:-southamerica-west1}
 gcloud run jobs deploy clasificador --source . --region "$REGION" --quiet
