@@ -35,6 +35,7 @@ Clasificador de correos (etapa 1), código en `clasificador/`:
 
 ## Pendientes
 
+- **Copia de enviados de Andrea (19-oct):** la revisión del 19-oct encontró 0 de 3 correos enviados por Andrea copiados a agente@ (Javier 17 de 17). Falta que Víctor haga en el servidor la copia de salida de asistentetecnico@. Además, devolucionesconfirmadas@ seguía reenviando a agente@ (inofensivo: el agente ignora lo propio; pedir a Víctor que lo saque).
 - **Copia de enviados incompleta (18-oct):** el 15 y 16-oct llegaron a agente@ solo 1 de 11 correos enviados por Andrea y 3 de 8 de Javier (las reglas de Outlook se probaron el viernes ~11:30). Verificar el lunes con la cobertura de `revision.py exportar`; lo recomendado es que Víctor haga la copia de salida en el servidor para ambos.
 - Revisar los primeros días: `[REVISAR]`, resumen diario de descartados, gasto.
 - Primera revisión (17-oct, 159 correos): 96,2% de coincidencia con la revisión de Opus (1 grave); tras corregir la rúbrica, 98,7% y 0 graves. Detalle en `docs/09-analisis-correos.md` §8.
