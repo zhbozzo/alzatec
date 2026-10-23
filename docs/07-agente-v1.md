@@ -21,7 +21,7 @@ Código propio en Python ([`clasificador/`](../clasificador)), en Google Cloud: 
 | Modelo | **GPT-6.1 Sol** (esfuerzo medio), con salida JSON estructurada. Lee el texto, el hilo citado y las imágenes (por ejemplo, el pantallazo de agenda de Javier). |
 | Segunda opinión | Opcional y **apagada**. Un segundo modelo podría revisar los "acordados"; solo se activa si la evaluación muestra que hace falta. |
 | A prueba de fallas | Si el modelo rechaza o responde a medias **un** correo, ese correo va a pendientes con `[REVISAR]`. Si falla el servicio (sin saldo, API key, caída) o el envío, la corrida se detiene sin tocar los correos, que se procesan apenas se arregle. |
-| Alertas | Correo a `lbozzo@fen.uchile.cl` y `lbpiphone4@gmail.com` con **qué pasó y qué hacer** (por ejemplo, "Sin saldo en OpenAI: recargar créditos"). Máximo un aviso cada 3 horas por problema, y un aviso cuando se resuelve. Si falla la propia casilla `agente@`, avisa Google Cloud. |
+| Alertas | Correo a `lbpiphone4@gmail.com` con **qué pasó y qué hacer** (por ejemplo, "Sin saldo en OpenAI: recargar créditos"). Máximo un aviso cada 3 horas por problema, y un aviso cuando se resuelve. Si falla la propia casilla `agente@`, avisa Google Cloud. |
 | Estado | Marcas IMAP en la propia casilla `agente@` (`Clasificado`, `NoAplica`, etc.). No hay base de datos y no se marca nada como leído. |
 | Resumen diario | A las 17:45 llega la lista de lo descartado como "no aplica", para revisarla en un minuto. |
 | Destinos | Reenvía directo a las casillas reales desde el primer día: nadie depende todavía de ellas, así que solo suma. Andrea y Pato siguen trabajando igual mientras se valida. (Existe un modo sombra opcional, `MODO=sombra`, para probar cambios sin tocar las casillas reales.) |

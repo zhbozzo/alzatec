@@ -10,7 +10,7 @@ Clasificador de correos (etapa 1), código en `clasificador/`:
 - Cada 3 minutos se clasifican con GPT-6.1 Sol y se reenvían: despacho acordado → despachosconfirmados@, recepción acordada → devolucionesconfirmadas@ (hasta el 19-oct, retirosconfirmados@), pendiente → pendientesdespachoyrecepcion@. Lo que no aplica no se reenvía y sale en un resumen diario (17:45, L-V).
 - El estado vive en la propia casilla como marcas IMAP (sin base de datos). En cPanel las carpetas van dentro de INBOX (`INBOX.Alertas`).
 - **Memoria entre correos** (`clasificador/memoria.py`): cada reenvío deja una entrada en `INBOX.Registro`; el modelo recibe lo ya reenviado en el mismo hilo o cotización, y un correo que solo repite un acuerdo ya reenviado no se reenvía. Precargada con los reenvíos del 15 y 16-oct.
-- Si algo falla, avisa por correo a lbozzo@fen.uchile.cl y lbpiphone4@gmail.com con qué pasó y qué hacer.
+- Si algo falla, avisa por correo a lbpiphone4@gmail.com con qué pasó y qué hacer (desde el 23-oct, solo ese correo; también recibe el resumen diario y la alerta de respaldo de Google Cloud).
 
 ## Operar en Google Cloud
 

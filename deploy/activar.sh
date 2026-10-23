@@ -39,7 +39,7 @@ alerta() {
       --log-filter 'resource.type="cloud_run_job" AND resource.labels.job_name=~"^clasificador" AND severity>=ERROR' \
       >/dev/null
   local C N CANALES=()
-  for C in lbozzo@fen.uchile.cl lbpiphone4@gmail.com; do
+  for C in lbpiphone4@gmail.com; do
     N=$(gcloud beta monitoring channels list --filter "labels.email_address=\"$C\"" --format 'value(name)' | head -1)
     if [ -z "$N" ]; then
       N=$(gcloud beta monitoring channels create --display-name "Alertas $C" --type email \

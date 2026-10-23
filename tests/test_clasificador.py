@@ -308,7 +308,7 @@ def test_en_vivo_sin_casilla_de_prueba_el_resumen_va_a_las_alertas(monkeypatch):
     monkeypatch.setenv("MODO", "vivo")
     monkeypatch.setenv("PREFIJO", "[PRUEBA]")
     c = Config.desde_entorno()
-    assert c.resumen_a == "lbozzo@fen.uchile.cl, lbpiphone4@gmail.com"
+    assert c.resumen_a == "lbpiphone4@gmail.com"
     enviados = []
     procesar(c, BuzonFalso([correo_crudo()]), ModeloFalso(resultado()), None, enviados.append)
     assert enviados[0]["To"] == "pendientesdespachoyrecepcion@alzatec.com"

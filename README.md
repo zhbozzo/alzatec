@@ -29,7 +29,7 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
 
 ## Clasificador (código)
 
-- [`clasificador/`](clasificador): el agente. Usa un solo modelo (GPT-6.1 Sol) y avisa por correo a `lbozzo@fen.uchile.cl` y `lbpiphone4@gmail.com` si algo falla, con qué pasó y qué hacer. Se corre con `python -m clasificador procesar` (cada 3 minutos) y `python -m clasificador resumen` (una vez al día). Cómo funciona: [07](docs/07-agente-v1.md).
+- [`clasificador/`](clasificador): el agente. Usa un solo modelo (GPT-6.1 Sol) y avisa por correo a `lbpiphone4@gmail.com` si algo falla, con qué pasó y qué hacer. Se corre con `python -m clasificador procesar` (cada 3 minutos) y `python -m clasificador resumen` (una vez al día). Cómo funciona: [07](docs/07-agente-v1.md).
 - Prueba con los 200 correos etiquetados (necesita las API keys y los datos en `datos/`):
   ```
   python -m clasificador.evaluar --modelo openai:gpt-6.1-sol

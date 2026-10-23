@@ -104,13 +104,13 @@ Si Cloud Scheduler no está disponible en `southamerica-west1`, usar `--location
 
 ## 7b. Alerta de respaldo de Google Cloud
 
-Las alertas normales (sin saldo en OpenAI, API key inválida, caída del proveedor) las manda el propio clasificador desde `agente@` a `lbozzo@fen.uchile.cl` y `lbpiphone4@gmail.com`. Pero si lo que falla es la casilla `agente@` (por ejemplo, alguien cambió su contraseña), no puede mandar correos. Para ese caso, Google Cloud avisa por su cuenta:
+Las alertas normales (sin saldo en OpenAI, API key inválida, caída del proveedor) las manda el propio clasificador desde `agente@` a `lbpiphone4@gmail.com`. Pero si lo que falla es la casilla `agente@` (por ejemplo, alguien cambió su contraseña), no puede mandar correos. Para ese caso, Google Cloud avisa por su cuenta:
 
 ```bash
 gcloud logging metrics create clasificador-errores \
   --description "Corridas del clasificador que terminaron con error" \
   --log-filter 'resource.type="cloud_run_job" AND resource.labels.job_name=~"^clasificador" AND severity>=ERROR'
-for C in lbozzo@fen.uchile.cl lbpiphone4@gmail.com; do
+for C in lbpiphone4@gmail.com; do
   gcloud beta monitoring channels create --display-name "Alertas $C" --type email --channel-labels email_address=$C
 done
 CANALES=$(gcloud beta monitoring channels list --filter 'type="email"' --format 'value(name)' | paste -sd, -)
@@ -140,7 +140,7 @@ El resumen diario de lo descartado llega por defecto a los mismos correos de las
 
 - El correo **no se pierde**: queda en `agente@` sin la marca `Clasificado` y se reintenta en la próxima corrida (o a los 30 minutos si una corrida se cayó a la mitad).
 - Si el modelo falla con un correo, ese correo va a pendientes con `[REVISAR]`.
-- Si falla el servicio (sin saldo, API key inválida, caída de OpenAI, contraseña de `agente@`), la corrida se detiene sin tocar los correos y llega una alerta a `lbozzo@fen.uchile.cl` y `lbpiphone4@gmail.com` que dice **qué pasó y qué hacer**. El mismo aviso no se repite antes de 3 horas, y cuando se resuelve llega un correo de confirmación. Para cambiar los destinatarios: variable `ALERTAS_A`.
+- Si falla el servicio (sin saldo, API key inválida, caída de OpenAI, contraseña de `agente@`), la corrida se detiene sin tocar los correos y llega una alerta a `lbpiphone4@gmail.com` que dice **qué pasó y qué hacer**. El mismo aviso no se repite antes de 3 horas, y cuando se resuelve llega un correo de confirmación. Para cambiar los destinatarios: variable `ALERTAS_A`.
 
 ## Segunda opinión (opcional, apagada)
 

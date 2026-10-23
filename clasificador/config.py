@@ -38,7 +38,7 @@ class Config:
     # Etiqueta opcional al inicio del asunto de los reenvíos, por ejemplo "[PRUEBA]" las primeras semanas
     prefijo: str = ""
     # A quién avisar si algo falla (separados por coma en ALERTAS_A)
-    alertas_a: list = field(default_factory=lambda: ["lbozzo@fen.uchile.cl", "lbpiphone4@gmail.com"])
+    alertas_a: list = field(default_factory=lambda: ["lbpiphone4@gmail.com"])
 
     # Modelo principal y segunda opinión opcional ("openai:gpt-6.1-sol", "anthropic:claude-sonnet-5-5" o "")
     modelo: str = "openai:gpt-6.1-sol"
