@@ -138,7 +138,8 @@ def cobertura(correos, desde, hasta):
         citados = set()
         for x in correos:
             texto = " ".join((x.get("citado") or "").split())
-            patron = (rx + r"[^\n]{0,150}?(?:Enviado(?: el)?|Sent|Fecha|Date):\s*\w+,?\s*(\d{1,2})\s*(?:de\s*)?(\w+)"
+            # solo cuando el remitente citado ("De:" o "From:") es la persona, no cuando aparece en "Para:"
+            patron = (r"(?:De|From):\s*['\"]?[^\n<]{0,40}?" + rx + r"[^\n]{0,150}?(?:Enviado(?: el)?|Sent|Fecha|Date):\s*\w+,?\s*(\d{1,2})\s*(?:de\s*)?(\w+)"
                       r"\s*(?:de\s*)?(\d{4})\s*(?:a las\s*)?(\d{1,2}):(\d{2})")
             for m in re.finditer(patron, texto, re.I):
                 mes = MESES.get(m.group(2).lower())
@@ -149,9 +150,10 @@ def cobertura(correos, desde, hasta):
                     citados.add(local)
         faltan = []
         for local in sorted(citados):
-            # la hora citada es de Chile; se compara con las copias recibidas (±2 minutos, UTC-3 o UTC-4)
+            # la hora citada suele ser de Chile (UTC-3 o UTC-4), pero algunos programas la citan en UTC;
+            # se compara con las copias recibidas (±2 minutos)
             if not any(abs((e.replace(tzinfo=None) - (local + datetime.timedelta(hours=dh))).total_seconds()) <= 120
-                       for e in enviados for dh in (3, 4)):
+                       for e in enviados for dh in (0, 3, 4)):
                 faltan.append(local.strftime("%d-%m %H:%M"))
         if citados:
             print(f"Cobertura {quien}: {len(citados) - len(faltan)} de {len(citados)} correos suyos citados en hilos "
