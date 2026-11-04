@@ -103,6 +103,28 @@ def armar_correccion(cfg, correo, antes, ahora, destino_ahora, nota):
     return armar_aviso(cfg, cfg.destino(antes), f"[CORRECCIÓN] Ignorar: [{ETIQUETAS[antes]}] {correo.asunto}", texto)
 
 
+def armar_reagendamiento(cfg, tipo, asunto_original, texto, crudo=None):
+    """Aviso a la casilla de pendientes cuando bodega marca en la agenda que el camión no llegó."""
+    m = EmailMessage()
+    m["From"] = f"Clasificador Alzatec <{cfg.usuario}>"
+    m["To"] = cfg.destino("pendiente")
+    copia = cfg.reagendar_cc.get(tipo)
+    if copia and cfg.modo != "sombra":
+        m["Cc"] = copia
+    etiqueta_tipo = {"Despacho": "PENDIENTE DESPACHO", "Devolución": "PENDIENTE DEVOLUCIÓN"}.get(tipo, "PENDIENTE")
+    m["Subject"] = f"[{etiqueta_tipo}] [REAGENDAMIENTO] {asunto_original or '(sin asunto)'}"
+    m["Date"] = formatdate(localtime=True)
+    m["Message-ID"] = make_msgid(domain=cfg.usuario.split("@")[-1])
+    m.set_content(texto)
+    if crudo:
+        try:
+            m.add_attachment(message_from_bytes(crudo, policy=policy.SMTP))
+            m.as_bytes()
+        except Exception:
+            pass
+    return m
+
+
 def armar_aviso(cfg, destino, asunto, texto):
     m = EmailMessage()
     m["From"] = f"Clasificador Alzatec <{cfg.usuario}>"

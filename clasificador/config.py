@@ -33,6 +33,12 @@ class Config:
         "recepcion_acordada": "devolucionesconfirmadas@alzatec.com",
         "pendiente": "pendientesdespachoyrecepcion@alzatec.com",
     })
+    # Agenda de camiones en Google Sheets (vacío = sin agenda) y a quién copiar el aviso de reagendamiento
+    agenda_id: str = ""
+    reagendar_cc: dict = field(default_factory=lambda: {
+        "Despacho": "asistentetecnico@alzatec.com",
+        "Devolución": "devoluciones@alzatec.com",
+    })
     # A quién va el resumen diario de lo descartado ("no aplica"); por defecto, a los de las alertas
     resumen_a: str = ""
     # Etiqueta opcional al inicio del asunto de los reenvíos, por ejemplo "[PRUEBA]" las primeras semanas
@@ -79,6 +85,7 @@ class Config:
         c.max_segundos = int(_env("MAX_SEGUNDOS", c.max_segundos))
         c.max_imagenes = int(_env("MAX_IMAGENES", c.max_imagenes))
         c.desde = _env("DESDE", c.desde)
+        c.agenda_id = _env("AGENDA_ID", c.agenda_id)
         return c
 
     def destino(self, categoria):

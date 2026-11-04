@@ -1,15 +1,16 @@
 """Orquestación: procesar la casilla y enviar el resumen diario."""
 
 import json
+import re
 import sys
 import time
 from email import message_from_bytes, policy
 
-from . import memoria, modelos
+from . import agenda, memoria, modelos
 from .buzon import CLASIFICADO, DUPLICADO, NO_APLICA, RESUMIDO
 from .modelos import ErrorServicio
 from .correo import Correo, leer
-from .envio import ETIQUETAS, armar_aviso, armar_correccion, armar_reenvio
+from .envio import ETIQUETAS, armar_aviso, armar_correccion, armar_reagendamiento, armar_reenvio
 from .reglas import Decision, VACIO, decidir
 
 # US$ por millón de tokens: entrada, entrada en caché, salida
@@ -146,6 +147,14 @@ def corregir(cfg, buzon, principal, enviar, uid, ahora, antes, nota=""):
     if ahora != "no_aplica":
         buzon.desmarcar(uid, NO_APLICA)
         _recordar(buzon, correo, decision, uid)
+    if cfg.agenda_id:
+        try:
+            if antes in agenda.TIPOS and ahora not in agenda.TIPOS:
+                agenda.anular_uid(_planilla(cfg), uid, f"corregido: era {ETIQUETAS[ahora]}")
+            if ahora in agenda.TIPOS:
+                agenda.registrar_acordado(_planilla(cfg), correo, decision, uid, _claves_agenda(correo))
+        except Exception as e:
+            _agenda_fallida(cfg, buzon, enviar, e, "corregir")
     registrar(evento="correccion", uid=uid, asunto=correo.asunto[:200], antes=antes, ahora=ahora,
               destino=destino, aviso_a=destino_antes, nota=nota[:300])
 
@@ -257,6 +266,7 @@ def procesar(cfg, buzon, principal, verificador, enviar):
         buzon.marcar(uid, CLASIFICADO, *([NO_APLICA] if decision.categoria == "no_aplica" else []))
         if destino:
             _recordar(buzon, correo, decision, uid)
+            _a_la_agenda(cfg, buzon, enviar, correo, decision, uid)
 
         costos = [costo(u) for u in decision.usos]
         registrar(
@@ -273,12 +283,91 @@ def procesar(cfg, buzon, principal, verificador, enviar):
             segundos=round(time.time() - inicio, 1),
         )
     registrar(evento="corrida", procesados=hechos, en_espera=len(todos) - hechos)
+    _reagendamientos(cfg, buzon, enviar)
     if rebotes:
         avisar(cfg, buzon, enviar, AVISO_REBOTE, f"{len(rebotes)} reenvíos fueron devueltos por el servidor",
                "Esos correos NO llegaron a su casilla. Avisar al mantenedor para revisar el motivo y volver a "
                "enviarlos (siguen en agente@).", "\n\n".join(rebotes[:5]), "procesar",
                pie="Este aviso no se repite por 3 horas.")
     return hechos
+
+
+_planillas = {}
+
+
+def _planilla(cfg):
+    if cfg.agenda_id not in _planillas:
+        _planillas[cfg.agenda_id] = agenda.Planilla(cfg.agenda_id)
+    return _planillas[cfg.agenda_id]
+
+
+def _claves_agenda(correo):
+    return sorted(set(memoria.claves_guardar(correo)) | set(memoria.claves_buscar(correo)))
+
+
+def _agenda_fallida(cfg, buzon, enviar, e, accion):
+    """La agenda nunca frena la clasificación: si falla, se registra y se avisa (como máximo cada 3 horas)."""
+    registrar(evento="agenda_fallida", severity="WARNING", accion=accion, error=f"{type(e).__name__}: {e}")
+    try:
+        avisar(cfg, buzon, enviar, "agenda", "No se pudo escribir en la agenda de camiones",
+               "Revisar que la planilla siga compartida como Editor con clasificador@alzatec.iam.gserviceaccount.com "
+               "y que no le hayan cambiado el nombre a la hoja Agenda. Los correos se siguen reenviando igual.",
+               f"{type(e).__name__}: {e}", accion, pie="Este aviso no se repite por 3 horas.")
+    except Exception:
+        pass
+
+
+def _a_la_agenda(cfg, buzon, enviar, correo, decision, uid):
+    if not cfg.agenda_id:
+        return
+    try:
+        if decision.categoria in agenda.TIPOS:
+            resultado = agenda.registrar_acordado(_planilla(cfg), correo, decision, uid, _claves_agenda(correo))
+            registrar(evento="agenda", uid=uid, accion=resultado)
+        elif decision.categoria == "pendiente" and "cambio_o_anulacion" in (decision.resultado.get("falta") or []):
+            n = agenda.marcar_cambio(_planilla(cfg), correo, decision, uid, _claves_agenda(correo))
+            registrar(evento="agenda", uid=uid, accion="revisar", filas=n)
+    except Exception as e:
+        _agenda_fallida(cfg, buzon, enviar, e, "agregar")
+
+
+def cargar_agenda(cfg, buzon, uids):
+    """Carga en la agenda acordados que ya se habían reenviado, con los datos que guardó la memoria en ese
+    reenvío (sin volver a llamar al modelo). Cliente y obra salen del asunto "Cotización … - CLIENTE - OBRA"."""
+    planilla = _planilla(cfg)
+    for uid in uids:
+        correo = leer(buzon.leer(uid), cfg.max_imagenes)
+        previo = next((h for h in buzon.historial(memoria.claves_guardar(correo), maximo=50)
+                       if h.get("uid") == uid and h.get("categoria") in agenda.TIPOS), None)
+        if not previo:
+            registrar(evento="agenda", uid=uid, accion="sin_memoria")
+            continue
+        partes = [p.strip() for p in re.split(r"\s+-\s+", memoria.PREFIJOS.sub("", correo.asunto or "")) if p.strip()]
+        cliente, obra = (partes[1], partes[2]) if len(partes) >= 3 and memoria.COTIZACION.search(partes[0]) else ("", "")
+        resultado = dict(VACIO, categoria=previo["categoria"], movimiento=previo.get("movimiento", ""), cliente=cliente,
+                         obra=obra, **{k: previo.get(k, "") for k in ("fecha_movimiento", "n_cotizacion", "resumen")})
+        accion = agenda.registrar_acordado(planilla, correo, Decision(previo["categoria"], resultado), uid,
+                                           _claves_agenda(correo))
+        registrar(evento="agenda", uid=uid, accion=accion)
+
+
+def _reagendamientos(cfg, buzon, enviar):
+    """Lo que bodega marcó "No llegó" en la agenda vuelve a pendientes con [REAGENDAMIENTO]."""
+    if not cfg.agenda_id:
+        return
+    try:
+        planilla = _planilla(cfg)
+        for n, fila in agenda.no_llegaron(planilla):
+            crudo, asunto = None, fila[agenda.COL["Correo"]].split(" · ")[0]
+            try:
+                crudo = buzon.leer(int(fila[agenda.COL["UID"]]))
+            except Exception:
+                pass
+            enviar(armar_reagendamiento(cfg, fila[agenda.COL["Tipo"]], asunto, agenda.texto_aviso(fila), crudo))
+            agenda.marcar_avisado(planilla, n, fila)
+            registrar(evento="reagendamiento", fila=n, uid=fila[agenda.COL["UID"]], tipo=fila[agenda.COL["Tipo"]])
+    except Exception as e:
+        _agenda_fallida(cfg, buzon, enviar, e, "reagendar")
 
 
 def resumen_diario(cfg, buzon, enviar):
@@ -376,6 +465,13 @@ def main(argv=None):
             resumen_diario(cfg, buzon, enviar)
         elif accion == "estado":  # solo informa, no toca ningún correo
             registrar(evento="estado", desde=cfg.desde, **buzon.estado())
+            return
+        elif accion == "agenda_cargar":  # agenda_cargar UID UID...: acordados ya reenviados, en orden
+            cargar_agenda(cfg, buzon, [int(a) for a in argv[1:] if a.isdigit()])
+            return
+        elif accion == "agenda_preparar":  # títulos, lista de estados, colores y hojas Hoy / Próximos 7 días
+            agenda.preparar(_planilla(cfg))
+            registrar(evento="agenda_preparada", id=cfg.agenda_id)
             return
         elif accion == "buscar":  # buscar DESDE termino...: en todas las carpetas, solo lectura
             registrar(evento="busqueda", desde=argv[1], terminos=argv[2:],
