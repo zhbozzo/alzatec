@@ -236,9 +236,9 @@ def ver(planilla):
     hojas = [h["properties"]["title"] for h in planilla.info()["sheets"]]
     filas = planilla.leer()
     vistas = {}
-    for t in ("Hoy", "Próximos 7 días"):
+    for t, celdas in ((SEMANA, "A1:G8"), ("Hoy", "A1:I8")):
         if t in hojas:
-            rango = urllib.parse.quote(f"'{t}'!A1:I8")
+            rango = urllib.parse.quote(f"'{t}'!{celdas}")
             vistas[t] = planilla._pedir("GET", f"/values/{rango}").get("values", [])
     como_se_ve = planilla._pedir("GET", "/values/" + urllib.parse.quote(f"{HOJA}!A1:C3")).get("values", [])
     return {"hojas": hojas, "locale": planilla.info_locale(), "filas": len(filas),
@@ -253,51 +253,155 @@ def tocada_por_bodega(filas):
                (f[COL["Nota de bodega"]] and not f[COL["Nota de bodega"]].startswith("No se entendió")) for f in filas)
 
 
+SEMANA = "Semana"
+OPCIONES_SEMANA = ["Esta semana", "Semana siguiente", "Semana anterior", "En 2 semanas", "Hace 2 semanas"]
+VISTAS = (SEMANA, "Hoy", HOJA)  # orden de las pestañas
+VIEJAS = ("Próximos 7 días", "Hoja 1", "Sheet1", "Hoja1")  # se borran si están
+
+
+def _rgb(r, g, b):
+    return {"red": r, "green": g, "blue": b}
+
+
 def preparar(planilla):
-    """Deja la planilla lista: hoja Agenda con títulos, lista de estados y colores, y las hojas Hoy y
-    Próximos 7 días con fórmulas que ordenan por fecha y hora. Se puede correr más de una vez."""
+    """Deja la planilla lista. Se puede correr más de una vez (no toca las filas de la Agenda).
+    - Agenda: títulos, lista de estados y colores.
+    - Semana: lunes a domingo en columnas, con lo de cada día ordenado por hora. Arriba se elige la semana
+      ("Esta semana" por defecto; el domingo ya muestra la siguiente), así que avanza sola.
+    - Hoy: lo de hoy."""
     hojas = {h["properties"]["title"]: h["properties"]["sheetId"] for h in planilla.info()["sheets"]}
-    pedidos = [{"addSheet": {"properties": {"title": t}}} for t in (HOJA, "Hoy", "Próximos 7 días") if t not in hojas]
+    semana_nueva = SEMANA not in hojas
+    pedidos = [{"addSheet": {"properties": {"title": t}}} for t in VISTAS if t not in hojas]
     if pedidos:
         planilla.lote(pedidos)
         hojas = {h["properties"]["title"]: h["properties"]["sheetId"] for h in planilla.info()["sheets"]}
-    agenda = hojas[HOJA]
-    # Hora de Chile para TODAY(); la hoja vacía que trae una planilla nueva se borra; orden: Hoy, Próximos, Agenda
+    agenda, semana, hoy = hojas[HOJA], hojas[SEMANA], hojas["Hoy"]
+    # Hora de Chile para TODAY(); se borran las hojas que ya no se usan; orden: Semana, Hoy, Agenda
     pedidos = [{"updateSpreadsheetProperties": {"properties": {"timeZone": "America/Santiago"}, "fields": "timeZone"}}]
-    pedidos += [{"deleteSheet": {"sheetId": i}} for t, i in hojas.items()
-                if t not in (HOJA, "Hoy", "Próximos 7 días") and t in ("Hoja 1", "Sheet1", "Hoja1")]
+    pedidos += [{"deleteSheet": {"sheetId": i}} for t, i in hojas.items() if t in VIEJAS]
     pedidos += [{"updateSheetProperties": {"properties": {"sheetId": hojas[t], "index": k}, "fields": "index"}}
-                for k, t in enumerate(("Hoy", "Próximos 7 días", HOJA))]
+                for k, t in enumerate(VISTAS)]
     # Los colores se vuelven a crear: se borran los que dejó una corrida anterior
     reglas = planilla._pedir("GET", "", params={"fields": "sheets(properties(sheetId),conditionalFormats)"})
-    previas = next((len(h.get("conditionalFormats", [])) for h in reglas.get("sheets", [])
-                    if h["properties"]["sheetId"] == agenda), 0)
-    pedidos += [{"deleteConditionalFormatRule": {"sheetId": agenda, "index": 0}} for _ in range(previas)]
+    for h in reglas.get("sheets", []):
+        if h["properties"]["sheetId"] in (agenda, semana):
+            pedidos += [{"deleteConditionalFormatRule": {"sheetId": h["properties"]["sheetId"], "index": 0}}
+                        for _ in h.get("conditionalFormats", [])]
     planilla.lote(pedidos)
     planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"{HOJA}!A1:{ULTIMA}1"), {"values": [COLUMNAS]},
                     {"valueInputOption": "RAW"})
-    # Las vistas filtran por el número de día (no dependen del formato de la fecha). En planillas en español
-    # los argumentos de las fórmulas se separan con punto y coma.
+    # En planillas en español los argumentos de las fórmulas se separan con punto y coma
     idioma = (planilla.info_locale() or "en").split("_")[0]
     sep = ";" if idioma in ("es", "pt", "de", "fr", "it", "nl", "ru", "tr", "pl") else ","
-    datos, fechas = f"{HOJA}!A2:I", f"{HOJA}!A2:A"
-    for titulo, condicion in (("Hoy", f"{fechas}=TODAY()"),
-                              ("Próximos 7 días", f"{fechas}>=TODAY(){sep}{fechas}<=TODAY()+7")):
-        formula = f'=IFERROR(SORT(FILTER({datos}{sep}{condicion}){sep}1{sep}TRUE{sep}2{sep}TRUE){sep}"Sin movimientos")'
-        planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"'{titulo}'!A1:I3"),
-                        {"values": [[f"{titulo} (se actualiza sola; el estado se cambia en la hoja Agenda)"] + [""] * 8,
-                                    COLUMNAS[:9], [formula] + [""] * 8]}, {"valueInputOption": "USER_ENTERED"})
-        vista = hojas[titulo]
-        planilla.lote([
-            {"updateSheetProperties": {"properties": {"sheetId": vista, "gridProperties": {"frozenRowCount": 2}},
-                                       "fields": "gridProperties.frozenRowCount"}},
-            {"repeatCell": {"range": {"sheetId": vista, "startRowIndex": 0, "endRowIndex": 2},
-                            "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
-                            "fields": "userEnteredFormat.textFormat.bold"}},
-            {"repeatCell": {"range": {"sheetId": vista, "startRowIndex": 2, "startColumnIndex": 0, "endColumnIndex": 1},
-                            "cell": {"userEnteredFormat": {"numberFormat": {"type": "DATE", "pattern": "ddd dd-mm"}}},
-                            "fields": "userEnteredFormat.numberFormat"}},
-        ])
+    _preparar_hoy(planilla, hoy, sep)
+    _preparar_semana(planilla, semana, sep, semana_nueva)
+    _preparar_agenda(planilla, agenda)
+
+
+def _preparar_hoy(planilla, hoja, sep):
+    """Las vistas filtran por el número de día: no dependen de cómo se vea la fecha."""
+    formula = (f'=IFERROR(SORT(FILTER({HOJA}!A2:I{sep}{HOJA}!A2:A=TODAY()){sep}1{sep}TRUE{sep}2{sep}TRUE)'
+               f'{sep}"Sin movimientos")')
+    planilla._pedir("PUT", "/values/" + urllib.parse.quote("'Hoy'!A1:I3"),
+                    {"values": [["Hoy (se actualiza sola; el estado se cambia en la hoja Agenda)"] + [""] * 8,
+                                COLUMNAS[:9], [formula] + [""] * 8]}, {"valueInputOption": "USER_ENTERED"})
+    planilla.lote([
+        {"updateSheetProperties": {"properties": {"sheetId": hoja, "gridProperties": {"frozenRowCount": 2}},
+                                   "fields": "gridProperties.frozenRowCount"}},
+        {"repeatCell": {"range": {"sheetId": hoja, "startRowIndex": 0, "endRowIndex": 2},
+                        "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
+                        "fields": "userEnteredFormat.textFormat.bold"}},
+        {"repeatCell": {"range": {"sheetId": hoja, "startRowIndex": 2, "startColumnIndex": 0, "endColumnIndex": 1},
+                        "cell": {"userEnteredFormat": {"numberFormat": {"type": "DATE", "pattern": "ddd dd-mm"}}},
+                        "fields": "userEnteredFormat.numberFormat"}},
+    ])
+
+
+def _preparar_semana(planilla, hoja, sep, nueva):
+    """Una columna por día (lunes a domingo). Cada movimiento en una línea: "08:00  Devolución · EBCO · obra ·
+    camión", y el estado entre corchetes si no es Agendado. Colores por estado y por tipo; hoy en azul."""
+    a = lambda c: f"{HOJA}!${c}$2:${c}"  # noqa: E731
+    hora = f'IF(ISNUMBER({a("B")}){sep}TEXT({a("B")}{sep}"hh:mm"){sep}{a("B")})'
+    texto = (f'ARRAYFORMULA({hora}&"  "&{a("C")}&" · "&{a("D")}&IF({a("E")}=""{sep}""{sep}" · "&{a("E")})'
+             f'&IF({a("G")}=""{sep}""{sep}" · "&{a("G")})&IF({a("H")}="Agendado"{sep}""{sep}"   ["&{a("H")}&"]"))')
+    corrimiento = (f'SWITCH($B$1{sep}"Semana siguiente"{sep}1{sep}"Semana anterior"{sep}-1{sep}"En 2 semanas"{sep}2'
+                   f'{sep}"Hace 2 semanas"{sep}-2{sep}0)')
+    lunes = f"=TODAY()-WEEKDAY(TODAY(){sep}3)+IF(WEEKDAY(TODAY(){sep}2)=7{sep}7{sep}0)+7*{corrimiento}"
+    columnas = "ABCDEFG"
+    dias = [lunes] + [f"=$A$3+{k}" for k in range(1, 7)]
+    cuentas = [f'=COUNTIFS({a("A")}{sep}{c}$3{sep}{a("H")}{sep}"<>Anulado"{sep}{a("H")}{sep}"<>Reagendado")&" mov"'
+               for c in columnas]
+    listas = [f'=IFERROR(SORT(FILTER({texto}{sep}{a("A")}={c}$3)){sep}"—")' for c in columnas]
+    rango_txt = f'="del "&TEXT($A$3{sep}"d mmm")&" al "&TEXT($A$3+6{sep}"d mmm yyyy")'
+    explicacion = ("Elige la semana en la celda B1 (si la dejas en \"Esta semana\", avanza sola; el domingo ya "
+                   "muestra la siguiente). Los estados se marcan en la hoja Agenda o en la app.")
+    pon = lambda celdas, valores: planilla._pedir(  # noqa: E731
+        "PUT", "/values/" + urllib.parse.quote(f"'{SEMANA}'!{celdas}"), {"values": valores},
+        {"valueInputOption": "USER_ENTERED"})
+    pon("A1", [["Semana"]])
+    pon("C1", [[rango_txt]])
+    pon("A2:G5", [[explicacion] + [""] * 6, dias, cuentas, listas])
+    if nueva:  # B1 se escribe solo la primera vez: no se pisa la semana que alguien eligió
+        pon("B1", [["Esta semana"]])
+    lista = {"sheetId": hoja, "startRowIndex": 4, "endRowIndex": 120, "startColumnIndex": 0, "endColumnIndex": 7}
+    reglas = [  # primero las de más prioridad
+        ("[No llegó]", _rgb(0.99, 0.85, 0.84), None), ("[Llegó]", _rgb(0.85, 0.94, 0.85), None),
+        ("[Anulado]", _rgb(0.93, 0.93, 0.93), {"strikethrough": True, "foregroundColor": _rgb(0.5, 0.5, 0.5)}),
+        ("[Reagendado]", _rgb(1, 0.92, 0.8), {"strikethrough": True}), ("[Revisar]", _rgb(1, 0.96, 0.7), None),
+        ("Devolución", _rgb(0.9, 0.97, 0.95), None), ("Despacho", _rgb(0.92, 0.94, 1), None),
+    ]
+    pedidos = [
+        {"updateSheetProperties": {"properties": {"sheetId": hoja, "gridProperties": {"frozenRowCount": 4}},
+                                   "fields": "gridProperties.frozenRowCount"}},
+        {"updateDimensionProperties": {"range": {"sheetId": hoja, "dimension": "COLUMNS", "startIndex": 0, "endIndex": 7},
+                                       "properties": {"pixelSize": 235}, "fields": "pixelSize"}},
+        {"repeatCell": {"range": {"sheetId": hoja, "startRowIndex": 0, "endRowIndex": 1, "startColumnIndex": 0, "endColumnIndex": 1},
+                        "cell": {"userEnteredFormat": {"textFormat": {"bold": True, "fontSize": 14}}},
+                        "fields": "userEnteredFormat.textFormat"}},
+        {"repeatCell": {"range": {"sheetId": hoja, "startRowIndex": 0, "endRowIndex": 1, "startColumnIndex": 1, "endColumnIndex": 2},
+                        "cell": {"userEnteredFormat": {"backgroundColor": _rgb(0.91, 0.94, 1),
+                                                       "textFormat": {"bold": True, "foregroundColor": _rgb(0.1, 0.4, 0.85)}}},
+                        "fields": "userEnteredFormat(backgroundColor,textFormat)"}},
+        {"repeatCell": {"range": {"sheetId": hoja, "startRowIndex": 0, "endRowIndex": 1, "startColumnIndex": 2, "endColumnIndex": 3},
+                        "cell": {"userEnteredFormat": {"textFormat": {"bold": True, "fontSize": 12}}},
+                        "fields": "userEnteredFormat.textFormat"}},
+        {"repeatCell": {"range": {"sheetId": hoja, "startRowIndex": 1, "endRowIndex": 2, "startColumnIndex": 0, "endColumnIndex": 1},
+                        "cell": {"userEnteredFormat": {"textFormat": {"italic": True, "foregroundColor": _rgb(0.4, 0.42, 0.45)},
+                                                       "wrapStrategy": "OVERFLOW_CELL"}},
+                        "fields": "userEnteredFormat(textFormat,wrapStrategy)"}},
+        {"repeatCell": {"range": {"sheetId": hoja, "startRowIndex": 2, "endRowIndex": 3, "startColumnIndex": 0, "endColumnIndex": 7},
+                        "cell": {"userEnteredFormat": {"numberFormat": {"type": "DATE", "pattern": "dddd d mmm"},
+                                                       "horizontalAlignment": "CENTER",
+                                                       "textFormat": {"bold": True, "fontSize": 11}}},
+                        "fields": "userEnteredFormat(numberFormat,horizontalAlignment,textFormat)"}},
+        {"repeatCell": {"range": {"sheetId": hoja, "startRowIndex": 3, "endRowIndex": 4, "startColumnIndex": 0, "endColumnIndex": 7},
+                        "cell": {"userEnteredFormat": {"horizontalAlignment": "CENTER",
+                                                       "textFormat": {"foregroundColor": _rgb(0.4, 0.42, 0.45)}}},
+                        "fields": "userEnteredFormat(horizontalAlignment,textFormat)"}},
+        {"repeatCell": {"range": lista, "cell": {"userEnteredFormat": {"wrapStrategy": "WRAP", "verticalAlignment": "TOP"}},
+                        "fields": "userEnteredFormat(wrapStrategy,verticalAlignment)"}},
+        {"setDataValidation": {"range": {"sheetId": hoja, "startRowIndex": 0, "endRowIndex": 1, "startColumnIndex": 1,
+                                         "endColumnIndex": 2},
+                               "rule": {"condition": {"type": "ONE_OF_LIST",
+                                                      "values": [{"userEnteredValue": o} for o in OPCIONES_SEMANA]},
+                                        "strict": True, "showCustomUi": True}}},
+        {"addConditionalFormatRule": {"index": 0, "rule": {
+            "ranges": [{"sheetId": hoja, "startRowIndex": 2, "endRowIndex": 4, "startColumnIndex": 0, "endColumnIndex": 7}],
+            "booleanRule": {"condition": {"type": "CUSTOM_FORMULA", "values": [{"userEnteredValue": "=A$3=TODAY()"}]},
+                            "format": {"backgroundColor": _rgb(0.1, 0.4, 0.85),
+                                       "textFormat": {"foregroundColor": _rgb(1, 1, 1), "bold": True}}}}}},
+    ]
+    for k, (contiene, fondo, letra) in enumerate(reglas, start=1):
+        formato = {"backgroundColor": fondo}
+        if letra:
+            formato["textFormat"] = letra
+        pedidos.append({"addConditionalFormatRule": {"index": k, "rule": {
+            "ranges": [lista], "booleanRule": {"condition": {"type": "TEXT_CONTAINS", "values": [{"userEnteredValue": contiene}]},
+                                               "format": formato}}}})
+    planilla.lote(pedidos)
+
+
+def _preparar_agenda(planilla, agenda):
     rango = {"sheetId": agenda, "startRowIndex": 1, "startColumnIndex": COL["Estado"], "endColumnIndex": COL["Estado"] + 1}
     colores = {"Llegó": (0.85, 0.94, 0.83), "No llegó": (0.96, 0.8, 0.8), "Reagendado": (1, 0.9, 0.7),
                "Anulado": (0.85, 0.85, 0.85), "Revisar": (1, 0.95, 0.6)}
@@ -320,7 +424,7 @@ def preparar(planilla):
         "ranges": [{"sheetId": agenda, "startRowIndex": 1, "startColumnIndex": 0, "endColumnIndex": len(COLUMNAS)}],
         "booleanRule": {"condition": {"type": "CUSTOM_FORMULA",
                                       "values": [{"userEnteredValue": f'=${_letra("Estado")}2="{estado}"'}]},
-                        "format": {"backgroundColor": {"red": r, "green": g, "blue": b}}}}}}
+                        "format": {"backgroundColor": _rgb(r, g, b)}}}}}
         for estado, (r, g, b) in colores.items()]
     planilla.lote(pedidos)
 

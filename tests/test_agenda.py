@@ -233,3 +233,74 @@ def test_cargar_agenda_usa_la_memoria_y_saca_cliente_y_obra_del_asunto(cfg, monk
     principal.cargar_agenda(cfg, BuzonConMemoria([correo_crudo()], [previo]), [1])
     f = p.filas[0]
     assert (f[COL["Cliente"]], f[COL["Obra"]], f[COL["Fecha"]]) == ("CYPCO", "ECOPARK", "2026-11-09")
+
+
+class PlanillaGrabadora(agenda.Planilla):
+    """Planilla que no sale a internet: guarda los pedidos y contesta lo mínimo."""
+
+    def __init__(self, hojas, locale="es_ES"):
+        super().__init__("x", token=lambda: "t")
+        self.hojas, self.locale, self.pedidos = dict(hojas), locale, []
+
+    def _pedir(self, metodo, ruta, cuerpo=None, params=None):
+        self.pedidos.append((metodo, ruta, cuerpo, params))
+        campos = (params or {}).get("fields", "")
+        if metodo == "GET" and campos.startswith("sheets(properties(sheetId,title))"):
+            return {"sheets": [{"properties": {"sheetId": i, "title": t}} for t, i in self.hojas.items()]}
+        if metodo == "GET" and campos == "properties(locale)":
+            return {"properties": {"locale": self.locale}}
+        if metodo == "GET" and "conditionalFormats" in campos:
+            return {"sheets": [{"properties": {"sheetId": i}, "conditionalFormats": [{}, {}]} for i in self.hojas.values()]}
+        if metodo == "POST" and ruta == ":batchUpdate":
+            for p in cuerpo["requests"]:
+                if "addSheet" in p:
+                    self.hojas[p["addSheet"]["properties"]["title"]] = 100 + len(self.hojas)
+        return {}
+
+    def escrito(self, celdas):
+        import urllib.parse
+        for metodo, ruta, cuerpo, _ in self.pedidos:
+            if metodo == "PUT" and urllib.parse.unquote(ruta) == f"/values/{celdas}":
+                return cuerpo["values"]
+        return None
+
+
+def test_preparar_arma_semana_hoy_y_agenda_con_formulas_en_espanol():
+    p = PlanillaGrabadora({"Hoja 1": 0, "Agenda": 1, "Hoy": 2, "Próximos 7 días": 3})
+    agenda.preparar(p)
+    lotes = [r for m, ruta, c, _ in p.pedidos if ruta == ":batchUpdate" for r in c["requests"]]
+    borradas = {r["deleteSheet"]["sheetId"] for r in lotes if "deleteSheet" in r}
+    assert borradas == {0, 3}  # la hoja vacía y la vieja "Próximos 7 días"
+    orden = [(r["updateSheetProperties"]["properties"]["sheetId"], r["updateSheetProperties"]["properties"]["index"])
+             for r in lotes if "updateSheetProperties" in r and "index" in r["updateSheetProperties"]["properties"]]
+    assert orden == [(p.hojas["Semana"], 0), (2, 1), (1, 2)]
+    dias = p.escrito("'Semana'!A2:G5")[1]
+    assert dias[0].startswith("=TODAY()-WEEKDAY(TODAY();3)+IF(WEEKDAY(TODAY();2)=7;7;0)+7*SWITCH($B$1;")
+    assert dias[6] == "=$A$3+6"
+    lista = p.escrito("'Semana'!A2:G5")[3][0]
+    assert lista.startswith("=IFERROR(SORT(FILTER(ARRAYFORMULA(") and "Agenda!$A$2:$A=A$3" in lista and "," not in lista
+    assert p.escrito("'Semana'!B1") == [["Esta semana"]]
+    assert "," not in p.escrito("'Hoy'!A1:I3")[2][0]
+    # los colores viejos se borran antes de crear los nuevos (2 por hoja, en Agenda y Semana)
+    assert sum(1 for r in lotes if "deleteConditionalFormatRule" in r) == 4
+
+
+def test_preparar_otra_vez_no_pisa_la_semana_elegida_y_en_ingles_usa_comas():
+    p = PlanillaGrabadora({"Agenda": 1, "Hoy": 2, "Semana": 5}, locale="en_US")
+    agenda.preparar(p)
+    assert p.escrito("'Semana'!B1") is None
+    assert "WEEKDAY(TODAY(),3)" in p.escrito("'Semana'!A2:G5")[1][0]
+
+
+def test_la_app_web_usa_los_mismos_nombres_que_la_planilla():
+    import pathlib
+    import re as _re
+    raiz = pathlib.Path(__file__).resolve().parent.parent / "agenda-web"
+    codigo = (raiz / "Codigo.gs").read_text(encoding="utf-8")
+    estados = _re.findall(r"'([^']+)'", _re.search(r"var ESTADOS = \[(.*?)\];", codigo).group(1))
+    assert estados == agenda.ESTADOS
+    campos = _re.findall(r"'([^']+)':", _re.search(r"var CAMPOS = \{(.*?)\};", codigo, _re.S).group(1))
+    assert set(campos) <= set(COLUMNAS) and {"Fecha", "Hora", "Tipo", "Estado", "UID", "Aviso"} <= set(campos)
+    assert agenda.HOJA in codigo
+    html = (raiz / "Index.html").read_text(encoding="utf-8")
+    assert _re.search(r"var ESTADOS = \[(.*?)\];", html).group(1).replace("'", "").split(", ") == agenda.ESTADOS
