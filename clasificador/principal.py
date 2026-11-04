@@ -331,10 +331,16 @@ def _a_la_agenda(cfg, buzon, enviar, correo, decision, uid):
         _agenda_fallida(cfg, buzon, enviar, e, "agregar")
 
 
-def cargar_agenda(cfg, buzon, uids):
+def cargar_agenda(cfg, buzon, uids, desde_cero=False):
     """Carga en la agenda acordados que ya se habían reenviado, con los datos que guardó la memoria en ese
-    reenvío (sin volver a llamar al modelo). Cliente y obra salen del asunto "Cotización … - CLIENTE - OBRA"."""
+    reenvío (sin volver a llamar al modelo). Con desde_cero borra antes las filas, solo si bodega no ha
+    marcado nada todavía."""
     planilla = _planilla(cfg)
+    if desde_cero:
+        if agenda.tocada_por_bodega(planilla.leer()):
+            registrar(evento="agenda", accion="no_vaciada", motivo="bodega ya marcó filas")
+            return
+        planilla.vaciar()
     for uid in uids:
         correo = leer(buzon.leer(uid), cfg.max_imagenes)
         previo = next((h for h in buzon.historial(memoria.claves_guardar(correo), maximo=50)
@@ -342,10 +348,8 @@ def cargar_agenda(cfg, buzon, uids):
         if not previo:
             registrar(evento="agenda", uid=uid, accion="sin_memoria")
             continue
-        partes = [p.strip() for p in re.split(r"\s+-\s+", memoria.PREFIJOS.sub("", correo.asunto or "")) if p.strip()]
-        cliente, obra = (partes[1], partes[2]) if len(partes) >= 3 and memoria.COTIZACION.search(partes[0]) else ("", "")
-        resultado = dict(VACIO, categoria=previo["categoria"], movimiento=previo.get("movimiento", ""), cliente=cliente,
-                         obra=obra, **{k: previo.get(k, "") for k in ("fecha_movimiento", "n_cotizacion", "resumen")})
+        resultado = dict(VACIO, categoria=previo["categoria"], **{k: previo.get(k, "") for k in (
+            "movimiento", "fecha_movimiento", "n_cotizacion", "resumen", "cliente", "obra")})
         accion = agenda.registrar_acordado(planilla, correo, Decision(previo["categoria"], resultado), uid,
                                            _claves_agenda(correo))
         registrar(evento="agenda", uid=uid, accion=accion)
@@ -466,8 +470,8 @@ def main(argv=None):
         elif accion == "estado":  # solo informa, no toca ningún correo
             registrar(evento="estado", desde=cfg.desde, **buzon.estado())
             return
-        elif accion == "agenda_cargar":  # agenda_cargar UID UID...: acordados ya reenviados, en orden
-            cargar_agenda(cfg, buzon, [int(a) for a in argv[1:] if a.isdigit()])
+        elif accion == "agenda_cargar":  # agenda_cargar [desde_cero] UID UID...: acordados ya reenviados, en orden
+            cargar_agenda(cfg, buzon, [int(a) for a in argv[1:] if a.isdigit()], desde_cero="desde_cero" in argv[1:])
             return
         elif accion == "agenda_ver":  # solo lectura: hojas, filas por estado, últimas filas y vistas
             registrar(evento="agenda_ver", **agenda.ver(_planilla(cfg)))

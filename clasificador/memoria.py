@@ -61,6 +61,7 @@ def entrada(correo, decision, uid=None):
         "fecha": correo.fecha, "uid": uid, "categoria": decision.categoria,
         "movimiento": r.get("movimiento", ""), "fecha_movimiento": r.get("fecha_movimiento", ""),
         "n_cotizacion": r.get("n_cotizacion", ""), "resumen": (r.get("resumen") or "")[:250],
+        "cliente": (r.get("cliente") or "")[:60], "obra": (r.get("obra") or "")[:60],
         "asunto": (correo.asunto or "")[:120],
     }
 

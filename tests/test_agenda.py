@@ -63,12 +63,76 @@ def test_la_misma_fecha_en_el_mismo_hilo_no_se_repite():
     assert len(p.filas) == 1 and p.filas[0][COL["Hora"]] == "11:30"
 
 
-def test_otra_fecha_en_el_mismo_hilo_deja_la_anterior_como_reagendado():
+def test_si_el_modelo_dice_que_se_reagendo_la_fecha_anterior_queda_como_reagendado():
     p, correo = PlanillaFalsa(), leer(correo_crudo())
     agenda.registrar_acordado(p, correo, acordado(), 7, ["c:27801"], AHORA)
-    agenda.registrar_acordado(p, correo, acordado("lun 10-11-2026 09:00"), 9, ["c:27801", "h:x"], AHORA)
+    nueva = acordado("lun 10-11-2026 09:00", resumen="Javier reagenda la devolución para el lunes 10-11.")
+    assert agenda.registrar_acordado(p, correo, nueva, 9, ["c:27801", "h:x"], AHORA) == "reagendado"
     assert [f[COL["Estado"]] for f in p.filas] == ["Reagendado", "Agendado"]
-    assert "nueva fecha 2026-11-10" in p.filas[0][COL["Historial"]]
+    assert "se cambió a 2026-11-10 09:00" in p.filas[0][COL["Historial"]]
+
+
+def test_otra_fecha_sin_decir_que_se_reagendo_puede_ser_otro_movimiento():
+    p, correo = PlanillaFalsa(), leer(correo_crudo())
+    agenda.registrar_acordado(p, correo, acordado(), 7, ["c:27801"], AHORA)
+    segunda = acordado("lun 10-11-2026 09:00", resumen="Javier agenda la segunda devolución para el 10-11.")
+    assert agenda.registrar_acordado(p, correo, segunda, 9, ["c:27801"], AHORA) == "agregado"
+    assert [f[COL["Estado"]] for f in p.filas] == ["Agendado", "Agendado"]
+
+
+def test_un_recordatorio_de_la_misma_fecha_no_se_repite_y_reactiva_la_fila():
+    p, correo = PlanillaFalsa(), leer(correo_crudo())
+    agenda.registrar_acordado(p, correo, acordado(), 7, ["c:27801"], AHORA)
+    p.filas[0][COL["Estado"]] = "Revisar"
+    recordatorio = acordado("jue 06-11-2026 10:00", resumen="Javier recuerda la devolución de mañana.")
+    assert agenda.registrar_acordado(p, correo, recordatorio, 9, ["c:27801"], AHORA) == "repetido"
+    assert len(p.filas) == 1 and p.filas[0][COL["Estado"]] == "Agendado"
+
+
+def test_varias_fechas_en_un_correo_son_varias_filas():
+    p, correo = PlanillaFalsa(), leer(correo_crudo())
+    varias = acordado("mié 04-11-2026 11:00; mié 11-11-2026 11:00; mié 18-11-2026 11:00", "recepcion_acordada",
+                      "Javier reagenda y confirma tres devoluciones.")
+    assert agenda.registrar_acordado(p, correo, varias, 7, ["h:a"], AHORA) == "agregado x3"
+    assert [(f[COL["Fecha"]], f[COL["Estado"]]) for f in p.filas] == [
+        ("2026-11-04", "Agendado"), ("2026-11-11", "Agendado"), ("2026-11-18", "Agendado")]
+    assert agenda.fechas_horas("05-11-2026 12:00 y 06-11-2026 11:00") == [
+        (datetime.date(2026, 11, 5), "12:00"), (datetime.date(2026, 11, 6), "11:00")]
+    assert agenda.fecha_hora("vie 06-11-2026 a primera hora") == (datetime.date(2026, 11, 6), "a primera hora")
+
+
+def test_la_agenda_diaria_de_javier_no_se_carga():
+    p = PlanillaFalsa()
+    correo = leer(correo_crudo(asunto="AGENDA 04-11-2026"))
+    assert agenda.registrar_acordado(p, correo, acordado(categoria="recepcion_acordada"), 7, ["h:b"], AHORA) == "agenda_diaria"
+    assert p.filas == []
+
+
+def test_cliente_y_obra_cuando_el_modelo_no_los_da():
+    correo = leer(correo_crudo(asunto="RE: SOLICITUD HORA DEVOLUCION OBRA SEMINARIO", de="Juan <juan@santolaya.cl>"))
+    assert agenda.cliente_y_obra(correo) == ("SANTOLAYA", "SEMINARIO")
+    correo = leer(correo_crudo(asunto="RE: Devolución // Obra Santa Elena de Chicureo // Constructora Calan SpA",
+                               de="Pedro <p@gmail.com>"))
+    assert agenda.cliente_y_obra(correo) == ("", "Santa Elena de Chicureo")
+    correo = leer(correo_crudo(asunto="RE: hora devolucion", de="Ana <ana@ebco.cl>"))
+    assert agenda.cliente_y_obra(correo, "Javier confirma la devolución de Ebco, obra Entrelomas V, para el 04-11.") == (
+        "EBCO", "Entrelomas V")
+
+
+def test_la_planilla_lee_fechas_y_horas_como_texto_y_escribe_sin_formulas():
+    pedidos = []
+
+    class Probar(agenda.Planilla):
+        def _pedir(self, metodo, ruta, cuerpo=None, params=None):
+            pedidos.append((ruta, cuerpo, params))
+            return {"values": [[46331, 0.4583333333, "Devolución", "EBCO", "", 28794, "", "Agendado"]]}
+
+    p = Probar("x", token=lambda: "t")
+    f = p.leer()[0]
+    assert (f[COL["Fecha"]], f[COL["Hora"]], f[COL["Cotización"]], f[COL["Aviso"]]) == ("2026-11-05", "11:00", "28794", "")
+    p.agregar([["2026-11-05", "11:00", "Despacho", "=IMPORTXML(1)"] + [""] * 11])
+    ruta, cuerpo, params = pedidos[-1]
+    assert params["valueInputOption"] == "RAW" and cuerpo["values"][0][0] == 46331
 
 
 def test_otro_hilo_o_otro_tipo_no_se_toca():
