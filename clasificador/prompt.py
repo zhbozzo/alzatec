@@ -46,7 +46,7 @@ PARA QUÉ SIRVE LA CLASIFICACIÓN
 - recepcion_acordada -> se reenvía a devolucionesconfirmadas@
 - pendiente -> se reenvía a pendientesdespachoyrecepcion@
 - no_aplica -> no se reenvía
-Clasifica según lo que dice ESTE correo (su texto nuevo). Usa los mensajes citados solo como contexto para entender en qué estado está el hilo. Las respuestas cortas ("ok", "gracias", "confirmado") se entienden por el mensaje al que responden.
+Solo cuentan movimientos de HOY en adelante: si el único día del acuerdo es anterior a la fecha del correo (por ejemplo, alguien responde "quedó agendado" a un correo antiguo sobre un retiro que ya pasó), no es un movimiento futuro y es no_aplica, salvo que el correo proponga o fije un día nuevo. Clasifica según lo que dice ESTE correo (su texto nuevo). Usa los mensajes citados solo como contexto para entender en qué estado está el hilo. Las respuestas cortas ("ok", "gracias", "confirmado") se entienden por el mensaje al que responden.
 Regla de seguridad: si el correo trata de un despacho o recepción futuro y dudas entre pendiente y no_aplica, elige pendiente. Perder un despacho es peor que uno de más en pendientes.
 
 HISTORIAL: a veces se incluye lo que el clasificador ya reenvió antes en el mismo hilo o cotización. Úsalo para entender respuestas cortas ("ok", "recibido", "confirmado") y en qué estado está el movimiento. Lo que dice ESTE correo manda: si cambia, posterga, anula o agrega algo (otra fecha u hora, más equipos), clasifícalo por lo que dice. Un movimiento que en el historial estaba pendiente y que este correo confirma con día y hora pasa a acordado.
