@@ -72,6 +72,25 @@ def test_si_el_modelo_dice_que_se_reagendo_la_fecha_anterior_queda_como_reagenda
     assert "se cambió a 2026-11-10 09:00" in p.filas[0][COL["Historial"]]
 
 
+def test_si_de_dos_fechas_queda_una_la_otra_queda_como_reagendado():
+    p, correo = PlanillaFalsa(), leer(correo_crudo())
+    agenda.registrar_acordado(p, correo, acordado("lun 09-11-2026 10:00; mar 10-11-2026 10:00", "recepcion_acordada",
+                                                  "Javier confirma dos devoluciones."), 7, ["h:a"], AHORA)
+    queda = acordado("mar 10-11-2026 10:00", "recepcion_acordada", "Queda sin efecto la fecha del lunes 9.")
+    assert agenda.registrar_acordado(p, correo, queda, 9, ["h:a"], AHORA) == "repetido y reagendado"
+    assert [f[COL["Estado"]] for f in p.filas] == ["Reagendado", "Agendado"]
+
+
+def test_en_una_serie_de_fechas_no_se_adivina_cual_se_reagendo():
+    p, correo = PlanillaFalsa(), leer(correo_crudo())
+    agenda.registrar_acordado(p, correo, acordado("jue 05-11-2026 10:00; jue 12-11-2026 10:00; jue 19-11-2026 10:00",
+                                                  "recepcion_acordada", "Javier confirma tres devoluciones."), 7, ["h:a"], AHORA)
+    cambio = acordado("vie 13-11-2026 10:00", "recepcion_acordada", "Javier reagenda una devolución para el viernes 13.")
+    assert agenda.registrar_acordado(p, correo, cambio, 9, ["h:a"], AHORA) == "agregado"
+    assert [f[COL["Estado"]] for f in p.filas] == ["Agendado"] * 4
+    assert "si era esta fecha, marcar Reagendado" in p.filas[1][COL["Historial"]]
+
+
 def test_otra_fecha_sin_decir_que_se_reagendo_puede_ser_otro_movimiento():
     p, correo = PlanillaFalsa(), leer(correo_crudo())
     agenda.registrar_acordado(p, correo, acordado(), 7, ["c:27801"], AHORA)

@@ -366,21 +366,27 @@ def registrar_acordado(planilla, correo, decision, uid, claves, ahora=None):
         if f[COL["Estado"]] != "Agendado":
             celdas[(n, "Estado")] = "Agendado"
         celdas[(n, "Historial")] = _historial(f, f"confirmado de nuevo (UID {uid})", ahora)
+    # Reagendado: solo si el modelo dice que se cambió la fecha y hay UNA sola fecha futura que pudo ser la
+    # cambiada. Si hay varias (una serie de devoluciones semanales), no se adivina: queda la nota.
     reagendadas = 0
-    if agregar and REAGENDA.search(decision.resultado.get("resumen") or ""):
-        nuevas_fechas = {f[COL["Fecha"]] for f in nuevas}
-        texto = ", ".join(f"{f[COL['Fecha']]} {f[COL['Hora']]}".strip() for f in agregar)
-        for n, f in hilo:
-            if f[COL["Estado"]] == "Agendado" and hoy <= f[COL["Fecha"]] and f[COL["Fecha"]] not in nuevas_fechas \
-                    and (n, "Estado") not in celdas:
+    fechas_correo = {f[COL["Fecha"]] for f in nuevas if f[COL["Fecha"]]}
+    if fechas_correo and REAGENDA.search(decision.resultado.get("resumen") or ""):
+        texto = ", ".join(f"{f[COL['Fecha']]} {f[COL['Hora']]}".strip() for f in nuevas)
+        otras = [(n, f) for n, f in hilo if f[COL["Estado"]] == "Agendado" and hoy <= f[COL["Fecha"]]
+                 and f[COL["Fecha"]] not in fechas_correo and (n, "Estado") not in celdas]
+        for n, f in otras:
+            if len(otras) == 1:
                 celdas[(n, "Estado")] = "Reagendado"
                 celdas[(n, "Historial")] = _historial(f, f"se cambió a {texto} (UID {uid})", ahora)
                 reagendadas += 1
+            else:
+                celdas[(n, "Historial")] = _historial(f, f"en el hilo se reagendó algo para {texto} (UID {uid}); "
+                                                         "si era esta fecha, marcar Reagendado", ahora)
     planilla.escribir(celdas)
     if agregar:
         planilla.agregar(agregar)
     if not agregar:
-        return "repetido"
+        return "repetido y reagendado" if reagendadas else "repetido"
     return ("reagendado" if reagendadas else "agregado") + (f" x{len(agregar)}" if len(agregar) > 1 else "")
 
 
