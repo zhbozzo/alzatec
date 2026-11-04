@@ -8,9 +8,9 @@
 | Recepción acordada | `devolucionesconfirmadas@alzatec.com` (hasta el 19-oct, `retirosconfirmados@`) |
 | Pendiente (le falta algo) | `pendientesdespachoyrecepcion@alzatec.com` |
 
-Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. No toca MADA ni responde a clientes.
+Las cotizaciones y el resto no se mueven. No toca MADA ni responde a clientes.
 
-**Etapa 2 (futuro):** agenda de camiones en el Excel de Pato, con alerta de día copado.
+**Etapa 2 (desde el 4-nov):** agenda de camiones en Google Sheets, paralela al Excel de Pato. Solo tiene lo confirmado y la llena sola el clasificador. Pato marca el estado de cada camión; si marca "No llegó", vuelve a pendientes con `[REAGENDAMIENTO]`. Ver [12](docs/12-agenda.md).
 
 ## Documentos
 
@@ -19,7 +19,9 @@ Las cotizaciones y el resto no se mueven. No hay agenda ni Excel en esta etapa. 
   - [Cómo funciona el clasificador](docs/07-agente-v1.md): flujo, JSON, reglas, reenvío y puesta en marcha.
   - [Notas de la reunión](docs/08-notas-reunion.md): lo confirmado y las preguntas abiertas.
   - [Análisis de la base de correos](docs/09-analisis-correos.md): volúmenes, hallazgos críticos y señales de cada categoría.
-- **Contexto y etapa 2**
+- **Etapa 2**
+  - [Agenda de camiones](docs/12-agenda.md): hojas, estados, lógica y comandos.
+- **Contexto**
   - [Diagnóstico](docs/01-diagnostico.md)
   - [Propuesta de agenda](docs/02-propuesta.md)
   - [Guía de reunión](docs/03-reunion.md)
