@@ -19,13 +19,23 @@ FALTAS = {
 }
 
 
+def etiqueta(decision):
+    """Categoría para el asunto y el cuerpo. Los pendientes dicen si son de despacho o de devolución,
+    para que Andrea y Javier vean los suyos en la casilla compartida."""
+    if decision.categoria == "pendiente":
+        tipo = {"despacho": "DESPACHO", "recepcion": "DEVOLUCIÓN"}.get(decision.resultado.get("movimiento"))
+        if tipo:
+            return f"PENDIENTE {tipo}"
+    return ETIQUETAS[decision.categoria]
+
+
 def asunto_reenvio(cfg, correo, decision):
     partes = {"correccion": ["[CORREGIDO]"], "traspaso": ["[TRASPASO]"]}.get(decision.fuente, [])
     if cfg.prefijo:
         partes.append(cfg.prefijo)
     if cfg.modo == "sombra":
         partes.append("[SOMBRA]")
-    partes.append(f"[{ETIQUETAS[decision.categoria]}]")
+    partes.append(f"[{etiqueta(decision)}]")
     if decision.revisar:
         partes.append("[REVISAR]")
     return " ".join(partes) + " " + (correo.asunto or "(sin asunto)")
@@ -33,7 +43,7 @@ def asunto_reenvio(cfg, correo, decision):
 
 def cuerpo_reenvio(correo, decision):
     r = decision.resultado
-    lineas = [f"Categoría: {ETIQUETAS[decision.categoria]}"]
+    lineas = [f"Categoría: {etiqueta(decision)}"]
     if decision.fuente == "correccion":
         lineas.append(f"Corrección: {decision.nota}")
     if decision.fuente == "traspaso":
@@ -42,10 +52,10 @@ def cuerpo_reenvio(correo, decision):
         lineas.append(f"REVISAR: {decision.nota}")
     if decision.categoria == "pendiente" and r.get("falta"):
         lineas.append("Falta: " + ", ".join(FALTAS.get(f, f) for f in r["falta"]))
-    for etiqueta, clave in (("Fecha del movimiento", "fecha_movimiento"), ("Cotización", "n_cotizacion"),
+    for nombre, clave in (("Fecha del movimiento", "fecha_movimiento"), ("Cotización", "n_cotizacion"),
                             ("Cliente", "cliente"), ("Obra", "obra")):
         if r.get(clave):
-            lineas.append(f"{etiqueta}: {r[clave]}")
+            lineas.append(f"{nombre}: {r[clave]}")
     if r.get("resumen"):
         lineas.append("")
         lineas.append(f"Resumen: {r['resumen']}")

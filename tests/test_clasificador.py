@@ -156,7 +156,7 @@ def test_procesar_reenvia_marca_y_descarta_duplicados(cfg):
     procesar(cfg, buzon, ModeloFalso(resultado()), None, enviados.append)
     assert len(enviados) == 1  # el duplicado no se reenvía y el rebote no aplica
     assert enviados[0]["To"] == "prueba@ejemplo.cl"
-    assert enviados[0]["Subject"].startswith("[SOMBRA] [PENDIENTE]")
+    assert enviados[0]["Subject"].startswith("[SOMBRA] [PENDIENTE DESPACHO]")
     assert "Duplicado" in buzon.marcas[2] and "NoAplica" in buzon.marcas[3]
     assert all("Clasificado" in m for m in buzon.marcas.values())
     adjunto = [p for p in enviados[0].iter_attachments()][0]
@@ -312,7 +312,7 @@ def test_en_vivo_sin_casilla_de_prueba_el_resumen_va_a_las_alertas(monkeypatch):
     enviados = []
     procesar(c, BuzonFalso([correo_crudo()]), ModeloFalso(resultado()), None, enviados.append)
     assert enviados[0]["To"] == "pendientesdespachoyrecepcion@alzatec.com"
-    assert enviados[0]["Subject"].startswith("[PRUEBA] [PENDIENTE]")
+    assert enviados[0]["Subject"].startswith("[PRUEBA] [PENDIENTE DESPACHO]")
 
 
 def test_explicar_registra_el_motivo_sin_reenviar_ni_marcar(cfg, capsys):
@@ -401,7 +401,7 @@ def test_corregir_un_movimiento_descartado_lo_reenvia_con_corregido(cfg):
     corregir(cfg, buzon, ModeloFalso(resultado("no_aplica", falta=())), enviados.append, 1, "pendiente", "no_aplica",
              "saldo por despachar")
     assert len(enviados) == 1 and enviados[0]["To"] == cfg.destino("pendiente")
-    assert enviados[0]["Subject"].startswith("[CORREGIDO]") and "[PENDIENTE]" in enviados[0]["Subject"]
+    assert enviados[0]["Subject"].startswith("[CORREGIDO]") and "[PENDIENTE DESPACHO]" in enviados[0]["Subject"]
     assert "se había clasificado como NO APLICA" in enviados[0].get_body(("plain",)).get_content()
     assert "NoAplica" not in buzon.marcas[1] and "Clasificado" in buzon.marcas[1]
 
@@ -453,3 +453,15 @@ def test_traspasar_sin_memoria_vuelve_a_resumir(cfg):
     buzon, enviados, modelo = BuzonConMemoria([correo_crudo()], []), [], ModeloFalso(resultado("recepcion_acordada", falta=()))
     traspasar(cfg, buzon, modelo, enviados.append, [1])
     assert modelo.llamadas == 1 and "[RECEPCIÓN ACORDADA]" in enviados[0]["Subject"]
+
+
+def test_el_pendiente_dice_si_es_de_despacho_o_de_devolucion(cfg):
+    from clasificador.envio import asunto_reenvio, etiqueta
+    from clasificador.correo import leer
+    from clasificador.reglas import Decision
+    correo = leer(correo_crudo())
+    assert etiqueta(Decision("pendiente", resultado(movimiento="despacho"))) == "PENDIENTE DESPACHO"
+    assert etiqueta(Decision("pendiente", resultado(movimiento="recepcion"))) == "PENDIENTE DEVOLUCIÓN"
+    assert etiqueta(Decision("pendiente", resultado(movimiento="ninguno"))) == "PENDIENTE"
+    assert etiqueta(Decision("despacho_acordado", resultado("despacho_acordado", falta=()))) == "DESPACHO ACORDADO"
+    assert "[PENDIENTE DEVOLUCIÓN]" in asunto_reenvio(cfg, correo, Decision("pendiente", resultado(movimiento="recepcion")))
