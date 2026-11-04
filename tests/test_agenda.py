@@ -136,6 +136,11 @@ def test_cliente_y_obra_cuando_el_modelo_no_los_da():
     correo = leer(correo_crudo(asunto="RE: hora devolucion", de="Ana <ana@ebco.cl>"))
     assert agenda.cliente_y_obra(correo, "Javier confirma la devolución de Ebco, obra Entrelomas V, para el 04-11.") == (
         "EBCO", "Entrelomas V")
+    correo = leer(correo_crudo(asunto="RE: Hora de devolución", de="Ana <ana@sacyr.cl>"))
+    resumen = "Javier agenda la devolución. Llevar guía con la dirección de la obra de procedencia."
+    assert agenda.cliente_y_obra(correo, resumen) == ("SACYR", "")
+    resumen = "Lleva guía de la obra de procedencia; es de la obra Parque Sur, con camión de 5 t."
+    assert agenda.cliente_y_obra(correo, resumen) == ("SACYR", "Parque Sur")
 
 
 def test_la_planilla_lee_fechas_y_horas_como_texto_y_escribe_sin_formulas():

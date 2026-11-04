@@ -103,9 +103,13 @@ def cliente_y_obra(correo, resumen=""):
             break
     obra = ""
     for texto in (asunto, resumen or ""):
-        m = re.search(r"\bobra\s*:?\s+(.+?)(?:\s*(?://|\s-\s|,|;|\.\s|\s(?:para|con|el|en|de \d)\s)|$)", texto, re.I)
-        if m:
-            obra = m.group(1).strip()[:60]
+        for m in re.finditer(r"\bobra\s*:?\s+(.+?)(?:\s*(?://|\s-\s|,|;|\.(?:\s|$)|\s(?:para|con|el|en|de \d)\s)|$)",
+                             texto, re.I):
+            # "la obra de procedencia", "la obra en curso": no es el nombre de la obra
+            if not re.match(r"(?:de|del|la|el|en|que|y|a|con|para|donde|ya)\b", m.group(1)):
+                obra = m.group(1).strip()[:60]
+                break
+        if obra:
             break
     return cliente, obra
 
