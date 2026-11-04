@@ -150,6 +150,20 @@ class Planilla:
         self._pedir("POST", ":batchUpdate", {"requests": pedidos})
 
 
+def ver(planilla):
+    """Resumen de solo lectura para revisar la planilla a distancia."""
+    hojas = [h["properties"]["title"] for h in planilla.info()["sheets"]]
+    filas = planilla.leer()
+    vistas = {}
+    for t in ("Hoy", "Próximos 7 días"):
+        if t in hojas:
+            rango = urllib.parse.quote(f"'{t}'!A1:I6")
+            vistas[t] = planilla._pedir("GET", f"/values/{rango}").get("values", [])
+    return {"hojas": hojas, "locale": planilla.info_locale(), "filas": len(filas),
+            "estados": {e: sum(1 for f in filas if f[COL["Estado"]] == e) for e in ESTADOS},
+            "ultimas": [f[:9] for f in filas[-5:]], "vistas": vistas}
+
+
 def preparar(planilla):
     """Deja la planilla lista: hoja Agenda con títulos, lista de estados y colores, y las hojas Hoy y
     Próximos 7 días con fórmulas que ordenan por fecha y hora. Se puede correr más de una vez."""
