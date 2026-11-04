@@ -173,6 +173,13 @@ def preparar(planilla):
         planilla.lote(pedidos)
         hojas = {h["properties"]["title"]: h["properties"]["sheetId"] for h in planilla.info()["sheets"]}
     agenda = hojas[HOJA]
+    # Hora de Chile para TODAY(); la hoja vacía que trae una planilla nueva se borra; orden: Hoy, Próximos, Agenda
+    pedidos = [{"updateSpreadsheetProperties": {"properties": {"timeZone": "America/Santiago"}, "fields": "timeZone"}}]
+    pedidos += [{"deleteSheet": {"sheetId": i}} for t, i in hojas.items()
+                if t not in (HOJA, "Hoy", "Próximos 7 días") and t in ("Hoja 1", "Sheet1", "Hoja1")]
+    pedidos += [{"updateSheetProperties": {"properties": {"sheetId": hojas[t], "index": k}, "fields": "index"}}
+                for k, t in enumerate(("Hoy", "Próximos 7 días", HOJA))]
+    planilla.lote(pedidos)
     planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"{HOJA}!A1:{ULTIMA}1"), {"values": [COLUMNAS]},
                     {"valueInputOption": "RAW"})
     # Las fórmulas se escriben como las escribiría una persona: en planillas en español los argumentos se
