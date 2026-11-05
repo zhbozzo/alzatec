@@ -12,7 +12,7 @@ Planilla: `https://docs.google.com/spreadsheets/d/1E_-OoaJFamsrI8Nlhr-J7qNSXuWpo
   - la semana se elige en la celda **B1** (Esta semana, Semana siguiente, Semana anterior, En 2 semanas, Hace 2 semanas). En "Esta semana" avanza sola y el domingo ya muestra la siguiente.
   - Es solo para mirar.
 - **Hoy**: lo de hoy, ordenado por hora.
-- **Agenda**: una fila por movimiento. Columnas: Fecha, Hora, Tipo (Despacho/Devolución), Cliente, Obra, Cotización, Camión, **Estado**, **Nota de bodega**, Resumen, Correo, Historial, y las internas Hilo, UID y Aviso.
+- **Agenda**: una fila por movimiento. Columnas: Fecha, Hora, Tipo (Despacho/Devolución), Cliente, Obra, Cotización, Camión, **Toneladas** (solo el número, para sumar; vacía si el correo no lo dice, por ejemplo "camión 3/4"; desde el 5-nov), **Estado**, **Nota de bodega**, Resumen, Correo, Historial, y las internas Hilo, UID y Aviso.
 
 ## Qué hace Pato
 
