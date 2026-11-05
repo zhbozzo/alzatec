@@ -491,3 +491,18 @@ def test_cada_correo_de_la_agenda_queda_copiado_una_vez_para_el_enlace(cfg, monk
 def test_un_correo_muy_largo_se_corta():
     correo = leer(correo_crudo(texto="x" * 20000))
     assert agenda.fila_correo(correo, 5)[-1].endswith("[… cortado]") and len(agenda.fila_correo(correo, 5)[-1]) < 12100
+
+
+def test_correos_faltantes_copia_de_a_poco_los_que_no_estan(cfg, monkeypatch):
+    from clasificador import principal
+    p = PlanillaFalsa()
+    for uid in (1, 2, 3):
+        agenda.registrar_acordado(p, leer(correo_crudo()), acordado(f"lun {9 + uid}-11-2026 10:00"), uid, [f"c:{uid}"], AHORA)
+    p.correos = [["2"] + [""] * 7]
+    lotes = []
+    original = p.agregar_correos
+    p.agregar_correos = lambda filas: (lotes.append(len(filas)), original(filas))
+    cfg.agenda_id = "planilla-de-prueba"
+    monkeypatch.setattr(principal, "_planilla", lambda c: p)
+    principal.correos_faltantes(cfg, BuzonFalso([correo_crudo(), correo_crudo(), correo_crudo()]), lote=1)
+    assert sorted(f[0] for f in p.correos) == ["1", "2", "3"] and lotes == [1, 1]

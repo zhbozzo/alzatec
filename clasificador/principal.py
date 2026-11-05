@@ -360,18 +360,25 @@ def cargar_agenda(cfg, buzon, uids, desde_cero=False):
         registrar(evento="agenda", uid=uid, accion=accion)
 
 
-def correos_faltantes(cfg, buzon):
-    """Copia en la pestaña Correos los correos de la Agenda que todavía no están (para el enlace "Ver correo")."""
+def correos_faltantes(cfg, buzon, lote=10):
+    """Copia en la pestaña Correos los correos de la Agenda que todavía no están (para el enlace "Ver correo").
+    Sin imágenes y de a poco: guardarlos todos juntos en memoria hacía que el job se quedara sin memoria."""
     planilla = _planilla(cfg)
     ya = planilla.uids_con_correo()
     uids = sorted({f[agenda.COL["UID"]] for f in planilla.leer() if f[agenda.COL["UID"]].isdigit()} - ya, key=int)
-    pares = []
+    filas, total = [], 0
     for u in uids:
         try:
-            pares.append((leer(buzon.leer(int(u)), cfg.max_imagenes), int(u)))
+            filas.append(agenda.fila_correo(leer(buzon.leer(int(u)), 0), int(u)))
         except Exception as e:
             registrar(evento="agenda", uid=u, accion="correo_no_leido", error=f"{type(e).__name__}: {e}")
-    registrar(evento="agenda", accion="correos_guardados", cantidad=agenda.guardar_correos(planilla, pares, ya))
+        if len(filas) >= lote or (filas and u == uids[-1]):
+            planilla.agregar_correos(filas)
+            total, filas = total + len(filas), []
+    if filas:
+        planilla.agregar_correos(filas)
+        total += len(filas)
+    registrar(evento="agenda", accion="correos_guardados", cantidad=total)
 
 
 def _reagendamientos(cfg, buzon, enviar):
