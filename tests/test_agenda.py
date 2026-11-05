@@ -163,6 +163,29 @@ def test_la_planilla_lee_fechas_y_horas_como_texto_y_escribe_sin_formulas():
     assert params["valueInputOption"] == "RAW" and cuerpo["values"][0][0] == 46331
 
 
+def test_si_google_dice_demasiadas_lecturas_espera_y_reintenta(monkeypatch):
+    import io
+    import urllib.error
+    import urllib.request
+    respuestas = [429, 429, 503, None]
+    esperas = []
+
+    def abrir(req, timeout=None):
+        codigo = respuestas.pop(0)
+        if codigo:
+            raise urllib.error.HTTPError(req.full_url, codigo, "limite", {}, io.BytesIO(b""))
+        return io.BytesIO(b'{"ok": 1}')
+
+    monkeypatch.setattr(urllib.request, "urlopen", abrir)
+    monkeypatch.setattr(agenda.Planilla, "_esperar", staticmethod(esperas.append))
+    assert agenda.Planilla("x", token=lambda: "t")._pedir("GET", "") == {"ok": 1}
+    assert esperas == [2, 4, 8]
+    respuestas[:] = [403]
+    import pytest
+    with pytest.raises(urllib.error.HTTPError):  # sin permiso: no se reintenta
+        agenda.Planilla("x", token=lambda: "t")._pedir("GET", "")
+
+
 def test_si_movieron_las_columnas_la_planilla_falla_en_vez_de_escribir_mal():
     import pytest
 

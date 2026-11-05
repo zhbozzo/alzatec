@@ -13,7 +13,9 @@ const HTML = leer('../Index.html');
 const SCRIPTS = [leer('datos.js'), '(0, eval)(' + JSON.stringify(leer('../Codigo.gs')) + ');', leer('simulador.js')];
 const CAPTURAS = process.argv[2] || '';
 const MIERCOLES = new Date('2026-11-04T11:20:00-03:00');
-const DOMINGO = new Date('2026-11-08T10:00:00-03:00');
+const DOMINGO = new Date('2026-11-08T10:00:00-03:00');      // hay un camión ese domingo
+const LUNES = new Date('2026-11-09T08:00:00-03:00');
+const DOMINGO_VACIO = new Date('2026-11-15T10:00:00-03:00');  // sin camiones ese domingo
 
 let fallas = 0, pasadas = 0;
 function ok(cond, texto) {
@@ -68,7 +70,7 @@ async function captura(page, nombre) {
   ok(/1 no llegó/.test(await page.textContent('#resumen')) && /sin marcar/.test(await page.textContent('#resumen')), 'resumen de la semana con no llegaron y sin marcar');
   ok(await page.locator('.sin-fecha .mov').count() === 2, 'lo que no tiene fecha (o la tiene escrita a mano) aparece abajo para revisar');
   ok(/Fecha: "lun 16-11"/.test(await page.textContent('.sin-fecha')), 'la fecha escrita a mano se muestra tal cual');
-  ok(/1 sin marcar de semanas anteriores/.test(await page.textContent('#resumen')), 'avisa lo que quedó sin marcar la semana pasada');
+  ok(/1 sin marcar de días anteriores/.test(await page.textContent('#resumen')), 'avisa lo que quedó sin marcar la semana pasada');
   await captura(page, 'semana.png');
 
   // ✓ Llegó y desmarcar
@@ -134,9 +136,9 @@ async function captura(page, nombre) {
 
   // Semanas
   await page.click('#b-sig');
-  await page.waitForFunction(() => document.getElementById('titulo').textContent === '9 – 14 nov 2026');
+  await page.waitForFunction(() => document.getElementById('titulo').textContent === '9 – 15 nov 2026');
   await page.waitForSelector('#grilla .mov');
-  ok(await page.textContent('#relativa') === 'Próxima semana' && await page.locator('#grilla .mov').count() === 4, '› semana siguiente: 9 – 14 nov, 4 tarjetas');
+  ok(await page.textContent('#relativa') === 'Próxima semana' && await page.locator('#grilla .mov').count() === 4, '› semana siguiente: 9 – 15 nov, 4 tarjetas');
   // Dos filas con el mismo UID, fecha y tipo (una anulada): se marca la correcta
   await page.locator('#grilla .mov[data-abrir="1017|2026-11-12|Despacho|#2"] button.ok').click();
   await page.click('#m-si');
@@ -145,14 +147,14 @@ async function captura(page, nombre) {
   ok(JSON.stringify(repetidas) === '["Anulado","Llegó"]', 'con dos filas iguales marca la que se tocó, no la primera');
   await page.click('#b-ant');
   await page.click('#b-ant');
-  await page.waitForFunction(() => document.getElementById('titulo').textContent === '26 – 31 oct 2026');
+  await page.waitForFunction(() => document.getElementById('titulo').textContent === '26 oct – 1 nov 2026');
   await page.waitForSelector('#grilla .mov');
-  ok(await page.textContent('#relativa') === 'Semana pasada' && await page.locator('#grilla .mov').count() === 2, '‹ semana anterior: 26 – 31 oct');
+  ok(await page.textContent('#relativa') === 'Semana pasada' && await page.locator('#grilla .mov').count() === 2, '‹ semana anterior: 26 oct – 1 nov');
   await page.click('#b-hoy');
   await page.waitForFunction(() => document.getElementById('titulo').textContent === '2 – 8 nov 2026');
   ok(true, '"Hoy" vuelve a esta semana');
   await page.keyboard.press('ArrowRight');
-  await page.waitForFunction(() => document.getElementById('titulo').textContent === '9 – 14 nov 2026');
+  await page.waitForFunction(() => document.getElementById('titulo').textContent === '9 – 15 nov 2026');
   await page.keyboard.press('t');
   await page.waitForFunction(() => document.getElementById('titulo').textContent === '2 – 8 nov 2026');
   ok(true, 'teclas → y T para moverse');
@@ -211,10 +213,57 @@ async function captura(page, nombre) {
 
   // Lo sin marcar de semanas anteriores lleva a esa semana
   await page.click('.atrasados');
-  await page.waitForFunction(() => document.getElementById('titulo').textContent === '26 – 31 oct 2026');
+  await page.waitForFunction(() => document.getElementById('titulo').textContent === '26 oct – 1 nov 2026');
   ok(true, '"ver" lleva a la semana con lo sin marcar');
   await page.click('#b-hoy');
   await page.waitForFunction(() => document.getElementById('titulo').textContent === '2 – 8 nov 2026');
+
+  // La nota escrita no se pierde al marcar ni al cerrar
+  await tarjeta(page, '1002', '2026-11-02').click({position: {x: 20, y: 30}});
+  await page.fill('#d-nota', 'el chofer avisó que viene mañana');
+  await page.click('#detalle [data-estado="No llegó"]');
+  await page.click('#m-si');
+  await esperarGuardado(page);
+  f = await hoja(page, '1002');
+  ok(f['Estado'] === 'No llegó' && f['Nota de bodega'] === 'el chofer avisó que viene mañana', 'marcar desde el detalle guarda también la nota escrita');
+  await page.fill('#d-nota', 'llamar al cliente');
+  await page.click('#detalle .cerrar');
+  await esperarGuardado(page);
+  ok((await hoja(page, '1002'))['Nota de bodega'] === 'llamar al cliente', 'cerrar el detalle guarda la nota escrita');
+
+  // Reagendado y Anulado no muestran ✓ ✗; el detalle explica
+  ok(await tarjeta(page, '1011', '2026-11-05').locator('.acc').count() === 0 && await tarjeta(page, '1012', '2026-11-06').locator('.acc').count() === 0,
+    'tarjetas Reagendado y Anulado sin botones ✓ ✗');
+  await tarjeta(page, '1011', '2026-11-05').click();
+  ok(/Se cambió de fecha: 2026-11-06 11:00/.test(await page.textContent('#detalle')), 'el detalle de un Reagendado dice a qué fecha se cambió');
+  await page.click('#detalle [data-estado="No llegó"]');
+  ok(/ya estaba reagendado/.test(await page.textContent('#m-titulo')), 'marcar No llegó algo reagendado advierte que no hace falta');
+  await page.click('#m-no');
+  await page.keyboard.press('Escape');
+
+  // Filtro: se ve que hay algo oculto y no queda guardado
+  await page.uncheck('#f-devo');
+  ok(/Ocultando devoluciones · mostrar todo/.test(await page.textContent('#resumen')), 'si un filtro oculta algo, se dice arriba');
+  await page.click('[data-mostrar-todo]');
+  ok(await page.isChecked('#f-devo') && await page.locator('#grilla .mov.devo').count() > 0, '"mostrar todo" vuelve a mostrar todo');
+  await page.uncheck('#f-devo');
+  await page.reload();
+  await page.waitForSelector('.mov', {state: 'attached'});
+  ok(await page.isChecked('#f-devo'), 'al volver a abrir, los filtros parten todos activos');
+
+  // "AM" / "a primera hora" cuenta como 12:00 para "¿Llegó?"
+  await page.clock.setFixedTime(new Date('2026-11-04T13:30:00-03:00'));
+  await page.click('#sync');
+  await page.waitForFunction(() => document.querySelector('#grilla .mov[data-abrir^="1009|"]').classList.contains('falta'));
+  ok(true, '"a primera hora" de hoy pide marcar después de la 1 de la tarde');
+
+  // Imprimir: nombres completos, sin botones
+  await page.emulateMedia({media: 'print'});
+  const imp = await tarjeta(page, '1006', '2026-11-04').evaluate((e) => [getComputedStyle(e.querySelector('.cli')).whiteSpace,
+    e.querySelector('.acc') ? getComputedStyle(e.querySelector('.acc')).display : 'none']);
+  ok(imp[0] === 'normal' && imp[1] === 'none', 'al imprimir no se cortan los nombres ni salen los botones');
+  await page.emulateMedia({media: 'screen'});
+  await page.clock.setFixedTime(MIERCOLES);
 
   // Error de permiso al guardar
   await page.evaluate(() => { window.__SIM__.fallar = 'Exception: You do not have permission to access the requested document.'; });
@@ -225,21 +274,26 @@ async function captura(page, nombre) {
   await page.evaluate(() => { window.__SIM__.fallar = null; });
 
   // Pasa la semana con la página abierta: se mueve sola
-  await page.clock.setFixedTime(DOMINGO);
+  await page.clock.setFixedTime(LUNES);
   await page.click('#sync');
-  await page.waitForFunction(() => document.getElementById('titulo').textContent === '9 – 14 nov 2026', null, {timeout: 5000});
-  ok(true, 'con la página abierta, el domingo pasa sola a la semana siguiente');
+  await page.waitForFunction(() => document.getElementById('titulo').textContent === '9 – 15 nov 2026', null, {timeout: 5000});
+  ok(true, 'con la página abierta, el lunes pasa sola a la semana nueva');
   ok(errores.length === 0, 'sin errores en la consola' + (errores.length ? ': ' + errores.join(' | ') : ''));
   await contexto.close();
 
   console.log('Abrir un domingo');
   ({page, contexto, errores} = await abrir(browser, {viewport: {width: 1280, height: 800}}, DOMINGO));
-  ok(await page.textContent('#titulo') === '9 – 14 nov 2026' && await page.textContent('#relativa') === 'Próxima semana', 'el domingo abre en la semana siguiente');
+  ok(await page.textContent('#titulo') === '2 – 8 nov 2026' && await page.textContent('#relativa') === 'Esta semana', 'un domingo con camiones abre en esa semana (se ve el de hoy)');
+  await contexto.close();
+  ({page, contexto, errores} = await abrir(browser, {viewport: {width: 1280, height: 800}}, DOMINGO_VACIO));
+  await page.waitForFunction(() => document.getElementById('titulo').textContent === '16 – 22 nov 2026', null, {timeout: 5000});
+  ok(await page.textContent('#relativa') === 'Próxima semana', 'un domingo sin camiones abre en la semana siguiente');
   await contexto.close();
 
   console.log('Celular (iPhone 13)');
   ({page, contexto, errores} = await abrir(browser, {...devices['iPhone 13']}));
   ok(await page.locator('#dias-movil button').count() === 7, 'tira de días de la semana');
+  ok((await page.textContent('#dias-movil button[data-dia="2026-11-03"]')).includes('●1'), 'la tira marca los días con camiones sin marcar');
   ok(await page.getAttribute('#dias-movil button[data-dia="2026-11-04"]', 'aria-pressed') === 'true', 'parte en el día de hoy');
   ok(await page.locator('#lista-dia .mov').count() === 5, 'lista de hoy: 5 movimientos');
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), 'sin desplazamiento horizontal');

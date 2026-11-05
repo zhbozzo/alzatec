@@ -13,6 +13,8 @@ pasó con cada camión. Si marca "No llegó", el clasificador avisa en la casill
 import datetime
 import json
 import re
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from email.utils import getaddresses
@@ -198,10 +200,21 @@ class Planilla:
         if params:
             url += "?" + urllib.parse.urlencode(params)
         datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
-        req = urllib.request.Request(url, data=datos, method=metodo, headers={
-            "Authorization": f"Bearer {self._valor_token}", "Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=30) as r:
-            return json.load(r)
+        for intento in range(6):
+            req = urllib.request.Request(url, data=datos, method=metodo, headers={
+                "Authorization": f"Bearer {self._valor_token}", "Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    return json.load(r)
+            except urllib.error.HTTPError as e:
+                # 429: Google limita a ~60 lecturas por minuto (una carga grande las pasa); 5xx: falla pasajera
+                if (e.code != 429 and e.code < 500) or intento == 5:
+                    raise
+                self._esperar(min(2 ** intento * 2, 40))
+
+    @staticmethod
+    def _esperar(segundos):
+        time.sleep(segundos)
 
     def info(self):
         return self._pedir("GET", "", params={"fields": "sheets(properties(sheetId,title))"})

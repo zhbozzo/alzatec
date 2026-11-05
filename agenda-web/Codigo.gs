@@ -41,17 +41,23 @@ function leer(desde, hasta) {
     usuario: usuario_(),
     movimientos: []
   };
-  var limite = Utilities.formatDate(new Date(ahora.getTime() - DIAS_ATRASO * 86400000), x.zona, 'yyyy-MM-dd');
+  var todos = todos_(x), hoy = salida.hoy;
+  // La semana que se muestra sola: la actual; el domingo, la siguiente (salvo que hoy domingo haya camiones)
+  var lunes = sumarDias_(hoy, -((diaIso_(hoy) + 6) % 7));
+  var hayHoy = todos.some(function (m) { return m.fecha === hoy && m.estado !== 'Anulado' && m.estado !== 'Reagendado'; });
+  salida.semana = diaIso_(hoy) === 0 && !hayHoy ? sumarDias_(lunes, 7) : lunes;
+  // Lo que quedó sin marcar antes de esa semana (hasta 2 semanas atrás): se avisa arriba
+  var limite = sumarDias_(hoy, -DIAS_ATRASO);
   salida.atrasados = {cantidad: 0, ultima: ''};
-  todos_(x).forEach(function (m) {
+  todos.forEach(function (m) {
     if (m.fecha) {
-      if (desde && m.fecha < desde && m.estado === 'Agendado' && m.fecha >= limite) {
-        salida.atrasados.cantidad++;  // de semanas anteriores y nadie marcó si llegó
+      if (m.estado === 'Agendado' && m.fecha < hoy && m.fecha < salida.semana && m.fecha >= limite) {
+        salida.atrasados.cantidad++;
         if (m.fecha > salida.atrasados.ultima) salida.atrasados.ultima = m.fecha;
       }
       if ((desde && m.fecha < desde) || (hasta && m.fecha > hasta)) return;
-    } else if (m.estado === 'Anulado') {
-      return;
+    } else if (m.estado !== 'Agendado' && m.estado !== 'Revisar') {
+      return;  // sin fecha: solo lo que sigue pendiente (lo marcado no queda para siempre en "revisar")
     }
     salida.movimientos.push(m);
   });
@@ -189,6 +195,16 @@ function texto_(valor, visto, nombre, zona) {
     return String(visto || valor).trim();  // lo que se ve: "14:30" y no "Sat Dec 30 1899…"
   }
   return String(valor).trim();
+}
+
+function diaIso_(iso) {  // 0 = domingo
+  var p = iso.split('-');
+  return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay();
+}
+
+function sumarDias_(iso, n) {
+  var p = iso.split('-');
+  return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10);
 }
 
 function isoDeSerial_(n) {

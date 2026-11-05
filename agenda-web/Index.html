@@ -81,7 +81,7 @@
   .cab.pasado .num { color: var(--tenue); }
   .cab .tot { font-size: 11.5px; color: var(--suave); }
   .cab .marcas { font-size: 11px; color: var(--tenue); min-height: 15px; }
-  .gutter { font-size: 11px; color: var(--tenue); text-align: right; padding: 4px 6px 0 0; border-top: 1px solid var(--linea-suave); }
+  .gutter { font-size: 12px; color: var(--suave); text-align: right; padding: 4px 6px 0 0; border-top: 1px solid var(--linea-suave); }
   .celda { border-left: 1px solid var(--linea-suave); border-top: 1px solid var(--linea-suave); padding: 3px; min-height: 46px;
     display: flex; flex-direction: column; gap: 3px; position: relative; min-width: 0; }
   .celda.hoy { background: #f8fbff; }
@@ -104,8 +104,8 @@
   .mov .cam { font-size: 11.5px; }
   .mov .badge { display: inline-block; margin-top: 2px; font-size: 10.5px; font-weight: 700; border-radius: 4px; padding: 0 5px; }
   .acc { position: absolute; top: 4px; right: 4px; display: flex; flex-direction: column; gap: 3px; }
-  .acc button { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #c3cad3; background: #fff; padding: 0;
-    font-size: 12px; line-height: 19px; color: #9aa4af; font-weight: 700; }
+  .acc button { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #8a95a1; background: #fff; padding: 0;
+    font-size: 12px; line-height: 19px; color: var(--suave); font-weight: 700; }
   .acc button.ok:hover { border-color: var(--ok); color: var(--ok); }
   .acc button.no:hover { border-color: var(--mal); color: var(--mal); }
   .mov.e-llego { background: var(--ok-fondo); }
@@ -158,6 +158,7 @@
     .dias-movil .dn { font-size: 10.5px; font-weight: 600; color: var(--suave); text-transform: uppercase; }
     .dias-movil .num { font-size: 18px; font-weight: 600; }
     .dias-movil .cuenta { font-size: 10.5px; color: var(--suave); }
+    .dias-movil .falta-dia { font-size: 10.5px; color: var(--naranja); font-weight: 700; }
     .dias-movil button.hoy .num { color: var(--azul); }
     .dias-movil button[aria-pressed=true] { background: var(--azul); border-color: var(--azul); color: #fff; }
     .dias-movil button[aria-pressed=true] .dn, .dias-movil button[aria-pressed=true] .cuenta, .dias-movil button[aria-pressed=true] .num { color: #fff; }
@@ -256,8 +257,14 @@
   .toast.error { background: var(--mal); }
   .toast button { border: 0; background: none; color: #8ab4f8; font-weight: 700; padding: 2px 4px; }
 
+  @page { size: landscape; margin: 10mm; }
   @media print {
     .barra { position: static; border: 0; }
+    .mov { padding: 4px 6px !important; font-size: 11px !important; }
+    .mov .cli, .mov .obra, .mov .cam, .mov .l1 { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+    .tabla-caja { max-height: none !important; overflow: visible !important; box-shadow: none; }
+    th { position: static; }
+    .resumen-semana .atrasados { border: 0; }
     .herr, .nav .btn, .sync, .acc, .velo, .detalle, .toast, .banner { display: none !important; }
     main { padding: 0; }
     .cab { position: static; }
@@ -353,7 +360,8 @@
   var NO_CUENTAN = {'Anulado': 1, 'Reagendado': 1};
   var REFRESCO_MS = 60000;
 
-  var st = {
+  var st = null;
+  st = {
     hoy: hoyLocal(), ahora: '', usuario: '',
     lunes: null, siguiendo: true, vista: 'semana', dia: null,
     cache: {}, sinFecha: [], todas: null, todasOn: false,
@@ -381,7 +389,10 @@
   function diaSemana(iso) { return (aFecha(iso).getUTCDay() + 6) % 7; }
   function lunesDe(iso) { return sumar(iso, -diaSemana(iso)); }
   /** La semana que se muestra sola: la actual; el domingo ya se muestra la siguiente. */
-  function semanaPorDefecto(hoy) { return diaSemana(hoy) === 6 ? sumar(lunesDe(hoy), 7) : lunesDe(hoy); }
+  function semanaPorDefecto(hoy) {
+    if (st && st.semana && st.hoySemana === hoy) return st.semana;  // la decide el servidor (sabe si hoy hay camiones)
+    return diaSemana(hoy) === 6 ? sumar(lunesDe(hoy), 7) : lunesDe(hoy);
+  }
   function semanasEntre(a, b) { return Math.round((aFecha(b) - aFecha(a)) / (7 * 86400000)); }
   function fechaLarga(iso) {
     var d = aFecha(iso);
@@ -428,6 +439,7 @@
     st.ultima = Date.now();
     st.error = '';
     if (r.atrasados) st.atrasados = r.atrasados;
+    if (r.semana) { st.semana = r.semana; st.hoySemana = r.hoy; }
   }
   /** Lo que se guardó mientras una lectura iba en camino se vuelve a poner encima de esa lectura. */
   function conGuardados(lista, marca) {
@@ -510,10 +522,19 @@
         (a.tipo || '').localeCompare(b.tipo || '') || (a.cliente || '').localeCompare(b.cliente || '');
     });
   }
+  function esTarde(m) { return /^(pm|tarde)\b/i.test(m.hora || '') || /en la tarde/i.test(m.hora || ''); }
   function claveHora(m) {
     if (/^\d{2}:\d{2}$/.test(m.hora || '')) return m.hora;
-    if (/^(am|mañana|primera)/i.test(m.hora || '') || /primera hora/i.test(m.hora || '')) return '00:00' + m.hora;
-    return '99' + (m.hora || '');
+    if (esTarde(m)) return '13:59~' + m.hora;  // después de lo de la mañana
+    return '00:00' + (m.hora || '');
+  }
+  /** Hora para saber si ya debería haber llegado: "AM" o "a primera hora" cuentan como 12:00, "PM" como 18:00. */
+  function horaAprox(m) {
+    var h = minutos(m.hora);
+    if (h !== null) return h;
+    if (esTarde(m)) return 18 * 60;
+    if (/^(am|mañana)\b|primera hora/i.test(m.hora || '')) return 12 * 60;
+    return null;
   }
   function buscarMov(clave) {
     var listas = [st.cache[st.lunes] || [], st.sinFecha, st.todas || []], k;
@@ -537,7 +558,7 @@
     if (m.estado !== 'Agendado' || !m.fecha) return false;
     if (m.fecha < st.hoy) return true;
     if (m.fecha > st.hoy) return false;
-    var a = minutos(st.ahora), h = minutos(m.hora);
+    var a = minutos(st.ahora), h = horaAprox(m);
     return a !== null && h !== null && a - h > 60;
   }
   function toneladas(texto) {
@@ -572,7 +593,8 @@
 
   function pintar() {
     var dias = diasVisibles();
-    $('titulo').textContent = rango(st.lunes, dias.length === 7 ? 7 : 6);
+    if (!st.ultima && !st.error) return;  // hasta la primera respuesta (el servidor decide qué semana mostrar)
+    $('titulo').textContent = rango(st.lunes, 7);
     var rel = semanasEntre(lunesDe(st.hoy), st.lunes);
     var etiqueta = rel === 0 ? 'Esta semana' : rel === 1 ? 'Próxima semana' : rel === -1 ? 'Semana pasada' :
       rel > 1 ? 'En ' + rel + ' semanas' : 'Hace ' + (-rel) + ' semanas';
@@ -599,17 +621,19 @@
     var cargada = st.cache[st.lunes];
     if (!cargada || (st.vista === 'tabla' && st.todasOn)) { $('resumen').innerHTML = ''; return; }
     var t = totales(filtrar(deLaSemana()));
-    var partes = ['<span><b>' + t.mov + '</b> ' + plural(t.mov, 'movimiento', 'movimientos') + '</span>'];
+    var oculto = !st.filtros['Despacho'] ? 'despachos' : !st.filtros['Devolución'] ? 'devoluciones' : '';
+    var partes = oculto ? ['<button class="atrasados" data-mostrar-todo="1">Ocultando ' + oculto + ' · mostrar todo</button>'] : [];
+    partes.push('<span><b>' + t.mov + '</b> ' + plural(t.mov, 'movimiento', 'movimientos') + '</span>');
     if (st.filtros['Despacho']) partes.push('<span><span class="punto desp"></span> <b>' + t.desp + '</b> ' + plural(t.desp, 'despacho', 'despachos') + '</span>');
     if (st.filtros['Devolución']) partes.push('<span><span class="punto devo"></span> <b>' + t.devo + '</b> ' + plural(t.devo, 'devolución', 'devoluciones') + '</span>');
-    if (t.ton) partes.push('<span>≈ <b>' + numero(t.ton) + '</b> t</span>');
+    if (t.ton) partes.push('<span title="Suma de lo que dicen los correos del camión (capacidad o carga). Los que no dicen, no suman.">≈ <b>' + numero(t.ton) + '</b> t según los correos</span>');
     if (t.llego) partes.push('<span style="color:var(--ok)">✓ ' + t.llego + ' ' + plural(t.llego, 'llegó', 'llegaron') + '</span>');
     if (t.nollego) partes.push('<span style="color:var(--mal)">✗ ' + t.nollego + ' no ' + plural(t.nollego, 'llegó', 'llegaron') + '</span>');
     if (t.falta) partes.push('<span style="color:var(--naranja)">● ' + t.falta + ' sin marcar</span>');
     if (t.revisar) partes.push('<span style="color:var(--amarillo)">⚠ ' + t.revisar + ' por revisar</span>');
     if (st.atrasados.cantidad) {
       partes.push('<button class="atrasados" data-ir="' + lunesDe(st.atrasados.ultima) + '">● ' + st.atrasados.cantidad +
-        ' sin marcar de semanas anteriores · ver</button>');
+        ' sin marcar de días anteriores · ver</button>');
     }
     $('resumen').innerHTML = partes.join('');
   }
@@ -624,10 +648,11 @@
     var detalleCamion = [m.camion, m.cotizacion ? 'Cot. ' + m.cotizacion : ''].filter(Boolean).join(' · ');
     var titulo = [m.hora, m.tipo, m.cliente, m.obra, m.camion, m.estado].filter(Boolean).join(' · ');
     return '<div class="' + clases.join(' ') + '" role="button" tabindex="0" data-abrir="' + esc(m.clave) + '" title="' + esc(titulo) + '">' +
+      (m.estado === 'Reagendado' || m.estado === 'Anulado' ? '' :  // ya no se espera ese camión: nada que marcar
       '<div class="acc">' +
         '<button class="ok" data-accion="ok" data-k="' + esc(m.clave) + '" aria-label="Marcar que llegó" title="Llegó">✓</button>' +
         '<button class="no" data-accion="no" data-k="' + esc(m.clave) + '" aria-label="Marcar que no llegó" title="No llegó">✗</button>' +
-      '</div>' +
+      '</div>') +
       '<div class="l1"><span class="h">' + esc(m.hora || 'Sin hora') + '</span><span class="tp">' + esc(m.tipo === 'Devolución' ? 'Devolución' : 'Despacho') + '</span></div>' +
       '<div class="cli">' + esc(m.cliente || '(sin cliente)') + '</div>' +
       (m.obra ? '<div class="obra">' + esc(m.obra) + '</div>' : '') +
@@ -646,7 +671,8 @@
     var lista = ordenar(filtrar(deLaSemana()));
     var horas = lista.map(horaNum).filter(function (h) { return h !== null; });
     var hMin = Math.min.apply(null, [7].concat(horas)), hMax = Math.max.apply(null, [18].concat(horas));
-    var sinHora = lista.some(function (m) { return horaNum(m) === null; });
+    var sinHora = lista.some(function (m) { return horaNum(m) === null && !esTarde(m); });
+    var tarde = lista.some(function (m) { return horaNum(m) === null && esTarde(m); });
     var fechas = dias.map(function (d) { return sumar(st.lunes, d); });
     var html = ['<div class="cab" style="border-top-left-radius:12px"></div>'];
     fechas.forEach(function (f, i) {
@@ -671,10 +697,11 @@
         html.push('<div class="celda ' + (f === st.hoy ? 'hoy ' : '') + (extraClase || '') + '">' + linea + aqui.map(function (m) { return tarjeta(m); }).join('') + '</div>');
       });
     }
-    if (sinHora) fila('Sin hora', function (m) { return horaNum(m) === null; }, 'sinhora');
+    if (sinHora) fila('Sin hora', function (m) { return horaNum(m) === null && !esTarde(m); }, 'sinhora');
     for (var h = hMin; h <= hMax; h++) {
       (function (h) { fila(dos(h) + ':00', function (m) { return horaNum(m) === h; }, '', h); })(h);
     }
+    if (tarde) fila('Tarde', function (m) { return horaNum(m) === null && esTarde(m); }, 'sinhora');
     grilla.innerHTML = html.join('');
     if (!lista.length) {
       grilla.insertAdjacentHTML('beforeend', '<div class="vacio" style="grid-column:1/-1">No hay movimientos confirmados esta semana' +
@@ -689,10 +716,11 @@
     var dia = st.dia && fechas.indexOf(st.dia) >= 0 ? st.dia : fechas.indexOf(st.hoy) >= 0 ? st.hoy : fechas[0];
     var lista = ordenar(filtrar(deLaSemana()));
     cont.innerHTML = fechas.map(function (f, i) {
-      var n = totales(lista.filter(function (m) { return m.fecha === f; })).mov;
+      var t = totales(lista.filter(function (m) { return m.fecha === f; }));
       return '<button data-dia="' + f + '" class="' + (f === st.hoy ? 'hoy' : '') + '" aria-pressed="' + (f === dia) + '">' +
         '<div class="dn">' + DIAS[dias[i]] + '</div><div class="num">' + aFecha(f).getUTCDate() + '</div>' +
-        '<div class="cuenta">' + (n ? n + ' mov' : '—') + '</div></button>';
+        '<div class="cuenta">' + (t.mov ? t.mov + ' mov' : '—') + '</div>' +
+        (t.falta ? '<div class="falta-dia">●' + t.falta + '</div>' : '') + '</button>';
     }).join('');
     if (!st.cache[st.lunes]) { listaDia.innerHTML = '<div class="esqueleto"></div>'; return; }
     var delDia = lista.filter(function (m) { return m.fecha === dia; });
@@ -703,7 +731,7 @@
     var grupos = {};
     var orden = [];
     delDia.forEach(function (m) {
-      var g = horaNum(m) === null ? 'Sin hora' : m.hora;
+      var g = horaNum(m) === null ? (esTarde(m) ? 'Tarde' : 'Sin hora') : m.hora;
       if (!grupos[g]) { grupos[g] = []; orden.push(g); }
       grupos[g].push(m);
     });
@@ -771,6 +799,14 @@
     else if (m.estado === 'No llegó') aviso = '<div class="d-aviso mal">En unos minutos se avisa a pendientes (con copia a ' + (devo ? 'Javier' : 'Andrea') + ') para reagendar.</div>';
     else if (m.aviso) aviso = '<div class="d-aviso info">Se avisó a pendientes el ' + esc(m.aviso) + ' porque estaba marcado "No llegó".</div>';
     else if (faltaMarcar(m)) aviso = '<div class="d-aviso falta">Ya pasó la hora: falta marcar si llegó.</div>';
+    else if (m.estado === 'Revisar') aviso = '<div class="d-aviso falta">' + (m.nota && /^No se entendió/.test(m.nota) ?
+      'No se entendió la fecha del correo.' : 'En el correo piden un cambio o una anulación.') +
+      ' Confirmar con ' + (devo ? 'Javier' : 'Andrea') + ' antes de esperar el camión.</div>';
+    else if (m.estado === 'Reagendado') {
+      var cambio = (m.historial || '').split(' | ').filter(function (h) { return /se cambió a/.test(h); }).pop();
+      aviso = '<div class="d-aviso info">Se cambió de fecha' + (cambio ? ': ' + esc(cambio.replace(/^.*se cambió a /, '').replace(/ \(UID.*$/, '')) : '') +
+        '. Este camión ya no se espera este día.</div>';
+    }
     var historial = (m.historial || '').split(' | ').filter(Boolean);
     var notaActual = $('d-nota') && $('d-nota').getAttribute('data-k') === m.clave ? $('d-nota').value : null;
     panel.innerHTML =
@@ -845,7 +881,7 @@
           fn: function () { guardar(nuevo, {estado: previo.estado}, {silencioso: true}); aviso('Listo, quedó como ' + previo.estado); }
         });
       } else if (cambio.nota !== undefined) {
-        aviso('Nota guardada');
+        aviso('Nota guardada' + (m.cliente ? ' · ' + m.cliente : ''));
       }
     }, function (e) {
       if (st.pendientes[clave] && st.pendientes[clave].v === v) delete st.pendientes[clave];
@@ -854,33 +890,39 @@
     }).then(function () { st.cargando--; pintarSync(); });
   }
 
-  function marcar(clave, estado) {
+  /** Pide confirmación cuando corresponde y guarda. Si había una nota escrita en el detalle, va en el mismo cambio. */
+  function marcar(clave, estado, nota) {
     var m = buscarMov(clave);
-    if (!m || m.estado === estado) return Promise.resolve();
+    if (!m) return Promise.resolve();
+    if (m.estado === estado) return nota !== undefined ? guardar(m, {nota: nota}) : Promise.resolve();
+    var cambio = {estado: estado};
+    if (nota !== undefined) cambio.nota = nota;
+    var hacer = function (si) { if (si) return guardar(m, cambio); };
     var quien = m.tipo === 'Devolución' ? 'Javier' : 'Andrea';
+    var avisado = (m.aviso || '').replace(/^enviando /, '');
     if (m.aviso && m.estado === 'No llegó') {
-      return confirmar('Ya se avisó que no llegó',
-        'El ' + m.aviso.replace(/^enviando /, '') + ' se mandó a pendientes (con copia a ' + quien + ') para reagendar. ' +
-        'Si el camión sí vino o no hay que reagendar, avísale a ' + quien + '.', 'Cambiar a ' + estado)
-        .then(function (si) { if (si) return guardar(m, {estado: estado}); });
+      return confirmar('Ya se avisó que no llegó', 'El ' + avisado + ' se mandó a pendientes (con copia a ' + quien +
+        ') para reagendar. Si el camión sí vino o no hay que reagendar, avísale a ' + quien + '.', 'Cambiar a ' + estado).then(hacer);
     }
     if (estado === 'No llegó' && m.aviso) {
-      return confirmar('¿El camión no llegó?', 'Ya se había avisado a pendientes el ' + m.aviso.replace(/^enviando /, '') +
-        ': no se manda un aviso nuevo. Si hay que reagendar otra vez, avísale a ' + quien + '.', 'Marcar no llegó')
-        .then(function (si) { if (si) return guardar(m, {estado: estado}); });
+      return confirmar('¿El camión no llegó?', 'Ya se había avisado a pendientes el ' + avisado +
+        ': no se manda un aviso nuevo. Si hay que reagendar otra vez, avísale a ' + quien + '.', 'Marcar no llegó').then(hacer);
+    }
+    if (estado === 'No llegó' && (m.estado === 'Reagendado' || m.estado === 'Anulado')) {
+      return confirmar('Este ya estaba ' + m.estado.toLowerCase(), 'No se esperaba este camión, así que no hace falta marcarlo. ' +
+        'Si igual lo marcas "No llegó", se avisará a pendientes (con copia a ' + quien + ') para reagendar.', 'Marcar no llegó igual').then(hacer);
     }
     if (estado === 'No llegó') {
-      return confirmar('¿El camión no llegó?',
-        (m.cliente || m.tipo) + (m.fecha ? ', ' + fechaLarga(m.fecha) : '') + (m.hora ? ' ' + m.hora : '') +
-        '. Se avisará a pendientes con copia a ' + (m.tipo === 'Devolución' ? 'Javier' : 'Andrea') + ' para reagendar.',
-        'Sí, no llegó').then(function (si) { if (si) return guardar(m, {estado: estado}); });
+      return confirmar('¿El camión no llegó?', (m.cliente || m.tipo) + (m.fecha ? ', ' + fechaLarga(m.fecha) : '') +
+        (m.hora ? ' ' + m.hora : '') + '. Se avisará a pendientes con copia a ' + quien + ' para reagendar.', 'Sí, no llegó').then(hacer);
     }
     if (estado === 'Llegó' && m.fecha && m.fecha > st.hoy) {
-      return confirmar('¿Marcar como llegó?', 'Este movimiento es para el ' + fechaLarga(m.fecha) + ', que todavía no llega.', 'Marcar llegó')
-        .then(function (si) { if (si) return guardar(m, {estado: estado}); });
+      return confirmar('¿Marcar como llegó?', 'Este movimiento es para el ' + fechaLarga(m.fecha) + ', que todavía no llega.',
+        'Marcar llegó').then(hacer);
     }
-    return guardar(m, {estado: estado});
+    return guardar(m, cambio);
   }
+
 
   var resolverModal = null;
   function confirmar(titulo, texto, si) {
@@ -917,7 +959,16 @@
     var c = $('detalle').querySelector('.cerrar');
     if (c) c.focus();
   }
+  /** La nota escrita en el detalle que todavía no se guarda (o undefined). */
+  function notaSinGuardar() {
+    var ta = $('d-nota');
+    if (!ta) return undefined;
+    var m = buscarMov(ta.getAttribute('data-k'));
+    return m && ta.value.replace(/\s+$/, '') !== (m.nota || '') ? ta.value : undefined;
+  }
   function cerrarDetalle() {
+    var nota = notaSinGuardar(), m = $('d-nota') && buscarMov($('d-nota').getAttribute('data-k'));
+    if (nota !== undefined && m) guardar(m, {nota: nota});  // al cerrar, la nota escrita se guarda sola
     st.abierto = null;
     $('detalle').hidden = true;
     $('velo').hidden = true;
@@ -951,13 +1002,12 @@
   }
 
   function guardarPreferencia() {
-    try { localStorage.setItem('agenda-preferencias', JSON.stringify({vista: st.vista, filtros: st.filtros})); } catch (e) { /* sin almacenamiento */ }
+    try { localStorage.setItem('agenda-preferencias', JSON.stringify({vista: st.vista})); } catch (e) { /* sin almacenamiento */ }
   }
   function leerPreferencia() {
     try {
       var p = JSON.parse(localStorage.getItem('agenda-preferencias') || '{}');
       if (p.vista === 'tabla' || p.vista === 'semana') st.vista = p.vista;
-      if (p.filtros) { st.filtros['Despacho'] = p.filtros['Despacho'] !== false; st.filtros['Devolución'] = p.filtros['Devolución'] !== false; }
     } catch (e) { /* sin almacenamiento */ }
     $('f-desp').checked = st.filtros['Despacho'];
     $('f-devo').checked = st.filtros['Devolución'];
@@ -985,7 +1035,7 @@
     }
     var est = el.closest('[data-estado]');
     if (est && st.abierto) {
-      if (!st.pendientes[st.abierto] && ev.detail <= 1) marcar(st.abierto, est.getAttribute('data-estado'));
+      if (!st.pendientes[st.abierto] && ev.detail <= 1) marcar(st.abierto, est.getAttribute('data-estado'), notaSinGuardar());
       return;
     }
     if (el.closest('select')) return;
@@ -998,6 +1048,12 @@
       var c = th.getAttribute('data-orden');
       st.orden = {campo: c, asc: st.orden.campo === c ? !st.orden.asc : true};
       pintarTabla();
+      return;
+    }
+    if (el.closest('[data-mostrar-todo]')) {
+      st.filtros['Despacho'] = st.filtros['Devolución'] = true;
+      $('f-desp').checked = $('f-devo').checked = true;
+      pintar();
       return;
     }
     var ir = el.closest('[data-ir]');
