@@ -14,6 +14,13 @@ AHORA = datetime.datetime(2026, 11, 4, 10, 0, tzinfo=agenda.CHILE)
 class PlanillaFalsa:
     def __init__(self):
         self.filas = []
+        self.correos = []
+
+    def uids_con_correo(self):
+        return {f[0] for f in self.correos}
+
+    def agregar_correos(self, filas):
+        self.correos += [list(f) for f in filas]
 
     def leer(self):
         return [list(f) for f in self.filas]
@@ -397,7 +404,11 @@ def test_preparar_arma_semana_hoy_y_agenda_con_formulas_en_espanol():
     assert borradas == {0, 3}  # la hoja vacía y la vieja "Próximos 7 días"
     orden = [(r["updateSheetProperties"]["properties"]["sheetId"], r["updateSheetProperties"]["properties"]["index"])
              for r in lotes if "updateSheetProperties" in r and "index" in r["updateSheetProperties"]["properties"]]
-    assert orden == [(p.hojas["Semana"], 0), (2, 1), (1, 2)]
+    assert orden == [(p.hojas["Semana"], 0), (2, 1), (1, 2), (p.hojas["Correos"], 3)]
+    enlace = p.escrito("Agenda!Q1")[0][0]  # última columna: "Ver correo" que salta a la fila del correo
+    assert enlace.startswith('={"Ver correo";ARRAYFORMULA(IF(O2:O="";"";HYPERLINK("#gid=' + str(p.hojas["Correos"]) + '&range=A"&')
+    assert "MATCH(O2:O;Correos!$A:$A;0)" in enlace and "," not in enlace
+    assert p.escrito("Correos!A1:H1") == [agenda.COLUMNAS_CORREO]
     dias = p.escrito("'Semana'!A2:G5")[1]
     assert dias[0].startswith("=TODAY()-WEEKDAY(TODAY();3)+IF(WEEKDAY(TODAY();2)=7;7;0)+7*SWITCH($B$1;")
     assert dias[6] == "=$A$3+6"
@@ -460,3 +471,23 @@ def test_preparar_agrega_la_columna_toneladas_a_una_hoja_vieja_y_la_llena():
     otra._pedir = PlanillaGrabadora._pedir.__get__(otra)  # una hoja que ya tiene Toneladas no se toca
     agenda.preparar(otra)
     assert not any("insertDimension" in r for m, ruta, c, _ in otra.pedidos if ruta == ":batchUpdate" for r in c["requests"])
+
+
+def test_cada_correo_de_la_agenda_queda_copiado_una_vez_para_el_enlace(cfg, monkeypatch):
+    from clasificador import principal
+    p = PlanillaFalsa()
+    cfg.agenda_id = "planilla-de-prueba"
+    monkeypatch.setattr(principal, "_planilla", lambda c: p)
+    r = resultado("despacho_acordado", falta=())
+    r.update(fecha_movimiento="vie 07-11-2026 08:00; lun 10-11-2026 08:00")
+    principal.procesar(cfg, BuzonFalso([correo_crudo()]), ModeloFalso(r), None, [].append)
+    assert len(p.filas) == 2 and len(p.correos) == 1  # dos fechas, un solo correo
+    uid, fecha, de, para, cc, asunto, adjuntos, texto = p.correos[0]
+    assert uid == p.filas[0][COL["UID"]] and asunto.startswith("Re: Cotización") and "se aprueba" in texto
+    assert "Mensajes anteriores del hilo" in texto and fecha == "13-08-2026 16:37"  # agosto: Chile en UTC-4
+    assert agenda.guardar_correos(p, [(leer(correo_crudo()), int(uid))]) == 0  # ya estaba: no se repite
+
+
+def test_un_correo_muy_largo_se_corta():
+    correo = leer(correo_crudo(texto="x" * 20000))
+    assert agenda.fila_correo(correo, 5)[-1].endswith("[… cortado]") and len(agenda.fila_correo(correo, 5)[-1]) < 12100

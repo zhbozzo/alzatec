@@ -152,7 +152,8 @@ def corregir(cfg, buzon, principal, enviar, uid, ahora, antes, nota=""):
             if antes in agenda.TIPOS and antes != ahora:  # salió de acordado o cambió despacho <-> devolución
                 agenda.anular_uid(_planilla(cfg), uid, f"corregido: ahora es {ETIQUETAS[ahora]}", agenda.TIPOS[antes])
             if ahora in agenda.TIPOS:
-                agenda.registrar_acordado(_planilla(cfg), correo, decision, uid, _claves_agenda(correo))
+                if agenda.registrar_acordado(_planilla(cfg), correo, decision, uid, _claves_agenda(correo)) != "agenda_diaria":
+                    agenda.guardar_correos(_planilla(cfg), [(correo, uid)])
         except Exception as e:
             _agenda_fallida(cfg, buzon, enviar, e, "corregir")
     registrar(evento="correccion", uid=uid, asunto=correo.asunto[:200], antes=antes, ahora=ahora,
@@ -323,6 +324,8 @@ def _a_la_agenda(cfg, buzon, enviar, correo, decision, uid):
     try:
         if decision.categoria in agenda.TIPOS:
             resultado = agenda.registrar_acordado(_planilla(cfg), correo, decision, uid, _claves_agenda(correo))
+            if resultado != "agenda_diaria":
+                agenda.guardar_correos(_planilla(cfg), [(correo, uid)])  # para el enlace "Ver correo"
             registrar(evento="agenda", uid=uid, accion=resultado)
         elif decision.categoria == "pendiente" and "cambio_o_anulacion" in (decision.resultado.get("falta") or []):
             n = agenda.marcar_cambio(_planilla(cfg), correo, decision, uid, _claves_agenda(correo))
@@ -352,7 +355,23 @@ def cargar_agenda(cfg, buzon, uids, desde_cero=False):
             "movimiento", "fecha_movimiento", "n_cotizacion", "resumen", "cliente", "obra")})
         accion = agenda.registrar_acordado(planilla, correo, Decision(previo["categoria"], resultado), uid,
                                            _claves_agenda(correo))
+        if accion != "agenda_diaria":
+            agenda.guardar_correos(planilla, [(correo, uid)])
         registrar(evento="agenda", uid=uid, accion=accion)
+
+
+def correos_faltantes(cfg, buzon):
+    """Copia en la pestaña Correos los correos de la Agenda que todavía no están (para el enlace "Ver correo")."""
+    planilla = _planilla(cfg)
+    ya = planilla.uids_con_correo()
+    uids = sorted({f[agenda.COL["UID"]] for f in planilla.leer() if f[agenda.COL["UID"]].isdigit()} - ya, key=int)
+    pares = []
+    for u in uids:
+        try:
+            pares.append((leer(buzon.leer(int(u)), cfg.max_imagenes), int(u)))
+        except Exception as e:
+            registrar(evento="agenda", uid=u, accion="correo_no_leido", error=f"{type(e).__name__}: {e}")
+    registrar(evento="agenda", accion="correos_guardados", cantidad=agenda.guardar_correos(planilla, pares, ya))
 
 
 def _reagendamientos(cfg, buzon, enviar):
@@ -478,6 +497,9 @@ def main(argv=None):
             return
         elif accion == "agenda_cargar":  # agenda_cargar [desde_cero] UID UID...: acordados ya reenviados, en orden
             cargar_agenda(cfg, buzon, [int(a) for a in argv[1:] if a.isdigit()], desde_cero="desde_cero" in argv[1:])
+            return
+        elif accion == "agenda_correos":  # copia en la pestaña Correos los correos de la Agenda que falten
+            correos_faltantes(cfg, buzon)
             return
         elif accion == "agenda_ver":  # solo lectura: hojas, filas por estado, últimas filas y vistas
             registrar(evento="agenda_ver", **agenda.ver(_planilla(cfg)))

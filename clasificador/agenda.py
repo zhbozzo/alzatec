@@ -25,6 +25,10 @@ HOJA = "Agenda"
 COLUMNAS = ["Fecha", "Hora", "Tipo", "Cliente", "Obra", "Cotización", "Camión", "Toneladas", "Estado", "Nota de bodega",
             "Resumen", "Correo", "Historial", "Hilo", "UID", "Aviso"]
 SIN_TONELADAS = [c for c in COLUMNAS if c != "Toneladas"]  # cómo era la hoja antes del 5-nov
+CORREOS = "Correos"  # pestaña con una copia de cada correo, para verlo desde la Agenda
+COLUMNAS_CORREO = ["UID", "Fecha", "De", "Para", "CC", "Asunto", "Adjuntos", "Texto"]
+LARGO_TEXTO = 12000
+ENLACE = "Ver correo"  # última columna de la Agenda (una fórmula; el clasificador no escribe ahí)
 ESTADOS = ["Agendado", "Llegó", "No llegó", "Reagendado", "Anulado", "Revisar"]
 TIPOS = {"despacho_acordado": "Despacho", "recepcion_acordada": "Devolución"}
 try:  # hora de Chile con su horario de invierno (UTC-4) y de verano (UTC-3)
@@ -134,6 +138,34 @@ def cliente_y_obra(correo, resumen=""):
         if obra:
             break
     return cliente, obra
+
+
+def fila_correo(correo, uid):
+    """La copia del correo para la pestaña Correos (texto nuevo y, debajo, el hilo citado)."""
+    texto = (correo.texto_nuevo or "").strip()
+    if (correo.texto_citado or "").strip():
+        texto += "\n\n──── Mensajes anteriores del hilo ────\n" + correo.texto_citado.strip()
+    if len(texto) > LARGO_TEXTO:
+        texto = texto[:LARGO_TEXTO] + "\n[… cortado]"
+    try:
+        fecha = datetime.datetime.fromisoformat(correo.fecha).astimezone(CHILE).strftime("%d-%m-%Y %H:%M")
+    except (TypeError, ValueError):
+        fecha = correo.fecha or ""
+    return [str(uid), fecha, correo.remitente or "", correo.para or "", correo.cc or "", correo.asunto or "",
+            ", ".join(correo.adjuntos or []), texto]
+
+
+def guardar_correos(planilla, pares, ya=None):
+    """Guarda en la pestaña Correos los que todavía no están (por UID). pares: [(correo, uid)]."""
+    ya = set(ya) if ya is not None else planilla.uids_con_correo()
+    filas = []
+    for correo, uid in pares:
+        if str(uid) not in ya:
+            ya.add(str(uid))
+            filas.append(fila_correo(correo, uid))
+    if filas:
+        planilla.agregar_correos(filas)
+    return len(filas)
 
 
 def es_agenda_diaria(correo):
@@ -264,7 +296,16 @@ class Planilla:
         """Se escribe tal cual (RAW): nada de lo que venga en un correo se interpreta como fórmula. La fecha va
         como número de día para que la planilla la trate como fecha."""
         filas = [[_serial(v) if i == COL["Fecha"] else v for i, v in enumerate(f)] for f in filas]
-        rango = urllib.parse.quote(f"{HOJA}!A1")
+        rango = urllib.parse.quote(f"{HOJA}!A1:{ULTIMA}")  # sin la columna del enlace (es una fórmula)
+        self._pedir("POST", f"/values/{rango}:append", {"values": filas},
+                    {"valueInputOption": "RAW", "insertDataOption": "OVERWRITE"})
+
+    def uids_con_correo(self):
+        filas = self._pedir("GET", "/values/" + urllib.parse.quote(f"{CORREOS}!A2:A")).get("values", [])
+        return {str(f[0]) for f in filas if f}
+
+    def agregar_correos(self, filas):
+        rango = urllib.parse.quote(f"{CORREOS}!A1:H")
         self._pedir("POST", f"/values/{rango}:append", {"values": filas},
                     {"valueInputOption": "RAW", "insertDataOption": "OVERWRITE"})
 
@@ -297,10 +338,15 @@ def ver(planilla):
                                                 "fields": "sheets(data(rowData(values(dataValidation))))"})
     fila2 = ((((celdas.get("sheets") or [{}])[0].get("data") or [{}])[0].get("rowData") or [{}])[0].get("values") or [])
     con_lista = [COLUMNAS[i] for i, c in enumerate(fila2[:len(COLUMNAS)]) if c.get("dataValidation")]
+    enlace = chr(ord(ULTIMA) + 1)
+    enlaces = planilla._pedir("GET", "/values/" + urllib.parse.quote(f"{HOJA}!{enlace}1:{enlace}3"),
+                              params={"valueRenderOption": "FORMULA"}).get("values", []) if CORREOS in hojas else []
+    correos = len(planilla.uids_con_correo()) if CORREOS in hojas else 0
     return {"hojas": hojas, "locale": planilla.info_locale(), "filas": len(filas),
             "estados": {e: sum(1 for f in filas if f[COL["Estado"]] == e) for e in ESTADOS},
             "por_fecha": {d: sum(1 for f in filas if f[COL["Fecha"]] == d) for d in sorted({f[COL["Fecha"]] for f in filas})},
-            "ultimas": [f[:COL["Nota de bodega"] + 1] for f in filas[-5:]], "como_se_ve": como_se_ve, "con_lista": con_lista, "vistas": vistas}
+            "ultimas": [f[:COL["Nota de bodega"] + 1] for f in filas[-5:]], "como_se_ve": como_se_ve, "con_lista": con_lista, "correos": correos,
+            "enlaces": enlaces, "vistas": vistas}
 
 
 def tocada_por_bodega(filas):
@@ -312,7 +358,7 @@ def tocada_por_bodega(filas):
 
 SEMANA = "Semana"
 OPCIONES_SEMANA = ["Esta semana", "Semana siguiente", "Semana anterior", "En 2 semanas", "Hace 2 semanas"]
-VISTAS = (SEMANA, "Hoy", HOJA)  # orden de las pestañas
+VISTAS = (SEMANA, "Hoy", HOJA, CORREOS)  # orden de las pestañas
 VIEJAS = ("Próximos 7 días", "Hoja 1", "Sheet1", "Hoja1")  # se borran si están
 
 
@@ -332,7 +378,7 @@ def preparar(planilla):
     if pedidos:
         planilla.lote(pedidos)
         hojas = {h["properties"]["title"]: h["properties"]["sheetId"] for h in planilla.info()["sheets"]}
-    agenda, semana, hoy = hojas[HOJA], hojas[SEMANA], hojas["Hoy"]
+    agenda, semana, hoy, correos = hojas[HOJA], hojas[SEMANA], hojas["Hoy"], hojas[CORREOS]
     # Hora de Chile para TODAY(); se borran las hojas que ya no se usan; orden: Semana, Hoy, Agenda
     pedidos = [{"updateSpreadsheetProperties": {"properties": {"timeZone": "America/Santiago"}, "fields": "timeZone"}}]
     pedidos += [{"deleteSheet": {"sheetId": i}} for t, i in hojas.items() if t in VIEJAS]
@@ -356,6 +402,36 @@ def preparar(planilla):
     _preparar_hoy(planilla, hoy, sep)
     _preparar_semana(planilla, semana, sep, semana_nueva)
     _preparar_agenda(planilla, agenda)
+    _preparar_correos(planilla, correos, agenda, sep)
+
+
+def _preparar_correos(planilla, hoja, agenda, sep):
+    """Pestaña Correos (una fila por correo) y, en la última columna de la Agenda, un enlace "Ver correo" que
+    salta a esa fila. El enlace es una sola fórmula que busca el UID: sigue funcionando si se ordenan las hojas."""
+    planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"{CORREOS}!A1:H1"), {"values": [COLUMNAS_CORREO]},
+                    {"valueInputOption": "RAW"})
+    uid, columna = _letra("UID"), chr(ord(ULTIMA) + 1)
+    formula = (f'={{"{ENLACE}";ARRAYFORMULA(IF({uid}2:{uid}=""{sep}""{sep}HYPERLINK("#gid={hoja}&range=A"&'
+               f'IFERROR(MATCH({uid}2:{uid}{sep}{CORREOS}!$A:$A{sep}0){sep}1){sep}"{ENLACE}")))}}')
+    planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"{HOJA}!{columna}1"), {"values": [[formula]]},
+                    {"valueInputOption": "USER_ENTERED"})
+    anchos = [70, 125, 230, 230, 160, 320, 200, 700]
+    planilla.lote([
+        {"updateSheetProperties": {"properties": {"sheetId": hoja, "gridProperties": {"frozenRowCount": 1}},
+                                   "fields": "gridProperties.frozenRowCount"}},
+        {"repeatCell": {"range": {"sheetId": hoja, "startRowIndex": 0, "endRowIndex": 1},
+                        "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
+                        "fields": "userEnteredFormat.textFormat.bold"}},
+        {"repeatCell": {"range": {"sheetId": hoja, "startRowIndex": 1},
+                        "cell": {"userEnteredFormat": {"wrapStrategy": "WRAP", "verticalAlignment": "TOP"}},
+                        "fields": "userEnteredFormat(wrapStrategy,verticalAlignment)"}},
+    ] + [{"updateDimensionProperties": {"range": {"sheetId": hoja, "dimension": "COLUMNS", "startIndex": i, "endIndex": i + 1},
+                                        "properties": {"pixelSize": ancho}, "fields": "pixelSize"}}
+         for i, ancho in enumerate(anchos)] + [
+        {"updateDimensionProperties": {"range": {"sheetId": agenda, "dimension": "COLUMNS",
+                                                 "startIndex": len(COLUMNAS), "endIndex": len(COLUMNAS) + 1},
+                                       "properties": {"pixelSize": 95}, "fields": "pixelSize"}},
+    ])
 
 
 def _agregar_toneladas(planilla, agenda):
