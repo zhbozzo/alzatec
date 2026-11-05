@@ -151,8 +151,8 @@ def test_la_planilla_lee_fechas_y_horas_como_texto_y_escribe_sin_formulas():
             pedidos.append((ruta, cuerpo, params))
             if params and params.get("valueRenderOption") == "UNFORMATTED_VALUE":
                 return {"values": [[46331, 0.4583333333]]}
-            return {"values": [COLUMNAS, ["jue 05-11-2026", "11:00", "Devolución", "EBCO", "", "28794", "", "Agendado",
-                                          "14:30"]]}
+            return {"values": [COLUMNAS, ["jue 05-11-2026", "11:00", "Devolución", "EBCO", "", "28794", "", "",
+                                          "Agendado", "14:30"]]}
 
     p = Probar("x", token=lambda: "t")
     f = p.leer()[0]
@@ -404,7 +404,7 @@ def test_preparar_arma_semana_hoy_y_agenda_con_formulas_en_espanol():
     lista = p.escrito("'Semana'!A2:G5")[3][0]
     assert lista.startswith("=IFERROR(SORT(FILTER(ARRAYFORMULA(") and "Agenda!$A$2:$A=A$3" in lista and "," not in lista
     assert p.escrito("'Semana'!B1") == [["Esta semana"]]
-    assert "," not in p.escrito("'Hoy'!A1:I3")[2][0]
+    assert "," not in p.escrito("'Hoy'!A1:J3")[2][0] and "Agenda!A2:J;" in p.escrito("'Hoy'!A1:J3")[2][0]
     # los colores viejos se borran antes de crear los nuevos (2 por hoja, en Agenda y Semana)
     assert sum(1 for r in lotes if "deleteConditionalFormatRule" in r) == 4
 
@@ -414,3 +414,43 @@ def test_preparar_otra_vez_no_pisa_la_semana_elegida_y_en_ingles_usa_comas():
     agenda.preparar(p)
     assert p.escrito("'Semana'!B1") is None
     assert "WEEKDAY(TODAY(),3)" in p.escrito("'Semana'!A2:G5")[1][0]
+
+
+def test_toneladas_como_numero_para_poder_sumar():
+    assert [agenda.toneladas(t) for t in ("camión 10 toneladas", "5 toneladas", "camión 10 t", "1.000 kg", "5T",
+                                          "1,5 toneladas", "camión 3/4", "")] == [10, 5, 10, 1, 5, 1.5, "", ""]
+    assert agenda.toneladas("camión 3/4", "con carga de 2 toneladas") == 2  # si el camión no lo dice, el resumen
+    p = PlanillaFalsa()
+    agenda.registrar_acordado(p, leer(correo_crudo()), acordado(resumen="Se agenda con camión de 6 toneladas."), 7,
+                              ["c:1"], AHORA)
+    f = p.filas[0]
+    assert (f[COL["Camión"]], f[COL["Toneladas"]], f[COL["Estado"]]) == ("camión 6 toneladas", 6, "Agendado")
+
+
+def test_preparar_agrega_la_columna_toneladas_a_una_hoja_vieja_y_la_llena():
+    import urllib.parse
+
+    class Vieja(PlanillaGrabadora):
+        def _pedir(self, metodo, ruta, cuerpo=None, params=None):
+            if metodo == "GET" and urllib.parse.unquote(ruta) == "/values/Agenda!1:1":
+                self.pedidos.append((metodo, ruta, cuerpo, params))
+                return {"values": [agenda.SIN_TONELADAS]}
+            return super()._pedir(metodo, ruta, cuerpo, params)
+
+        def leer(self):
+            fila = [""] * len(COLUMNAS)
+            fila[COL["Camión"]], fila[COL["Resumen"]] = "camión 10 toneladas", ""
+            otra = [""] * len(COLUMNAS)
+            otra[COL["Camión"]], otra[COL["Resumen"]] = "camión 3/4", "Javier agenda con carga de 2 toneladas."
+            return [fila, otra]
+
+    p = Vieja({"Agenda": 1, "Hoy": 2, "Semana": 5})
+    agenda.preparar(p)
+    lotes = [r for m, ruta, c, _ in p.pedidos if ruta == ":batchUpdate" for r in c["requests"]]
+    insertada = [r["insertDimension"]["range"] for r in lotes if "insertDimension" in r]
+    assert insertada == [{"sheetId": 1, "dimension": "COLUMNS", "startIndex": 7, "endIndex": 8}]
+    assert p.escrito("Agenda!H2:H3") == [[10], [2]]
+    otra = Vieja({"Agenda": 1, "Hoy": 2, "Semana": 5})
+    otra._pedir = PlanillaGrabadora._pedir.__get__(otra)  # una hoja que ya tiene Toneladas no se toca
+    agenda.preparar(otra)
+    assert not any("insertDimension" in r for m, ruta, c, _ in otra.pedidos if ruta == ":batchUpdate" for r in c["requests"])

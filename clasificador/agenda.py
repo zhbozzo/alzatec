@@ -22,8 +22,9 @@ from email.utils import getaddresses
 from . import memoria
 
 HOJA = "Agenda"
-COLUMNAS = ["Fecha", "Hora", "Tipo", "Cliente", "Obra", "Cotización", "Camión", "Estado", "Nota de bodega",
+COLUMNAS = ["Fecha", "Hora", "Tipo", "Cliente", "Obra", "Cotización", "Camión", "Toneladas", "Estado", "Nota de bodega",
             "Resumen", "Correo", "Historial", "Hilo", "UID", "Aviso"]
+SIN_TONELADAS = [c for c in COLUMNAS if c != "Toneladas"]  # cómo era la hoja antes del 5-nov
 ESTADOS = ["Agendado", "Llegó", "No llegó", "Reagendado", "Anulado", "Revisar"]
 TIPOS = {"despacho_acordado": "Despacho", "recepcion_acordada": "Devolución"}
 try:  # hora de Chile con su horario de invierno (UTC-4) y de verano (UTC-3)
@@ -91,6 +92,21 @@ def camion(*textos):
     return ""
 
 
+def toneladas(*textos):
+    """Las toneladas como número, para poder sumarlas: "camión 10 toneladas" -> 10, "1.000 kg" -> 1.
+    Si no se dicen ("camión 3/4"), queda vacío."""
+    for t in textos:
+        m = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:ton(?:elada)?s?\b|t\b)", t or "", re.I)
+        if m:
+            n = float(m.group(1).replace(",", "."))
+            return int(n) if n.is_integer() else n
+        m = re.search(r"(\d{1,3}(?:\.\d{3})+|\d+)\s*(?:kg|kilos?)\b", t or "", re.I)
+        if m:
+            n = int(m.group(1).replace(".", "")) / 1000
+            return int(n) if n.is_integer() else n
+    return ""
+
+
 GENERICOS = ("gmail.", "hotmail.", "outlook.", "yahoo.", "live.", "icloud.")
 
 
@@ -136,6 +152,7 @@ def filas_nuevas(correo, decision, uid, claves, ahora=None):
     base = {
         "Tipo": TIPOS[decision.categoria], "Cliente": cliente, "Obra": obra, "Cotización": r.get("n_cotizacion", ""),
         "Camión": camion(r.get("resumen"), correo.texto_nuevo), "Resumen": (r.get("resumen") or "")[:300],
+        "Toneladas": toneladas(camion(r.get("resumen"), correo.texto_nuevo), r.get("resumen"), correo.texto_nuevo),
         "Correo": f"{(correo.asunto or '')[:120]} · {(correo.fecha or '')[:16]}",
         "Historial": f"{ahora:%d-%m %H:%M} agregado desde el correo", "Hilo": " ".join(claves), "UID": str(uid),
         "Aviso": "",
@@ -279,7 +296,7 @@ def ver(planilla):
     return {"hojas": hojas, "locale": planilla.info_locale(), "filas": len(filas),
             "estados": {e: sum(1 for f in filas if f[COL["Estado"]] == e) for e in ESTADOS},
             "por_fecha": {d: sum(1 for f in filas if f[COL["Fecha"]] == d) for d in sorted({f[COL["Fecha"]] for f in filas})},
-            "ultimas": [f[:9] for f in filas[-5:]], "como_se_ve": como_se_ve, "vistas": vistas}
+            "ultimas": [f[:COL["Nota de bodega"] + 1] for f in filas[-5:]], "como_se_ve": como_se_ve, "vistas": vistas}
 
 
 def tocada_por_bodega(filas):
@@ -324,8 +341,11 @@ def preparar(planilla):
             pedidos += [{"deleteConditionalFormatRule": {"sheetId": h["properties"]["sheetId"], "index": 0}}
                         for _ in h.get("conditionalFormats", [])]
     planilla.lote(pedidos)
+    nueva_columna = _agregar_toneladas(planilla, agenda)
     planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"{HOJA}!A1:{ULTIMA}1"), {"values": [COLUMNAS]},
                     {"valueInputOption": "RAW"})
+    if nueva_columna:
+        _llenar_toneladas(planilla)
     # En planillas en español los argumentos de las fórmulas se separan con punto y coma
     idioma = (planilla.info_locale() or "en").split("_")[0]
     sep = ";" if idioma in ("es", "pt", "de", "fr", "it", "nl", "ru", "tr", "pl") else ","
@@ -334,13 +354,38 @@ def preparar(planilla):
     _preparar_agenda(planilla, agenda)
 
 
+def _agregar_toneladas(planilla, agenda):
+    """Si la hoja Agenda es de antes del 5-nov (sin "Toneladas"), le inserta la columna al lado de Camión."""
+    titulos = planilla._pedir("GET", "/values/" + urllib.parse.quote(f"{HOJA}!1:1")).get("values", [[]])
+    titulos = [str(t).strip() for t in (titulos[0] if titulos else [])]
+    if "Toneladas" in titulos or not titulos:
+        return False
+    if titulos[:len(SIN_TONELADAS)] != SIN_TONELADAS:
+        raise ValueError(f"La hoja {HOJA} no tiene las columnas esperadas: {', '.join(titulos)}")
+    planilla.lote([{"insertDimension": {"range": {"sheetId": agenda, "dimension": "COLUMNS",
+                                                  "startIndex": COL["Toneladas"], "endIndex": COL["Toneladas"] + 1},
+                                        "inheritFromBefore": False}}])
+    return True
+
+
+def _llenar_toneladas(planilla):
+    """Llena Toneladas en las filas que ya estaban, con lo que dicen Camión y Resumen."""
+    filas = planilla.leer()
+    if filas:
+        letra = _letra("Toneladas")
+        planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"{HOJA}!{letra}2:{letra}{len(filas) + 1}"),
+                        {"values": [[toneladas(f[COL["Camión"]], f[COL["Resumen"]])] for f in filas]},
+                        {"valueInputOption": "RAW"})
+
+
 def _preparar_hoy(planilla, hoja, sep):
     """Las vistas filtran por el número de día: no dependen de cómo se vea la fecha."""
-    formula = (f'=IFERROR(SORT(FILTER({HOJA}!A2:I{sep}{HOJA}!A2:A=TODAY()){sep}1{sep}TRUE{sep}2{sep}TRUE)'
+    n, fin = COL["Nota de bodega"] + 1, _letra("Nota de bodega")  # de Fecha a Nota de bodega
+    formula = (f'=IFERROR(SORT(FILTER({HOJA}!A2:{fin}{sep}{HOJA}!A2:A=TODAY()){sep}1{sep}TRUE{sep}2{sep}TRUE)'
                f'{sep}"Sin movimientos")')
-    planilla._pedir("PUT", "/values/" + urllib.parse.quote("'Hoy'!A1:I3"),
-                    {"values": [["Hoy (se actualiza sola; el estado se cambia en la hoja Agenda)"] + [""] * 8,
-                                COLUMNAS[:9], [formula] + [""] * 8]}, {"valueInputOption": "USER_ENTERED"})
+    planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"'Hoy'!A1:{fin}3"),
+                    {"values": [["Hoy (se actualiza sola; el estado se cambia en la hoja Agenda)"] + [""] * (n - 1),
+                                COLUMNAS[:n], [formula] + [""] * (n - 1)]}, {"valueInputOption": "USER_ENTERED"})
     planilla.lote([
         {"updateSheetProperties": {"properties": {"sheetId": hoja, "gridProperties": {"frozenRowCount": 2}},
                                    "fields": "gridProperties.frozenRowCount"}},
@@ -356,18 +401,18 @@ def _preparar_hoy(planilla, hoja, sep):
 def _preparar_semana(planilla, hoja, sep, nueva):
     """Una columna por día (lunes a domingo). Cada movimiento en una línea: "08:00  Devolución · EBCO · obra ·
     camión", y el estado entre corchetes si no es Agendado. Colores por estado y por tipo; hoy en azul."""
-    a = lambda c: f"{HOJA}!${c}$2:${c}"  # noqa: E731
-    hora = f'IF(ISNUMBER({a("B")}){sep}TEXT({a("B")}{sep}"hh:mm"){sep}{a("B")})'
-    texto = (f'ARRAYFORMULA({hora}&"  "&{a("C")}&" · "&{a("D")}&IF({a("E")}=""{sep}""{sep}" · "&{a("E")})'
-             f'&IF({a("G")}=""{sep}""{sep}" · "&{a("G")})&IF({a("H")}="Agendado"{sep}""{sep}"   ["&{a("H")}&"]"))')
+    a = lambda nombre: f"{HOJA}!${_letra(nombre)}$2:${_letra(nombre)}"  # noqa: E731
+    hora = f'IF(ISNUMBER({a("Hora")}){sep}TEXT({a("Hora")}{sep}"hh:mm"){sep}{a("Hora")})'
+    texto = (f'ARRAYFORMULA({hora}&"  "&{a("Tipo")}&" · "&{a("Cliente")}&IF({a("Obra")}=""{sep}""{sep}" · "&{a("Obra")})'
+             f'&IF({a("Camión")}=""{sep}""{sep}" · "&{a("Camión")})&IF({a("Estado")}="Agendado"{sep}""{sep}"   ["&{a("Estado")}&"]"))')
     corrimiento = (f'SWITCH($B$1{sep}"Semana siguiente"{sep}1{sep}"Semana anterior"{sep}-1{sep}"En 2 semanas"{sep}2'
                    f'{sep}"Hace 2 semanas"{sep}-2{sep}0)')
     lunes = f"=TODAY()-WEEKDAY(TODAY(){sep}3)+IF(WEEKDAY(TODAY(){sep}2)=7{sep}7{sep}0)+7*{corrimiento}"
     columnas = "ABCDEFG"
     dias = [lunes] + [f"=$A$3+{k}" for k in range(1, 7)]
-    cuentas = [f'=COUNTIFS({a("A")}{sep}{c}$3{sep}{a("H")}{sep}"<>Anulado"{sep}{a("H")}{sep}"<>Reagendado")&" mov"'
+    cuentas = [f'=COUNTIFS({a("Fecha")}{sep}{c}$3{sep}{a("Estado")}{sep}"<>Anulado"{sep}{a("Estado")}{sep}"<>Reagendado")&" mov"'
                for c in columnas]
-    listas = [f'=IFERROR(SORT(FILTER({texto}{sep}{a("A")}={c}$3)){sep}"—")' for c in columnas]
+    listas = [f'=IFERROR(SORT(FILTER({texto}{sep}{a("Fecha")}={c}$3)){sep}"—")' for c in columnas]
     rango_txt = f'="del "&TEXT($A$3{sep}"d mmm")&" al "&TEXT($A$3+6{sep}"d mmm yyyy")'
     explicacion = ("Elige la semana en la celda B1 (si la dejas en \"Esta semana\", avanza sola; el domingo ya "
                    "muestra la siguiente). Los estados se marcan en la hoja Agenda, columna Estado.")
