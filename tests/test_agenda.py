@@ -449,6 +449,12 @@ def test_preparar_agrega_la_columna_toneladas_a_una_hoja_vieja_y_la_llena():
     lotes = [r for m, ruta, c, _ in p.pedidos if ruta == ":batchUpdate" for r in c["requests"]]
     insertada = [r["insertDimension"]["range"] for r in lotes if "insertDimension" in r]
     assert insertada == [{"sheetId": 1, "dimension": "COLUMNS", "startIndex": 7, "endIndex": 8}]
+    assert [r["insertDimension"]["inheritFromBefore"] for r in lotes if "insertDimension" in r] == [True]
+    validaciones = [r["setDataValidation"] for r in lotes if "setDataValidation" in r and r["setDataValidation"]["range"]["sheetId"] == 1]
+    con_lista = [v["range"] for v in validaciones if "rule" in v]
+    sin_lista = [v["range"] for v in validaciones if "rule" not in v]
+    assert con_lista == [{"sheetId": 1, "startRowIndex": 1, "startColumnIndex": COL["Estado"], "endColumnIndex": COL["Estado"] + 1}]
+    assert {"sheetId": 1, "startRowIndex": 1, "startColumnIndex": 0, "endColumnIndex": COL["Estado"]} in sin_lista  # Toneladas sin lista
     assert p.escrito("Agenda!H2:H3") == [[10], [2]]
     otra = Vieja({"Agenda": 1, "Hoy": 2, "Semana": 5})
     otra._pedir = PlanillaGrabadora._pedir.__get__(otra)  # una hoja que ya tiene Toneladas no se toca

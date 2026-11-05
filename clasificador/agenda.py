@@ -364,7 +364,7 @@ def _agregar_toneladas(planilla, agenda):
         raise ValueError(f"La hoja {HOJA} no tiene las columnas esperadas: {', '.join(titulos)}")
     planilla.lote([{"insertDimension": {"range": {"sheetId": agenda, "dimension": "COLUMNS",
                                                   "startIndex": COL["Toneladas"], "endIndex": COL["Toneladas"] + 1},
-                                        "inheritFromBefore": False}}])
+                                        "inheritFromBefore": True}}])  # el formato de Camión, no la lista de Estado
     return True
 
 
@@ -498,6 +498,10 @@ def _preparar_agenda(planilla, agenda):
         {"repeatCell": {"range": {"sheetId": agenda, "startRowIndex": 1, "startColumnIndex": 0, "endColumnIndex": 1},
                         "cell": {"userEnteredFormat": {"numberFormat": {"type": "DATE", "pattern": "ddd dd-mm-yyyy"}}},
                         "fields": "userEnteredFormat.numberFormat"}},
+        # la lista de estados va solo en Estado: se borra de cualquier otra columna (sin "rule" se borra)
+        {"setDataValidation": {"range": {"sheetId": agenda, "startRowIndex": 1, "startColumnIndex": 0,
+                                         "endColumnIndex": COL["Estado"]}}},
+        {"setDataValidation": {"range": {"sheetId": agenda, "startRowIndex": 1, "startColumnIndex": COL["Estado"] + 1}}},
         {"setDataValidation": {"range": rango, "rule": {
             "condition": {"type": "ONE_OF_LIST", "values": [{"userEnteredValue": e} for e in ESTADOS]},
             "strict": True, "showCustomUi": True}}},
