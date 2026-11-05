@@ -149,8 +149,8 @@ def corregir(cfg, buzon, principal, enviar, uid, ahora, antes, nota=""):
         _recordar(buzon, correo, decision, uid)
     if cfg.agenda_id:
         try:
-            if antes in agenda.TIPOS and ahora not in agenda.TIPOS:
-                agenda.anular_uid(_planilla(cfg), uid, f"corregido: era {ETIQUETAS[ahora]}")
+            if antes in agenda.TIPOS and antes != ahora:  # salió de acordado o cambió despacho <-> devolución
+                agenda.anular_uid(_planilla(cfg), uid, f"corregido: ahora es {ETIQUETAS[ahora]}", agenda.TIPOS[antes])
             if ahora in agenda.TIPOS:
                 agenda.registrar_acordado(_planilla(cfg), correo, decision, uid, _claves_agenda(correo))
         except Exception as e:
@@ -362,12 +362,18 @@ def _reagendamientos(cfg, buzon, enviar):
     try:
         planilla = _planilla(cfg)
         for n, fila in agenda.no_llegaron(planilla):
+            if not agenda.reservar_aviso(planilla, n, fila):
+                continue
             crudo, asunto = None, fila[agenda.COL["Correo"]].split(" · ")[0]
             try:
                 crudo = buzon.leer(int(fila[agenda.COL["UID"]]))
             except Exception:
                 pass
-            enviar(armar_reagendamiento(cfg, fila[agenda.COL["Tipo"]], asunto, agenda.texto_aviso(fila), crudo))
+            try:
+                enviar(armar_reagendamiento(cfg, fila[agenda.COL["Tipo"]], asunto, agenda.texto_aviso(fila), crudo))
+            except Exception:
+                agenda.soltar_aviso(planilla, n, fila)
+                raise
             agenda.marcar_avisado(planilla, n, fila)
             registrar(evento="reagendamiento", fila=n, uid=fila[agenda.COL["UID"]], tipo=fila[agenda.COL["Tipo"]])
     except Exception as e:

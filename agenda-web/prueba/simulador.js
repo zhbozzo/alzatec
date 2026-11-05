@@ -27,7 +27,7 @@
   (window.__FILAS__ || []).forEach(function (f) {
     planilla.filas.push(COLUMNAS.map(function (c) {
       var v = f[c] === undefined ? '' : f[c];
-      if (c === 'Fecha' && v) return {valor: fechaCelda(v), visto: verFecha(v)};
+      if (c === 'Fecha' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return {valor: fechaCelda(v), visto: verFecha(v)};  // si no, texto escrito a mano
       return {valor: v, visto: String(v)};
     }));
   });
@@ -91,12 +91,11 @@
       if (nombre === 'withSuccessHandler') return function (f) { return run(f, mal); };
       if (nombre === 'withFailureHandler') return function (f) { return run(ok, f); };
       return function () {
-        var args = JSON.parse(JSON.stringify([].slice.call(arguments)));
-        setTimeout(function () {
-          var r;
-          try { r = JSON.parse(JSON.stringify(window[nombre].apply(null, args))); } catch (e) { if (mal) mal(e); return; }
-          if (ok) ok(r);
-        }, window.__LATENCIA__ || 80);
+        // Como el servidor real: se ejecuta al pedir (lee la planilla en ese momento) y la respuesta llega después
+        var args = JSON.parse(JSON.stringify([].slice.call(arguments))), r, error = null;
+        try { r = JSON.parse(JSON.stringify(window[nombre].apply(null, args))); } catch (e) { error = e; }
+        var demora = (window.__LATENCIA__ || {})[nombre] || 80;
+        setTimeout(function () { if (error) { if (mal) mal(error); } else if (ok) ok(r); }, demora);
       };
     }});
   }

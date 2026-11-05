@@ -1,2 +1,3 @@
 anthropic==1.15.0
 openai==3.32.0
+tzdata==2026.5

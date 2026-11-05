@@ -24,7 +24,11 @@ COLUMNAS = ["Fecha", "Hora", "Tipo", "Cliente", "Obra", "Cotización", "Camión"
             "Resumen", "Correo", "Historial", "Hilo", "UID", "Aviso"]
 ESTADOS = ["Agendado", "Llegó", "No llegó", "Reagendado", "Anulado", "Revisar"]
 TIPOS = {"despacho_acordado": "Despacho", "recepcion_acordada": "Devolución"}
-CHILE = datetime.timezone(datetime.timedelta(hours=-3))
+try:  # hora de Chile con su horario de invierno (UTC-4) y de verano (UTC-3)
+    from zoneinfo import ZoneInfo
+    CHILE = ZoneInfo("America/Santiago")
+except Exception:  # sin base de zonas horarias
+    CHILE = datetime.timezone(datetime.timedelta(hours=-3))
 COL = {nombre: i for i, nombre in enumerate(COLUMNAS)}
 ULTIMA = chr(ord("A") + len(COLUMNAS) - 1)
 
@@ -206,11 +210,25 @@ class Planilla:
         return self._pedir("GET", "", params={"fields": "properties(locale)"}).get("properties", {}).get("locale")
 
     def leer(self):
-        """Filas como texto: fechas en ISO y horas HH:MM, sin importar cómo se muestren en la planilla."""
-        rango = urllib.parse.quote(f"{HOJA}!A2:{ULTIMA}")
-        filas = self._pedir("GET", f"/values/{rango}", params={"valueRenderOption": "UNFORMATTED_VALUE",
-                                                               "dateTimeRenderOption": "SERIAL_NUMBER"}).get("values", [])
-        return [[_a_texto(v, COLUMNAS[i]) for i, v in enumerate(f)] + [""] * (len(COLUMNAS) - len(f)) for f in filas]
+        """Filas como texto. Fecha (AAAA-MM-DD) y Hora (HH:MM) se leen sin formato, así no importa cómo se vean;
+        el resto, como se ve (una nota "14:30" escrita a mano sigue siendo "14:30"). Si alguien movió o cambió
+        las columnas, falla en vez de escribir en la columna equivocada."""
+        vistos = self._pedir("GET", "/values/" + urllib.parse.quote(f"{HOJA}!A1:{ULTIMA}")).get("values", [])
+        titulos = [str(t).strip() for t in (vistos[0] if vistos else [])]
+        if titulos[:len(COLUMNAS)] != COLUMNAS:
+            raise ValueError(f"La hoja {HOJA} no tiene las columnas esperadas ({', '.join(COLUMNAS)}); "
+                             f"tiene: {', '.join(titulos) or 'nada'}. ¿Alguien movió o renombró una columna?")
+        crudos = self._pedir("GET", "/values/" + urllib.parse.quote(f"{HOJA}!A2:B"),
+                             params={"valueRenderOption": "UNFORMATTED_VALUE",
+                                     "dateTimeRenderOption": "SERIAL_NUMBER"}).get("values", [])
+        filas = []
+        for i, f in enumerate(vistos[1:]):
+            fila = [str(v) for v in f[:len(COLUMNAS)]] + [""] * (len(COLUMNAS) - len(f))
+            c = crudos[i] if i < len(crudos) else []
+            fila[COL["Fecha"]] = _a_texto(c[0], "Fecha") if c else ""
+            fila[COL["Hora"]] = _a_texto(c[1], "Hora") if len(c) > 1 else ""
+            filas.append(fila)
+        return filas
 
     def agregar(self, filas):
         """Se escribe tal cual (RAW): nada de lo que venga en un correo se interpreta como fórmula. La fecha va
@@ -253,8 +271,9 @@ def ver(planilla):
 
 def tocada_por_bodega(filas):
     """True si bodega ya marcó algo (estado o nota): entonces la agenda no se puede vaciar."""
-    return any(f[COL["Estado"]] in ("Llegó", "No llegó", "Anulado") or
-               (f[COL["Nota de bodega"]] and not f[COL["Nota de bodega"]].startswith("No se entendió")) for f in filas)
+    return any(f[COL["Estado"]] in ("Llegó", "No llegó", "Anulado") or f[COL["Aviso"]] or
+               (f[COL["Nota de bodega"]] and not f[COL["Nota de bodega"]].startswith("No se entendió")) or
+               re.search(r"→|: nota|borró la nota", f[COL["Historial"]]) for f in filas)  # cambios hechos en la app
 
 
 SEMANA = "Semana"
@@ -444,6 +463,36 @@ def _historial(fila, texto, ahora):
     return (previo + " | " if previo else "") + f"{ahora:%d-%m %H:%M} {texto}"
 
 
+def _identidad(f):
+    return f[COL["UID"]], f[COL["Fecha"]], f[COL["Tipo"]], f[COL["Hilo"]]
+
+
+def _aplicar(planilla, cambios, ahora):
+    """Escribe cambios en filas leídas antes. Vuelve a leer la hoja justo antes de escribir: ubica cada fila por
+    su identidad (por si alguien ordenó la hoja), arma el Historial con lo último que tiene (la app también
+    escribe ahí) y no toca una fila cuyo Estado cambió entremedio (alguien la marcó) o que no cumple `si`.
+    cambios: [(n, fila_leída, {columna: valor}, texto_para_historial, si)]. Devuelve cuántas filas cambió."""
+    if not cambios:
+        return 0
+    actuales, celdas, hechas = planilla.leer(), {}, 0
+    for n, vieja, valores, historia, si in cambios:
+        ident = _identidad(vieja)
+        m = n if n - 2 < len(actuales) and _identidad(actuales[n - 2]) == ident else next(
+            (k for k, f in enumerate(actuales, start=2) if _identidad(f) == ident), None)
+        if m is None:
+            continue
+        fresca = actuales[m - 2]
+        if fresca[COL["Estado"]] != vieja[COL["Estado"]] or (si and not si(fresca)):
+            continue
+        for columna, valor in valores.items():
+            celdas[(m, columna)] = valor
+        if historia:
+            celdas[(m, "Historial")] = _historial(fresca, historia, ahora)
+        hechas += 1
+    planilla.escribir(celdas)
+    return hechas
+
+
 REAGENDA = re.compile(r"reagend|reprogram|en reemplazo|en vez de|posterg|adelant|nueva fecha|nuevo d[ií]a|"
                       r"sin efecto|cambi\w* (?:de |la |el )?(?:fecha|hora|d[ií]a)", re.I)
 
@@ -461,36 +510,46 @@ def registrar_acordado(planilla, correo, decision, uid, claves, ahora=None):
     tipo, hoy = nuevas[0][COL["Tipo"]], ahora.date().isoformat()
     hilo = [(n, f) for n, f in enumerate(planilla.leer(), start=2)
             if _mismo_hilo(f, claves) and f[COL["Tipo"]] == tipo]
-    celdas, agregar = {}, []
+    cambios, agregar, repetidas = [], [], 0
     for nueva in nuevas:
-        previa = next(((n, f) for n, f in hilo if nueva[COL["Fecha"]] and f[COL["Fecha"]] == nueva[COL["Fecha"]]
-                       and f[COL["Estado"]] in ("Agendado", "Reagendado", "Revisar")), None)
-        if not previa:
+        mismas = [(n, f) for n, f in hilo if nueva[COL["Fecha"]] and f[COL["Fecha"]] == nueva[COL["Fecha"]]]
+        activa = next(((n, f) for n, f in mismas if f[COL["Estado"]] in ("Agendado", "Reagendado", "Revisar")), None)
+        llego = next(((n, f) for n, f in mismas if f[COL["Estado"]] == "Llegó"), None)
+        anulada = next(((n, f) for n, f in mismas if f[COL["Estado"]] == "Anulado"), None)
+        if activa or anulada:
+            # la misma fecha otra vez (recordatorio, confirmación, o una corrección que la devuelve): no se repite
+            n, f = activa or anulada
+            valores = {}
+            if nueva[COL["Hora"]] and f[COL["Hora"]] != nueva[COL["Hora"]]:
+                valores["Hora"] = nueva[COL["Hora"]]
+            if f[COL["Estado"]] != "Agendado":
+                valores["Estado"] = "Agendado"
+            texto = "confirmado de nuevo" if activa else "vuelve a quedar agendado"
+            cambios.append((n, f, valores, f"{texto} (UID {uid})", None))
+        elif llego:  # ya vino: un correo que lo repite no agrega otra fila
+            n, f = llego
+            cambios.append((n, f, {}, f"confirmado de nuevo, ya había llegado (UID {uid})", None))
+        else:  # nueva, o la anterior quedó "No llegó" y esta es la nueva hora
             agregar.append(nueva)
             continue
-        n, f = previa
-        if nueva[COL["Hora"]] and f[COL["Hora"]] != nueva[COL["Hora"]]:
-            celdas[(n, "Hora")] = nueva[COL["Hora"]]
-        if f[COL["Estado"]] != "Agendado":
-            celdas[(n, "Estado")] = "Agendado"
-        celdas[(n, "Historial")] = _historial(f, f"confirmado de nuevo (UID {uid})", ahora)
+        repetidas += 1
     # Reagendado: solo si el modelo dice que se cambió la fecha y hay UNA sola fecha futura que pudo ser la
     # cambiada. Si hay varias (una serie de devoluciones semanales), no se adivina: queda la nota.
     reagendadas = 0
     fechas_correo = {f[COL["Fecha"]] for f in nuevas if f[COL["Fecha"]]}
     if fechas_correo and REAGENDA.search(decision.resultado.get("resumen") or ""):
         texto = ", ".join(f"{f[COL['Fecha']]} {f[COL['Hora']]}".strip() for f in nuevas)
+        tocadas = {c[0] for c in cambios}
         otras = [(n, f) for n, f in hilo if f[COL["Estado"]] == "Agendado" and hoy <= f[COL["Fecha"]]
-                 and f[COL["Fecha"]] not in fechas_correo and (n, "Estado") not in celdas]
+                 and f[COL["Fecha"]] not in fechas_correo and n not in tocadas]
         for n, f in otras:
             if len(otras) == 1:
-                celdas[(n, "Estado")] = "Reagendado"
-                celdas[(n, "Historial")] = _historial(f, f"se cambió a {texto} (UID {uid})", ahora)
+                cambios.append((n, f, {"Estado": "Reagendado"}, f"se cambió a {texto} (UID {uid})", None))
                 reagendadas += 1
             else:
-                celdas[(n, "Historial")] = _historial(f, f"en el hilo se reagendó algo para {texto} (UID {uid}); "
-                                                         "si era esta fecha, marcar Reagendado", ahora)
-    planilla.escribir(celdas)
+                cambios.append((n, f, {}, f"en el hilo se reagendó algo para {texto} (UID {uid}); "
+                                           "si era esta fecha, marcar Reagendado", None))
+    _aplicar(planilla, cambios, ahora)
     if agregar:
         planilla.agregar(agregar)
     if not agregar:
@@ -502,26 +561,21 @@ def marcar_cambio(planilla, correo, decision, uid, claves, ahora=None):
     """Un pendiente de cambio o anulación deja en Revisar lo agendado a futuro en el mismo hilo."""
     ahora = ahora or datetime.datetime.now(CHILE)
     tipo = {"despacho": "Despacho", "recepcion": "Devolución"}.get(decision.resultado.get("movimiento"))
-    celdas = {}
-    for n, f in enumerate(planilla.leer(), start=2):
-        if (_mismo_hilo(f, claves) and (tipo is None or f[COL["Tipo"]] == tipo) and f[COL["Estado"]] == "Agendado"
-                and f[COL["Fecha"]] >= ahora.date().isoformat()):
-            celdas[(n, "Estado")] = "Revisar"
-            celdas[(n, "Historial")] = _historial(f, f"piden cambio o anulación (UID {uid})", ahora)
-    planilla.escribir(celdas)
-    return len(celdas) // 2
+    cambios = [(n, f, {"Estado": "Revisar"}, f"piden cambio o anulación (UID {uid})", None)
+               for n, f in enumerate(planilla.leer(), start=2)
+               if _mismo_hilo(f, claves) and (tipo is None or f[COL["Tipo"]] == tipo) and f[COL["Estado"]] == "Agendado"
+               and f[COL["Fecha"]] >= ahora.date().isoformat()]
+    return _aplicar(planilla, cambios, ahora)
 
 
-def anular_uid(planilla, uid, motivo, ahora=None):
-    """Una corrección que saca un acordado deja su fila como Anulado (no se borra)."""
+def anular_uid(planilla, uid, motivo, tipo=None, ahora=None):
+    """Una corrección que saca un acordado (o le cambia el tipo) deja sus filas como Anulado (no se borran).
+    Con tipo, solo las de ese tipo."""
     ahora = ahora or datetime.datetime.now(CHILE)
-    celdas = {}
-    for n, f in enumerate(planilla.leer(), start=2):
-        if f[COL["UID"]] == str(uid) and f[COL["Estado"]] not in ("Anulado", "Llegó"):
-            celdas[(n, "Estado")] = "Anulado"
-            celdas[(n, "Historial")] = _historial(f, motivo, ahora)
-    planilla.escribir(celdas)
-    return len(celdas) // 2
+    cambios = [(n, f, {"Estado": "Anulado"}, motivo, None) for n, f in enumerate(planilla.leer(), start=2)
+               if f[COL["UID"]] == str(uid) and f[COL["Estado"]] not in ("Anulado", "Llegó")
+               and (tipo is None or f[COL["Tipo"]] == tipo)]
+    return _aplicar(planilla, cambios, ahora)
 
 
 def no_llegaron(planilla):
@@ -529,10 +583,24 @@ def no_llegaron(planilla):
     return [(n, f) for n, f in enumerate(planilla.leer(), start=2) if f[COL["Estado"]] == "No llegó" and not f[COL["Aviso"]]]
 
 
+def reservar_aviso(planilla, n, fila, ahora=None):
+    """Antes de mandar el correo se anota "enviando" en Aviso. Si no se puede anotar (o la fila ya no está en
+    "No llegó" sin aviso), no se manda: así nunca se manda dos veces ni cada 3 minutos."""
+    ahora = ahora or datetime.datetime.now(CHILE)
+    return _aplicar(planilla, [(n, fila, {"Aviso": f"enviando {ahora:%d-%m %H:%M}"}, "",
+                                lambda f: f[COL["Estado"]] == "No llegó" and not f[COL["Aviso"]])], ahora) == 1
+
+
+def soltar_aviso(planilla, n, fila, ahora=None):
+    """El correo no salió: se borra la reserva para reintentar en la próxima corrida."""
+    ahora = ahora or datetime.datetime.now(CHILE)
+    _aplicar(planilla, [(n, fila, {"Aviso": ""}, "", lambda f: f[COL["Aviso"]].startswith("enviando"))], ahora)
+
+
 def marcar_avisado(planilla, n, fila, ahora=None):
     ahora = ahora or datetime.datetime.now(CHILE)
-    planilla.escribir({(n, "Aviso"): f"{ahora:%d-%m %H:%M}",
-                       (n, "Historial"): _historial(fila, "aviso de reagendamiento enviado a pendientes", ahora)})
+    _aplicar(planilla, [(n, fila, {"Aviso": f"{ahora:%d-%m %H:%M}"}, "aviso de reagendamiento enviado a pendientes",
+                         None)], ahora)
 
 
 def texto_aviso(fila):

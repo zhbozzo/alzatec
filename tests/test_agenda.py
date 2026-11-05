@@ -149,14 +149,110 @@ def test_la_planilla_lee_fechas_y_horas_como_texto_y_escribe_sin_formulas():
     class Probar(agenda.Planilla):
         def _pedir(self, metodo, ruta, cuerpo=None, params=None):
             pedidos.append((ruta, cuerpo, params))
-            return {"values": [[46331, 0.4583333333, "Devolución", "EBCO", "", 28794, "", "Agendado"]]}
+            if params and params.get("valueRenderOption") == "UNFORMATTED_VALUE":
+                return {"values": [[46331, 0.4583333333]]}
+            return {"values": [COLUMNAS, ["jue 05-11-2026", "11:00", "Devolución", "EBCO", "", "28794", "", "Agendado",
+                                          "14:30"]]}
 
     p = Probar("x", token=lambda: "t")
     f = p.leer()[0]
     assert (f[COL["Fecha"]], f[COL["Hora"]], f[COL["Cotización"]], f[COL["Aviso"]]) == ("2026-11-05", "11:00", "28794", "")
+    assert f[COL["Nota de bodega"]] == "14:30"  # una nota escrita a mano que parece hora se lee como se ve
     p.agregar([["2026-11-05", "11:00", "Despacho", "=IMPORTXML(1)"] + [""] * 11])
     ruta, cuerpo, params = pedidos[-1]
     assert params["valueInputOption"] == "RAW" and cuerpo["values"][0][0] == 46331
+
+
+def test_si_movieron_las_columnas_la_planilla_falla_en_vez_de_escribir_mal():
+    import pytest
+
+    class Movida(agenda.Planilla):
+        def _pedir(self, metodo, ruta, cuerpo=None, params=None):
+            return {"values": [COLUMNAS[:7] + ["Patente"] + COLUMNAS[7:]]}
+
+    with pytest.raises(ValueError, match="Patente"):
+        Movida("x", token=lambda: "t").leer()
+
+
+def test_si_ya_llego_o_estaba_anulada_no_se_duplica_y_si_no_llego_se_agrega_la_nueva_hora():
+    p, correo = PlanillaFalsa(), leer(correo_crudo())
+    for uid, fecha in ((1, "jue 06-11-2026 10:00"), (2, "vie 07-11-2026 10:00"), (3, "lun 10-11-2026 10:00")):
+        agenda.registrar_acordado(p, correo, acordado(fecha), uid, ["c:1"], AHORA)
+    p.filas[0][COL["Estado"]], p.filas[1][COL["Estado"]], p.filas[2][COL["Estado"]] = "Llegó", "Anulado", "No llegó"
+    assert agenda.registrar_acordado(p, correo, acordado("jue 06-11-2026 10:00"), 4, ["c:1"], AHORA) == "repetido"
+    assert agenda.registrar_acordado(p, correo, acordado("vie 07-11-2026 12:00"), 5, ["c:1"], AHORA) == "repetido"
+    assert agenda.registrar_acordado(p, correo, acordado("lun 10-11-2026 15:00"), 6, ["c:1"], AHORA) == "agregado"
+    assert [(f[COL["Fecha"]], f[COL["Hora"]], f[COL["Estado"]]) for f in p.filas] == [
+        ("2026-11-06", "10:00", "Llegó"), ("2026-11-07", "12:00", "Agendado"), ("2026-11-10", "10:00", "No llegó"),
+        ("2026-11-10", "15:00", "Agendado")]
+    assert "ya había llegado" in p.filas[0][COL["Historial"]] and "vuelve a quedar agendado" in p.filas[1][COL["Historial"]]
+
+
+def test_las_escrituras_releen_la_fila_si_ordenaron_la_hoja_o_pato_la_marco():
+    p, correo = PlanillaFalsa(), leer(correo_crudo())
+    agenda.registrar_acordado(p, correo, acordado("jue 06-11-2026 10:00"), 1, ["c:1"], AHORA)
+    agenda.registrar_acordado(p, correo, acordado("vie 07-11-2026 10:00"), 2, ["c:2"], AHORA)
+    leidas = p.leer()
+    p.filas.reverse()  # alguien ordenó la hoja entre la lectura y la escritura
+    p.filas[0][COL["Historial"]] += " | 04-11 10:05 pfarias: nota: \"ok\""  # y la app agregó algo al Historial
+    assert agenda._aplicar(p, [(3, leidas[1], {"Hora": "11:00"}, "prueba", None)], AHORA) == 1
+    assert p.filas[0][COL["Hora"]] == "11:00" and p.filas[1][COL["Hora"]] == "10:00"
+    assert 'pfarias: nota: "ok" | 04-11 10:00 prueba' in p.filas[0][COL["Historial"]]
+    p.filas[1][COL["Estado"]] = "Llegó"  # Pato la marcó: no se pisa con un Revisar leído antes
+    assert agenda._aplicar(p, [(2, leidas[0], {"Estado": "Revisar"}, "x", None)], AHORA) == 0
+    assert p.filas[1][COL["Estado"]] == "Llegó"
+
+
+def test_el_aviso_se_reserva_antes_de_mandar_y_si_el_correo_falla_se_reintenta(cfg, monkeypatch):
+    import pytest
+    from clasificador import principal
+    p = PlanillaFalsa()
+    agenda.registrar_acordado(p, leer(correo_crudo()), acordado(), 1, ["c:27801"], AHORA)
+    p.filas[0][COL["Estado"]] = "No llegó"
+    cfg.agenda_id = "planilla-de-prueba"
+    monkeypatch.setattr(principal, "_planilla", lambda c: p)
+    monkeypatch.setattr(principal, "avisar", lambda *a, **k: None)
+
+    def falla(m):
+        assert p.filas[0][COL["Aviso"]].startswith("enviando")  # se anotó antes de mandar
+        raise OSError("SMTP caído")
+
+    principal._reagendamientos(cfg, BuzonFalso([correo_crudo()]), falla)
+    assert p.filas[0][COL["Aviso"]] == ""  # se soltó: la próxima corrida reintenta
+    enviados = []
+    principal._reagendamientos(cfg, BuzonFalso([correo_crudo()]), enviados.append)
+    assert len(enviados) == 1 and p.filas[0][COL["Aviso"]] and not p.filas[0][COL["Aviso"]].startswith("enviando")
+
+    class SinEscritura(PlanillaFalsa):
+        def escribir(self, celdas):
+            raise PermissionError("403: la cuenta quedó como Lector")
+
+    q = SinEscritura()
+    q.filas = [list(f) for f in p.filas]
+    q.filas[0][COL["Aviso"]] = ""
+    monkeypatch.setattr(principal, "_planilla", lambda c: q)
+    otros = []
+    for _ in range(3):
+        principal._reagendamientos(cfg, BuzonFalso([correo_crudo()]), otros.append)
+    assert otros == []  # si no se puede anotar el aviso, no se manda (antes se mandaba cada 3 minutos)
+    with pytest.raises(PermissionError):
+        agenda.reservar_aviso(q, 2, q.filas[0])
+
+
+def test_corregir_de_despacho_a_devolucion_anula_la_fila_del_despacho():
+    p, correo = PlanillaFalsa(), leer(correo_crudo())
+    agenda.registrar_acordado(p, correo, acordado(), 7, ["c:27801"], AHORA)
+    assert agenda.anular_uid(p, 7, "corregido", "Despacho", AHORA) == 1
+    agenda.registrar_acordado(p, correo, acordado(categoria="recepcion_acordada"), 7, ["c:27801"], AHORA)
+    assert [(f[COL["Tipo"]], f[COL["Estado"]]) for f in p.filas] == [("Despacho", "Anulado"), ("Devolución", "Agendado")]
+
+
+def test_lo_que_se_marco_en_la_app_cuenta_como_tocado_por_bodega():
+    fila = [""] * len(COLUMNAS)
+    fila[COL["Estado"]], fila[COL["Historial"]] = "Agendado", "04-11 10:00 agregado desde el correo"
+    assert not agenda.tocada_por_bodega([fila])
+    fila[COL["Historial"]] += " | 04-11 12:00 pfarias: No llegó → Agendado"
+    assert agenda.tocada_por_bodega([fila])
 
 
 def test_otro_hilo_o_otro_tipo_no_se_toca():

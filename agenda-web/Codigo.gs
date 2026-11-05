@@ -22,6 +22,7 @@ var CAMPOS = {
 };
 var NECESARIAS = ['Fecha', 'Hora', 'Tipo', 'Estado', 'Nota de bodega', 'Historial', 'UID'];
 var LARGO_NOTA = 500;
+var DIAS_ATRASO = 14;  // lo sin marcar de hasta 2 semanas antes se avisa arriba
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index')
@@ -40,21 +41,20 @@ function leer(desde, hasta) {
     usuario: usuario_(),
     movimientos: []
   };
-  var n = x.hoja.getLastRow();
-  if (n < 2) return salida;
-  var rango = x.hoja.getRange(2, 1, n - 1, x.ancho);
-  var valores = rango.getValues(), vistos = rango.getDisplayValues();
-  for (var i = 0; i < valores.length; i++) {
-    var m = movimiento_(valores[i], vistos[i], x);
-    if (!m) continue;
-    m.fila = i + 2;
+  var limite = Utilities.formatDate(new Date(ahora.getTime() - DIAS_ATRASO * 86400000), x.zona, 'yyyy-MM-dd');
+  salida.atrasados = {cantidad: 0, ultima: ''};
+  todos_(x).forEach(function (m) {
     if (m.fecha) {
-      if ((desde && m.fecha < desde) || (hasta && m.fecha > hasta)) continue;
+      if (desde && m.fecha < desde && m.estado === 'Agendado' && m.fecha >= limite) {
+        salida.atrasados.cantidad++;  // de semanas anteriores y nadie marcó si llegó
+        if (m.fecha > salida.atrasados.ultima) salida.atrasados.ultima = m.fecha;
+      }
+      if ((desde && m.fecha < desde) || (hasta && m.fecha > hasta)) return;
     } else if (m.estado === 'Anulado') {
-      continue;
+      return;
     }
     salida.movimientos.push(m);
-  }
+  });
   return salida;
 }
 
@@ -92,9 +92,7 @@ function cambiar(c) {
       x.hoja.getRange(fila, x.col['Historial'] + 1).setValue(seguro_(historial));
       SpreadsheetApp.flush();
     }
-    var m = leerFila_(x, fila);
-    m.fila = fila;
-    return m;
+    return releer_(x, fila);
   } finally {
     candado.releaseLock();
   }
@@ -121,6 +119,13 @@ function leerFila_(x, fila) {
   return movimiento_(r.getValues()[0], r.getDisplayValues()[0], x) || {};
 }
 
+/** El movimiento como quedó, con la misma clave que le da leer(). */
+function releer_(x, fila) {
+  var todos = todos_(x);
+  for (var i = 0; i < todos.length; i++) if (todos[i].fila === fila) return todos[i];
+  return leerFila_(x, fila);
+}
+
 function movimiento_(valores, vistos, x) {
   var m = {};
   for (var nombre in CAMPOS) {
@@ -128,6 +133,10 @@ function movimiento_(valores, vistos, x) {
     m[CAMPOS[nombre]] = i === undefined ? '' : texto_(valores[i], vistos[i], nombre, x.zona);
   }
   if (!m.fecha && !m.tipo && !m.cliente && !m.estado) return null;  // fila vacía
+  if (m.fecha && !/^\d{4}-\d{2}-\d{2}$/.test(m.fecha)) {  // fecha escrita a mano que no se entiende
+    m.fechaTexto = m.fecha;
+    m.fecha = '';
+  }
   m.clave = clave_(m);
   return m;
 }
@@ -137,17 +146,27 @@ function clave_(m) {
 }
 
 function ubicar_(x, c) {
+  var todos = todos_(x);
+  for (var i = 0; i < todos.length; i++) if (todos[i].clave === c.clave) return todos[i].fila;
+  return 0;
+}
+
+/** Todas las filas con su clave. Si dos filas tienen el mismo UID, fecha y tipo (puede pasar), la segunda
+ *  lleva "#2" en la clave: así la app nunca confunde una con otra. */
+function todos_(x) {
   var n = x.hoja.getLastRow();
-  var pista = Number(c.fila);
-  if (pista >= 2 && pista <= n && leerFila_(x, pista).clave === c.clave) return pista;
-  if (n < 2) return 0;
+  if (n < 2) return [];
   var rango = x.hoja.getRange(2, 1, n - 1, x.ancho);
-  var valores = rango.getValues(), vistos = rango.getDisplayValues();
+  var valores = rango.getValues(), vistos = rango.getDisplayValues(), vistas = {}, salida = [];
   for (var i = 0; i < valores.length; i++) {
     var m = movimiento_(valores[i], vistos[i], x);
-    if (m && m.clave === c.clave) return i + 2;
+    if (!m) continue;
+    vistas[m.clave] = (vistas[m.clave] || 0) + 1;
+    if (vistas[m.clave] > 1) m.clave += '#' + vistas[m.clave];
+    m.fila = i + 2;
+    salida.push(m);
   }
-  return 0;
+  return salida;
 }
 
 /** Texto de una celda. La fecha va como AAAA-MM-DD y la hora como HH:MM, se vean como se vean. */
@@ -166,7 +185,9 @@ function texto_(valor, visto, nombre, zona) {
     var h = /^(\d{1,2}):(\d{2})/.exec(String(visto || valor).trim());
     return h ? ('0' + h[1]).slice(-2) + ':' + h[2] : String(visto || valor).trim();
   }
-  if (typeof valor === 'number') return String(visto || valor).trim();
+  if (typeof valor === 'number' || Object.prototype.toString.call(valor) === '[object Date]') {
+    return String(visto || valor).trim();  // lo que se ve: "14:30" y no "Sat Dec 30 1899…"
+  }
   return String(valor).trim();
 }
 
@@ -175,10 +196,10 @@ function isoDeSerial_(n) {
   return d.toISOString().slice(0, 10);
 }
 
-/** Lo que empieza con = + - @ se guarda como texto, para que una nota nunca sea una fórmula. */
+/** Se guarda siempre como texto: una nota nunca es fórmula, y "14:30" o "3/4" no se vuelven hora ni fecha. */
 function seguro_(t) {
   t = String(t);
-  return /^[=+\-@]/.test(t) ? "'" + t : t;
+  return t ? "'" + t : t;
 }
 
 function recortar_(t, n) {

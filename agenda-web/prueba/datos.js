@@ -1,6 +1,7 @@
 // Datos de ejemplo INVENTADOS para probar la app (no son correos reales).
 window.__FILAS__ = [
   {Fecha: '2026-10-28', Hora: '10:00', Tipo: 'Despacho', Cliente: 'CONSTRUCTORA ROBLE', Obra: 'Bodega Quilicura', Cotización: '28600', Camión: 'camión 5 toneladas', Estado: 'Llegó', Resumen: 'Retiro acordado.', UID: '900', Historial: '27-10 09:00 agregado desde el correo'},
+  {Fecha: '2026-10-30', Hora: '12:00', Tipo: 'Devolución', Cliente: 'OLVIDADO LTDA', Obra: 'Sin marcar', Estado: 'Agendado', UID: '901', Historial: '28-10 09:00 agregado desde el correo'},
   {Fecha: '2026-11-02', Hora: '09:00', Tipo: 'Devolución', Cliente: 'CONSTRUCTORA ANDES', Obra: 'Torre Norte', Camión: 'camión 10 toneladas', Estado: 'Llegó', Resumen: 'Devolución de andamios en bodega Lampa.', UID: '1001', Historial: '30-10 10:00 agregado desde el correo'},
   {Fecha: '2026-11-02', Hora: '11:00', Tipo: 'Despacho', Cliente: 'INMOBILIARIA SUR', Obra: 'Parque Los Robles', Cotización: '28750', Camión: 'camión 5 toneladas', Estado: 'Llegó', UID: '1002', Historial: '30-10 11:00 agregado desde el correo'},
   {Fecha: '2026-11-03', Hora: '10:00', Tipo: 'Devolución', Cliente: 'VALLE CENTRAL', Obra: 'Edificio Mirador', Camión: '5 toneladas', Estado: 'No llegó', Aviso: '03-11 12:10', UID: '1003', Historial: '31-10 09:00 agregado desde el correo | 03-11 12:05 pfarias: Agendado → No llegó'},
@@ -17,5 +18,8 @@ window.__FILAS__ = [
   {Fecha: '2026-11-08', Hora: '10:00', Tipo: 'Despacho', Cliente: 'DOMINGO SPA', Obra: 'Feria', Estado: 'Agendado', UID: '1014', Historial: '03-11 10:00 agregado desde el correo'},
   {Fecha: '2026-11-09', Hora: '10:00', Tipo: 'Devolución', Cliente: 'CASAS DEL VALLE', Obra: 'París', Camión: '2 toneladas', Estado: 'Agendado', UID: '1015', Historial: '03-11 10:00 agregado desde el correo'},
   {Fecha: '2026-11-10', Hora: '10:00', Tipo: 'Devolución', Cliente: 'CASAS DEL VALLE', Obra: 'París', Camión: '2 toneladas', Estado: 'Agendado', UID: '1015', Historial: '03-11 10:00 agregado desde el correo'},
+  {Fecha: '2026-11-12', Hora: '10:00', Tipo: 'Despacho', Cliente: 'REPETIDA SA', Obra: 'Primera (anulada)', Estado: 'Anulado', UID: '1017', Historial: '03-11 10:00 agregado desde el correo | 03-11 12:00 corregido'},
+  {Fecha: '2026-11-12', Hora: '10:00', Tipo: 'Despacho', Cliente: 'REPETIDA SA', Obra: 'Segunda', Estado: 'Agendado', UID: '1017', Historial: '04-11 09:00 agregado desde el correo'},
+  {Fecha: 'lun 16-11', Hora: '09:00', Tipo: 'Despacho', Cliente: 'ESCRITA A MANO', Obra: 'Fecha como texto', Estado: 'Agendado', UID: '1018', Historial: ''},
   {Fecha: '', Hora: '', Tipo: 'Despacho', Cliente: 'SIN FECHA LTDA', Obra: 'Obra X', Estado: 'Revisar', 'Nota de bodega': 'No se entendió la fecha: según historial', UID: '1016', Historial: '03-11 10:00 agregado desde el correo'}
 ];

@@ -66,7 +66,9 @@ async function captura(page, nombre) {
   ok(await page.locator('.linea-ahora').count() === 1, 'línea de la hora actual en el día de hoy');
   ok(await tarjeta(page, '1004', '2026-11-03').evaluate((e) => e.classList.contains('falta')), 'lo de ayer sin marcar sale como "¿Llegó?"');
   ok(/1 no llegó/.test(await page.textContent('#resumen')) && /sin marcar/.test(await page.textContent('#resumen')), 'resumen de la semana con no llegaron y sin marcar');
-  ok(await page.locator('.sin-fecha .mov').count() === 1, 'lo que no tiene fecha aparece abajo para revisar');
+  ok(await page.locator('.sin-fecha .mov').count() === 2, 'lo que no tiene fecha (o la tiene escrita a mano) aparece abajo para revisar');
+  ok(/Fecha: "lun 16-11"/.test(await page.textContent('.sin-fecha')), 'la fecha escrita a mano se muestra tal cual');
+  ok(/1 sin marcar de semanas anteriores/.test(await page.textContent('#resumen')), 'avisa lo que quedó sin marcar la semana pasada');
   await captura(page, 'semana.png');
 
   // ✓ Llegó y desmarcar
@@ -116,6 +118,10 @@ async function captura(page, nombre) {
   await esperarGuardado(page);
   f = await hoja(page, '1008');
   ok(f['Nota de bodega'] === '=1+1 llegó tarde' && !f['Nota de bodega:formula'], 'la nota se guarda como texto, nunca como fórmula');
+  await page.fill('#d-nota', '14:30');
+  await page.click('#d-guardar');
+  await esperarGuardado(page);
+  ok(await page.evaluate(() => window.__PLANILLA__.filas.find((x) => x[13].valor === '1008')[8].comoTexto === true), 'una nota "14:30" se guarda como texto, no como hora');
   await page.click('#detalle [data-estado="No llegó"]');
   await page.click('#m-si');
   await esperarGuardado(page);
@@ -130,12 +136,18 @@ async function captura(page, nombre) {
   await page.click('#b-sig');
   await page.waitForFunction(() => document.getElementById('titulo').textContent === '9 – 14 nov 2026');
   await page.waitForSelector('#grilla .mov');
-  ok(await page.textContent('#relativa') === 'Próxima semana' && await page.locator('#grilla .mov').count() === 2, '› semana siguiente: 9 – 14 nov, 2 movimientos');
+  ok(await page.textContent('#relativa') === 'Próxima semana' && await page.locator('#grilla .mov').count() === 4, '› semana siguiente: 9 – 14 nov, 4 tarjetas');
+  // Dos filas con el mismo UID, fecha y tipo (una anulada): se marca la correcta
+  await page.locator('#grilla .mov[data-abrir="1017|2026-11-12|Despacho|#2"] button.ok').click();
+  await page.click('#m-si');
+  await esperarGuardado(page);
+  const repetidas = await page.evaluate(() => window.__PLANILLA__.filas.filter((f) => f[13].valor === '1017').map((f) => f[7].valor));
+  ok(JSON.stringify(repetidas) === '["Anulado","Llegó"]', 'con dos filas iguales marca la que se tocó, no la primera');
   await page.click('#b-ant');
   await page.click('#b-ant');
   await page.waitForFunction(() => document.getElementById('titulo').textContent === '26 – 31 oct 2026');
   await page.waitForSelector('#grilla .mov');
-  ok(await page.textContent('#relativa') === 'Semana pasada' && await page.locator('#grilla .mov').count() === 1, '‹ semana anterior: 26 – 31 oct');
+  ok(await page.textContent('#relativa') === 'Semana pasada' && await page.locator('#grilla .mov').count() === 2, '‹ semana anterior: 26 – 31 oct');
   await page.click('#b-hoy');
   await page.waitForFunction(() => document.getElementById('titulo').textContent === '2 – 8 nov 2026');
   ok(true, '"Hoy" vuelve a esta semana');
@@ -166,11 +178,43 @@ async function captura(page, nombre) {
   await page.click('th[data-orden="cliente"]');
   ok((await page.textContent('#cuerpo-tabla tr:first-child td:nth-child(4)')).startsWith('<img'), 'ordenar por cliente');
   await page.check('#todas');
-  await page.waitForFunction(() => /18 movimientos/.test(document.getElementById('cuenta').textContent));
-  ok(true, '"Todas las fechas" trae todo (18, con el que no tiene fecha)');
+  await page.waitForFunction(() => /22 movimientos/.test(document.getElementById('cuenta').textContent));
+  ok(true, '"Todas las fechas" trae todo (22, con los que no tienen fecha)');
   await captura(page, 'tabla.png');
   await page.uncheck('#todas');
   await page.click('[data-vista="semana"]');
+
+  // Desmarcar algo que ya se avisó
+  await page.click('#b-hoy');
+  await page.waitForFunction(() => document.getElementById('titulo').textContent === '2 – 8 nov 2026');
+  await page.waitForSelector('#grilla .mov[data-abrir^="1003|"]');
+  await tarjeta(page, '1003', '2026-11-03').locator('button.no').click();
+  ok(await page.isVisible('#modal') && /Ya se avisó que no llegó/.test(await page.textContent('#m-titulo')) && /avísale a Javier/.test(await page.textContent('#m-texto')),
+    'desmarcar "No llegó" ya avisado: recuerda avisarle a Javier');
+  await page.click('#m-no');
+  ok((await hoja(page, '1003'))['Estado'] === 'No llegó', 'y cancelar lo deja como estaba');
+
+  // Doble clic en ✓: un solo cambio
+  await tarjeta(page, '1006', '2026-11-04').locator('button.ok').dblclick();
+  await esperarGuardado(page);
+  await page.waitForTimeout(200);
+  ok((await hoja(page, '1006'))['Estado'] === 'Llegó', 'doble clic en ✓ deja "Llegó" (no marca y desmarca)');
+
+  // Una lectura que salió antes de guardar no pisa lo guardado
+  await page.evaluate(() => { window.__LATENCIA__ = {leer: 700, cambiar: 50}; });
+  await page.click('#sync');
+  await tarjeta(page, '1006', '2026-11-04').locator('button.ok').click();
+  await page.waitForTimeout(1000);
+  await page.evaluate(() => { window.__LATENCIA__ = {}; });
+  ok((await hoja(page, '1006'))['Estado'] === 'Agendado' &&
+    !(await tarjeta(page, '1006', '2026-11-04').evaluate((e) => e.classList.contains('e-llego'))), 'una lectura vieja que llega después no pisa lo recién guardado');
+
+  // Lo sin marcar de semanas anteriores lleva a esa semana
+  await page.click('.atrasados');
+  await page.waitForFunction(() => document.getElementById('titulo').textContent === '26 – 31 oct 2026');
+  ok(true, '"ver" lleva a la semana con lo sin marcar');
+  await page.click('#b-hoy');
+  await page.waitForFunction(() => document.getElementById('titulo').textContent === '2 – 8 nov 2026');
 
   // Error de permiso al guardar
   await page.evaluate(() => { window.__SIM__.fallar = 'Exception: You do not have permission to access the requested document.'; });

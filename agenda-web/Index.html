@@ -61,6 +61,7 @@
   .sync.error { color: var(--mal); }
   .resumen-semana { margin-top: 6px; color: var(--suave); font-size: 12.5px; display: flex; gap: 14px; flex-wrap: wrap; }
   .resumen-semana b { color: var(--texto); font-weight: 600; }
+  .atrasados { border: 0; background: var(--naranja-fondo); color: var(--naranja); border-radius: 99px; padding: 1px 9px; font-size: 12.5px; font-weight: 600; }
   .banner { margin: 10px 16px 0; padding: 10px 12px; border-radius: 8px; background: var(--mal-fondo); color: var(--mal); }
 
   main { padding: 12px 16px 40px; }
@@ -358,6 +359,8 @@
     cache: {}, sinFecha: [], todas: null, todasOn: false,
     filtros: {'Despacho': true, 'Devolución': true},
     pendientes: {}, version: 0, abierto: null,
+    escritos: 0, recientes: {},      // guardados ya hechos, para que una lectura empezada antes no los pise
+    atrasados: {cantidad: 0, ultima: ''}, tocado: Date.now(), firmaDetalle: '',
     orden: {campo: 'fecha', asc: true}, busqueda: '',
     ultima: 0, cargando: 0, error: ''
   };
@@ -424,15 +427,26 @@
     st.usuario = r.usuario || st.usuario;
     st.ultima = Date.now();
     st.error = '';
+    if (r.atrasados) st.atrasados = r.atrasados;
+  }
+  /** Lo que se guardó mientras una lectura iba en camino se vuelve a poner encima de esa lectura. */
+  function conGuardados(lista, marca) {
+    return lista.map(function (m) {
+      var g = st.recientes[m.clave];
+      return g && g.n > marca ? g.m : m;
+    });
   }
 
   function cargarSemana(lunes, silencioso) {
     st.cargando++;
     pintarSync();
+    var marca = st.escritos;
     return api('leer', lunes, sumar(lunes, 6)).then(function (r) {
       recibir(r);
-      st.cache[lunes] = r.movimientos.filter(function (m) { return m.fecha; });
-      st.sinFecha = r.movimientos.filter(function (m) { return !m.fecha; });
+      var lista = conGuardados(r.movimientos, marca);
+      st.cache[lunes] = lista.filter(function (m) { return m.fecha; });
+      st.sinFecha = lista.filter(function (m) { return !m.fecha; });
+      if (st.lunes === semanaPorDefecto(st.hoy)) st.siguiendo = true;  // volvió a la semana actual: sigue sola
       if (st.siguiendo && semanaPorDefecto(st.hoy) !== st.lunes) {  // pasó la semana: se mueve sola
         st.lunes = semanaPorDefecto(st.hoy);
         st.dia = null;
@@ -449,9 +463,10 @@
   function cargarTodas() {
     st.cargando++;
     pintarSync();
+    var marca = st.escritos;
     return api('leer', '', '').then(function (r) {
       recibir(r);
-      st.todas = r.movimientos;
+      st.todas = conGuardados(r.movimientos, marca);
       pintar();
     }, function (e) {
       st.error = mensaje(e);
@@ -467,6 +482,12 @@
   }
 
   function refrescar() {
+    // El PC de bodega queda abierto: si nadie la usa en 30 minutos, vuelve sola a la semana actual
+    if (!st.siguiendo && !st.abierto && Date.now() - st.tocado > 30 * 60000) {
+      st.lunes = semanaPorDefecto(st.hoy);
+      st.siguiendo = true;
+      st.dia = null;
+    }
     if (st.vista === 'tabla' && st.todasOn) return cargarTodas();
     return cargarSemana(st.lunes, true);
   }
@@ -586,6 +607,10 @@
     if (t.nollego) partes.push('<span style="color:var(--mal)">✗ ' + t.nollego + ' no ' + plural(t.nollego, 'llegó', 'llegaron') + '</span>');
     if (t.falta) partes.push('<span style="color:var(--naranja)">● ' + t.falta + ' sin marcar</span>');
     if (t.revisar) partes.push('<span style="color:var(--amarillo)">⚠ ' + t.revisar + ' por revisar</span>');
+    if (st.atrasados.cantidad) {
+      partes.push('<button class="atrasados" data-ir="' + lunesDe(st.atrasados.ultima) + '">● ' + st.atrasados.cantidad +
+        ' sin marcar de semanas anteriores · ver</button>');
+    }
     $('resumen').innerHTML = partes.join('');
   }
 
@@ -595,6 +620,7 @@
     if (falta) clases.push('falta');
     if (m._guardando) clases.push('guardando');
     var badge = m.estado && m.estado !== 'Agendado' ? m.estado : falta ? '¿Llegó?' : '';
+    if (m.fechaTexto) badge = 'Fecha: "' + m.fechaTexto + '"';
     var detalleCamion = [m.camion, m.cotizacion ? 'Cot. ' + m.cotizacion : ''].filter(Boolean).join(' · ');
     var titulo = [m.hora, m.tipo, m.cliente, m.obra, m.camion, m.estado].filter(Boolean).join(' · ');
     return '<div class="' + clases.join(' ') + '" role="button" tabindex="0" data-abrir="' + esc(m.clave) + '" title="' + esc(titulo) + '">' +
@@ -717,7 +743,7 @@
       var otroDia = campo === 'fecha' && anterior !== null && m.fecha !== anterior;
       anterior = m.fecha;
       return '<tr data-abrir="' + esc(m.clave) + '" class="' + (otroDia ? 'otro-dia' : '') + '">' +
-        '<td class="nw">' + esc(m.fecha ? fechaCorta(m.fecha) : 'Sin fecha') + '</td>' +
+        '<td class="nw">' + esc(m.fecha ? fechaCorta(m.fecha) : m.fechaTexto || 'Sin fecha') + '</td>' +
         '<td class="nw">' + esc(m.hora) + '</td>' +
         '<td class="nw"><span class="tipo"><span class="punto ' + (m.tipo === 'Devolución' ? 'devo' : 'desp') + '"></span>' + esc(m.tipo) + '</span></td>' +
         '<td>' + esc(m.cliente) + '</td><td>' + esc(m.obra) + '</td><td class="nw">' + esc(m.cotizacion) + '</td>' +
@@ -733,6 +759,12 @@
   function pintarDetalle() {
     var m = buscarMov(st.abierto), panel = $('detalle');
     if (!m) { cerrarDetalle(); return; }
+    var firma = JSON.stringify(m) + st.hoy + faltaMarcar(m);
+    if (firma === st.firmaDetalle && panel.innerHTML) return;  // nada cambió: no mover lo que se está leyendo
+    st.firmaDetalle = firma;
+    var mismo = $('d-nota') && $('d-nota').getAttribute('data-k') === m.clave;  // el mismo movimiento, actualizado
+    var cuerpo = mismo ? panel.querySelector('.d-cuerpo') : null, scroll = cuerpo ? cuerpo.scrollTop : 0;
+    var abiertos = [].map.call(panel.querySelectorAll('details'), function (d) { return d.open; });
     var devo = m.tipo === 'Devolución';
     var aviso = '';
     if (m.estado === 'No llegó' && m.aviso) aviso = '<div class="d-aviso mal">Ya se avisó a pendientes para reagendar (' + esc(m.aviso) + ').</div>';
@@ -746,7 +778,8 @@
         '<button class="cerrar" data-accion="cerrar" aria-label="Cerrar">×</button></div>' +
       '<div class="d-cuerpo">' +
         '<h2 id="d-titulo">' + esc(m.cliente || '(sin cliente)') + '</h2>' +
-        '<div class="d-cuando">' + esc(m.fecha ? fechaLarga(m.fecha) : 'Sin fecha') + (m.hora ? ' · ' + esc(m.hora) : '') + '</div>' +
+        '<div class="d-cuando">' + esc(m.fecha ? fechaLarga(m.fecha) : m.fechaTexto ? 'Fecha escrita: "' + m.fechaTexto + '" (no se entiende como fecha)' : 'Sin fecha') +
+          (m.hora ? ' · ' + esc(m.hora) : '') + '</div>' +
         '<dl class="d-datos">' +
           (m.obra ? '<dt>Obra</dt><dd>' + esc(m.obra) + '</dd>' : '') +
           (m.cotizacion ? '<dt>Cotización</dt><dd>' + esc(m.cotizacion) + '</dd>' : '') +
@@ -774,6 +807,10 @@
         '<details' + (historial.length > 1 ? '' : ' open') + '><summary>Historial (' + historial.length + ')</summary><ol>' +
           historial.map(function (h) { return '<li>' + esc(h) + '</li>'; }).join('') + '</ol></details>' +
       '</div>';
+    if (cuerpo) {
+      panel.querySelectorAll('details').forEach(function (d, i) { if (abiertos[i] !== undefined) d.open = abiertos[i]; });
+      panel.querySelector('.d-cuerpo').scrollTop = scroll;
+    }
     actualizarBotonNota();
   }
 
@@ -797,6 +834,7 @@
     var pedido = {fila: m.fila, clave: clave};
     for (var k in cambio) pedido[k] = cambio[k];
     return api('cambiar', pedido).then(function (nuevo) {
+      st.recientes[nuevo.clave] = {m: nuevo, n: ++st.escritos};
       reemplazar(nuevo);
       if (st.pendientes[clave] && st.pendientes[clave].v === v) delete st.pendientes[clave];
       st.error = '';
@@ -819,6 +857,18 @@
   function marcar(clave, estado) {
     var m = buscarMov(clave);
     if (!m || m.estado === estado) return Promise.resolve();
+    var quien = m.tipo === 'Devolución' ? 'Javier' : 'Andrea';
+    if (m.aviso && m.estado === 'No llegó') {
+      return confirmar('Ya se avisó que no llegó',
+        'El ' + m.aviso.replace(/^enviando /, '') + ' se mandó a pendientes (con copia a ' + quien + ') para reagendar. ' +
+        'Si el camión sí vino o no hay que reagendar, avísale a ' + quien + '.', 'Cambiar a ' + estado)
+        .then(function (si) { if (si) return guardar(m, {estado: estado}); });
+    }
+    if (estado === 'No llegó' && m.aviso) {
+      return confirmar('¿El camión no llegó?', 'Ya se había avisado a pendientes el ' + m.aviso.replace(/^enviando /, '') +
+        ': no se manda un aviso nuevo. Si hay que reagendar otra vez, avísale a ' + quien + '.', 'Marcar no llegó')
+        .then(function (si) { if (si) return guardar(m, {estado: estado}); });
+    }
     if (estado === 'No llegó') {
       return confirmar('¿El camión no llegó?',
         (m.cliente || m.tipo) + (m.fecha ? ', ' + fechaLarga(m.fecha) : '') + (m.hora ? ' ' + m.hora : '') +
@@ -838,6 +888,7 @@
     $('m-texto').textContent = texto;
     $('m-si').textContent = si;
     $('modal').hidden = false;
+    st.modalDesde = Date.now();
     $('m-si').focus();
     return new Promise(function (ok) { resolverModal = ok; });
   }
@@ -871,6 +922,7 @@
     $('detalle').hidden = true;
     $('velo').hidden = true;
     $('detalle').innerHTML = '';
+    st.firmaDetalle = '';
     if (foco && foco.focus && document.body.contains(foco)) foco.focus();
   }
   function actualizarBotonNota() {
@@ -912,12 +964,16 @@
   }
 
   // --- Eventos ------------------------------------------------------------------------------------------
+  ['click', 'keydown', 'touchstart'].forEach(function (t) {
+    document.addEventListener(t, function () { st.tocado = Date.now(); }, {capture: true, passive: true});
+  });
   document.addEventListener('click', function (ev) {
     var el = ev.target;
     var acc = el.closest('[data-accion]');
     if (acc) {
       ev.stopPropagation();
       var a = acc.getAttribute('data-accion'), k = acc.getAttribute('data-k');
+      if ((a === 'ok' || a === 'no') && (ev.detail > 1 || st.pendientes[k])) return;  // doble clic: un solo cambio
       if (a === 'ok') { var m = buscarMov(k); if (m) marcar(k, m.estado === 'Llegó' ? 'Agendado' : 'Llegó'); }
       else if (a === 'no') { var n = buscarMov(k); if (n) marcar(k, n.estado === 'No llegó' ? 'Agendado' : 'No llegó'); }
       else if (a === 'cerrar') cerrarDetalle();
@@ -928,7 +984,10 @@
       return;
     }
     var est = el.closest('[data-estado]');
-    if (est && st.abierto) { marcar(st.abierto, est.getAttribute('data-estado')); return; }
+    if (est && st.abierto) {
+      if (!st.pendientes[st.abierto] && ev.detail <= 1) marcar(st.abierto, est.getAttribute('data-estado'));
+      return;
+    }
     if (el.closest('select')) return;
     var dia = el.closest('[data-dia]');
     if (dia) { st.dia = dia.getAttribute('data-dia'); pintar(); return; }
@@ -941,6 +1000,8 @@
       pintarTabla();
       return;
     }
+    var ir = el.closest('[data-ir]');
+    if (ir) { irA(ir.getAttribute('data-ir')); return; }
     var vista = el.closest('[data-vista]');
     if (vista) cambiarVista(vista.getAttribute('data-vista'));
   });
@@ -967,6 +1028,7 @@
   document.addEventListener('change', function (ev) {
     var sel = ev.target.closest && ev.target.closest('select[data-estado-k]');
     if (sel) {
+      sel.blur();  // si no, la tabla deja de repintarse mientras la lista tenga el foco
       marcar(sel.getAttribute('data-estado-k'), sel.value).then(function () { pintar(); });
       return;
     }
@@ -996,7 +1058,9 @@
   $('velo').onclick = cerrarDetalle;
   $('m-si').onclick = function () { cerrarModal(true); };
   $('m-no').onclick = function () { cerrarModal(false); };
-  $('modal').addEventListener('click', function (ev) { if (ev.target === $('modal')) cerrarModal(false); });
+  $('modal').addEventListener('click', function (ev) {
+    if (ev.target === $('modal') && Date.now() - (st.modalDesde || 0) > 500) cerrarModal(false);
+  });
   movil.addEventListener ? movil.addEventListener('change', pintar) : movil.addListener(pintar);
 
   // La barra de arriba cambia de alto según el ancho: los títulos de los días se pegan justo debajo
