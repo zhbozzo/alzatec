@@ -12,7 +12,8 @@ Planilla: `https://docs.google.com/spreadsheets/d/1E_-OoaJFamsrI8Nlhr-J7qNSXuWpo
   - la semana se elige en la celda **B1** (Esta semana, Semana siguiente, Semana anterior, En 2 semanas, Hace 2 semanas). En "Esta semana" avanza sola y el domingo ya muestra la siguiente.
   - Es solo para mirar.
 - **Hoy**: lo de hoy, ordenado por hora.
-- **Agenda**: una fila por movimiento. Columnas: Fecha, Hora, Tipo (Despacho/Devolución), Cliente, Obra, Cotización, Camión, **Toneladas** (solo el número, para sumar; vacía si el correo no lo dice, por ejemplo "camión 3/4"; desde el 5-nov), **Estado**, **Nota de bodega**, Resumen, Correo, Historial, y las internas Hilo, UID y Aviso.
+- **Correos**: una copia de cada correo que agregó algo a la agenda (de, para, CC, fecha, asunto, adjuntos y el texto con el hilo citado, hasta 12.000 caracteres). Está porque Pato y el gerente no tienen acceso a las casillas. El enlace "Ver correo" de la Agenda busca la fila por UID, así que sigue funcionando aunque se ordenen las hojas. Los adjuntos solo aparecen por nombre.
+- **Agenda**: una fila por movimiento. Columnas: Fecha, Hora, Tipo (Despacho/Devolución), Cliente, Obra, Cotización, Camión, **Toneladas** (solo el número, para sumar; vacía si el correo no lo dice, por ejemplo "camión 3/4"; desde el 5-nov), **Estado**, **Nota de bodega**, Resumen, Correo, Historial, las internas Hilo, UID y Aviso, y al final **Ver correo**: un enlace que salta a la copia del correo en la pestaña Correos.
 
 ## Qué hace Pato
 
@@ -58,6 +59,7 @@ Pato marca **Estado** en la lista de la hoja Agenda y, si quiere, escribe una **
 ## Comandos (job `clasificador`, `--args`)
 
 - `agenda_ver`: solo lectura. Registra el evento `agenda_ver` con las filas por estado y por fecha, cómo se ven y las vistas.
+- `agenda_correos`: copia en la pestaña Correos los correos de la Agenda que falten (sin imágenes, de a 10).
 - `agenda_preparar`: arma las hojas, los títulos, la lista de estados, los colores y las vistas (Semana, Hoy). Se puede correr más de una vez: no toca las filas ni la semana elegida en Semana!B1. Borra la hoja vieja "Próximos 7 días".
 - `agenda_cargar,UID,UID,…`: carga acordados ya reenviados usando la memoria, sin volver a llamar al modelo.
   - Con `agenda_cargar,desde_cero,UID,…` primero vacía la planilla, pero solo si bodega todavía no marcó nada.
