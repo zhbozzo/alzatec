@@ -16,18 +16,25 @@ Es una página tipo Google Calendar hecha con Google Apps Script (código en `ag
   - Cada camión es una tarjeta: hora, tipo (azul = despacho, verde = devolución), cliente, obra, camión y estado.
   - Arriba de cada día salen los movimientos y las toneladas aproximadas.
   - Se navega con **‹ ›** (semana anterior / siguiente) y **Hoy**; en el teclado, ← → y T.
-  - Abre sola en la semana actual (el domingo ya muestra la siguiente), se actualiza cada minuto y, si la dejas abierta, pasa sola a la semana nueva.
+  - Abre sola en la semana actual. El domingo muestra la siguiente, salvo que ese domingo haya camiones.
+  - Se actualiza cada minuto y, si la dejas abierta, pasa sola a la semana nueva.
+  - Si alguien la deja en otra semana, vuelve sola a la actual después de 30 minutos sin uso.
 - **Marcar:**
   - **✓** en la tarjeta = Llegó; tocarlo de nuevo lo desmarca.
   - **✗** = No llegó: pide confirmar y avisa a pendientes.
   - Tocar la tarjeta abre el detalle: los mismos botones, más Anulado, Revisar y Desmarcar, la **Nota de bodega**, lo acordado y el historial.
   - Después de marcar aparece **Deshacer** por unos segundos.
+  - Una nota escrita en el detalle se guarda junto con el estado, y también al cerrar el detalle.
+  - Las tarjetas Reagendado y Anulado no tienen ✓ ✗ (ese camión ya no se espera).
+  - Desmarcar un "No llegó" que ya se avisó pide confirmar y recuerda avisarle a Andrea o Javier: el correo de reagendamiento no se puede deshacer.
   - Marcar "Llegó" algo de un día futuro pide confirmar.
 - **Avisos:**
-  - lo de días pasados (o de hoy, pasada una hora) que sigue sin marcar sale como **¿Llegó?** y se cuenta arriba;
+  - lo de días pasados (o de hoy, pasada una hora) que sigue sin marcar sale como **¿Llegó?** y se cuenta arriba. "AM" o "a primera hora" cuentan como las 12:00, y "PM" o "tarde" como las 18:00;
+  - lo que quedó sin marcar en días anteriores (hasta 2 semanas) sale arriba con un "ver" que lleva a esa semana;
   - lo que no tiene fecha clara sale abajo, en amarillo.
 - **Tabla:** la misma semana (o todas las fechas) en filas, con búsqueda, orden por columna y el estado en una lista.
-- **Celular:** una tira con los días de la semana y la lista del día elegido, con botones grandes.
+- **Celular:** una tira con los días de la semana y la lista del día elegido, con botones grandes. La tira marca con ● los días que tienen camiones sin marcar.
+- **Filtros:** Despachos / Devoluciones. No quedan guardados (al abrir se ve todo) y, si uno oculta algo, se dice arriba.
 - **Imprimir:** imprime la semana.
 - **Quién marcó:** cada cambio queda en la columna Historial con la hora y el usuario (por ejemplo, "04-11 15:20 pfarias: Agendado → Llegó").
 
@@ -57,7 +64,7 @@ Es una página tipo Google Calendar hecha con Google Apps Script (código en `ag
 
 La URL no cambia.
 
-**Probarla sin Google:** `node agenda-web/prueba/probar.js CARPETA` corre la app con una planilla simulada y datos inventados (56 comprobaciones) y deja capturas en CARPETA.
+**Probarla sin Google:** `node agenda-web/prueba/probar.js CARPETA` corre la app con una planilla simulada y datos inventados (77 comprobaciones) y deja capturas en CARPETA.
 
 ## Hojas de la planilla
 
@@ -91,11 +98,24 @@ Pato marca **Estado** en la app (o en la lista de la hoja Agenda) y, si quiere, 
   - si hay varias fechas posibles, no adivina: lo anota en el Historial;
   - si no dice que se cambió (por ejemplo, "segunda devolución"), es otro movimiento y las dos filas quedan agendadas.
 - **Pendiente de cambio o anulación** en el mismo hilo: lo agendado a futuro queda en Revisar.
-- **Una corrección** con `corregir` que saca un acordado deja su fila como Anulado. Si lo vuelve acordado, lo agrega.
+- **Ya llegó, anulada o no llegó:**
+  - si la misma fecha vuelve a llegar en un correo y esa fila ya está en Llegó, no se agrega otra; solo se anota en el Historial;
+  - si estaba Anulado, vuelve a Agendado;
+  - si estaba "No llegó", se agrega la fila nueva (es la nueva hora).
+- **Una corrección** con `corregir` que saca un acordado, o lo cambia de despacho a devolución o al revés, deja la fila anterior como Anulado y agrega la correcta.
 - **La "AGENDA dd-mm-aaaa" diaria de Javier** no se carga: repite lo que ya está en cada hilo.
 - **Cliente y obra:** los da el modelo. Si no vienen, el cliente sale del dominio del correo del cliente (ebco.cl → EBCO) y la obra de "Obra X" en el asunto o el resumen.
-- **Si la planilla falla**, el correo se reenvía igual y llega un aviso a lbpiphone4@gmail.com, como máximo uno cada 3 horas.
-- **Seguridad:** todo se escribe tal cual, así que nada de un correo se interpreta como fórmula.
+- **Aviso de "No llegó":**
+  - antes de mandar el correo se anota "enviando…" en la columna Aviso;
+  - si no se puede anotar, no se manda, así nunca sale dos veces;
+  - si el correo falla, se borra y se reintenta en la próxima corrida.
+- **Escrituras seguras:** antes de escribir, el clasificador vuelve a leer la hoja.
+  - Si alguien la ordenó, ubica la fila por UID, fecha, tipo e hilo.
+  - Arma el Historial con lo último, porque la app también escribe ahí.
+  - No pisa un estado que alguien cambió entremedio.
+- **No mover ni renombrar columnas de la hoja Agenda.** Si cambian, el clasificador no escribe nada y avisa ("no tiene las columnas esperadas"). Se pueden agregar columnas al final, después de Aviso.
+- **Si la planilla falla**, el correo se reenvía igual y llega un aviso a lbpiphone4@gmail.com, como máximo uno cada 3 horas. Si Google dice que hay demasiadas lecturas (unas 60 por minuto, pasa en cargas grandes), espera y reintenta.
+- **Seguridad:** todo se escribe tal cual, así que nada de un correo se interpreta como fórmula. La app guarda notas e historial siempre como texto.
 
 ## Comandos (job `clasificador`, `--args`)
 
