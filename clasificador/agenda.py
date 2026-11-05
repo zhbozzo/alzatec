@@ -293,10 +293,14 @@ def ver(planilla):
             rango = urllib.parse.quote(f"'{t}'!{celdas}")
             vistas[t] = planilla._pedir("GET", f"/values/{rango}").get("values", [])
     como_se_ve = planilla._pedir("GET", "/values/" + urllib.parse.quote(f"{HOJA}!A1:C3")).get("values", [])
+    celdas = planilla._pedir("GET", "", params={"ranges": f"{HOJA}!A2:{ULTIMA}2",
+                                                "fields": "sheets(data(rowData(values(dataValidation))))"})
+    fila2 = ((((celdas.get("sheets") or [{}])[0].get("data") or [{}])[0].get("rowData") or [{}])[0].get("values") or [])
+    con_lista = [COLUMNAS[i] for i, c in enumerate(fila2[:len(COLUMNAS)]) if c.get("dataValidation")]
     return {"hojas": hojas, "locale": planilla.info_locale(), "filas": len(filas),
             "estados": {e: sum(1 for f in filas if f[COL["Estado"]] == e) for e in ESTADOS},
             "por_fecha": {d: sum(1 for f in filas if f[COL["Fecha"]] == d) for d in sorted({f[COL["Fecha"]] for f in filas})},
-            "ultimas": [f[:COL["Nota de bodega"] + 1] for f in filas[-5:]], "como_se_ve": como_se_ve, "vistas": vistas}
+            "ultimas": [f[:COL["Nota de bodega"] + 1] for f in filas[-5:]], "como_se_ve": como_se_ve, "con_lista": con_lista, "vistas": vistas}
 
 
 def tocada_por_bodega(filas):
