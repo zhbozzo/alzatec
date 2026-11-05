@@ -4,68 +4,6 @@ En marcha desde el 4-nov-2026. Es una planilla de Google Sheets paralela al Exce
 
 Planilla: `https://docs.google.com/spreadsheets/d/1E_-OoaJFamsrI8Nlhr-J7qNSXuWpoAYkNYJQiwugXMA` (de Lorenzo). Está compartida como Editor con la cuenta del clasificador, `clasificador@alzatec.iam.gserviceaccount.com`. Su ID va en la variable `AGENDA_ID` de los dos jobs; sin ella el clasificador no toca la agenda. Código en `clasificador/agenda.py`.
 
-Hay dos formas de verla:
-- **la app de calendario** (recomendada, se instala una vez; ver abajo);
-- **la planilla misma**.
-
-## App de calendario
-
-Es una página tipo Google Calendar hecha con Google Apps Script (código en `agenda-web/`). Lee y escribe la misma hoja Agenda, así que todo lo de abajo (reagendamiento, historial) funciona igual.
-
-- **Vista semanal:** lunes a sábado en columnas (domingo solo si hay algo) y las horas en filas.
-  - Cada camión es una tarjeta: hora, tipo (azul = despacho, verde = devolución), cliente, obra, camión y estado.
-  - Arriba de cada día salen los movimientos y las toneladas aproximadas.
-  - Se navega con **‹ ›** (semana anterior / siguiente) y **Hoy**; en el teclado, ← → y T.
-  - Abre sola en la semana actual. El domingo muestra la siguiente, salvo que ese domingo haya camiones.
-  - Se actualiza cada minuto y, si la dejas abierta, pasa sola a la semana nueva.
-  - Si alguien la deja en otra semana, vuelve sola a la actual después de 30 minutos sin uso.
-- **Marcar:**
-  - **✓** en la tarjeta = Llegó; tocarlo de nuevo lo desmarca.
-  - **✗** = No llegó: pide confirmar y avisa a pendientes.
-  - Tocar la tarjeta abre el detalle: los mismos botones, más Anulado, Revisar y Desmarcar, la **Nota de bodega**, lo acordado y el historial.
-  - Después de marcar aparece **Deshacer** por unos segundos.
-  - Una nota escrita en el detalle se guarda junto con el estado, y también al cerrar el detalle.
-  - Las tarjetas Reagendado y Anulado no tienen ✓ ✗ (ese camión ya no se espera).
-  - Desmarcar un "No llegó" que ya se avisó pide confirmar y recuerda avisarle a Andrea o Javier: el correo de reagendamiento no se puede deshacer.
-  - Marcar "Llegó" algo de un día futuro pide confirmar.
-- **Avisos:**
-  - lo de días pasados (o de hoy, pasada una hora) que sigue sin marcar sale como **¿Llegó?** y se cuenta arriba. "AM" o "a primera hora" cuentan como las 12:00, y "PM" o "tarde" como las 18:00;
-  - lo que quedó sin marcar en días anteriores (hasta 2 semanas) sale arriba con un "ver" que lleva a esa semana;
-  - lo que no tiene fecha clara sale abajo, en amarillo.
-- **Tabla:** la misma semana (o todas las fechas) en filas, con búsqueda, orden por columna y el estado en una lista.
-- **Celular:** una tira con los días de la semana y la lista del día elegido, con botones grandes. La tira marca con ● los días que tienen camiones sin marcar.
-- **Filtros:** Despachos / Devoluciones. No quedan guardados (al abrir se ve todo) y, si uno oculta algo, se dice arriba.
-- **Imprimir:** imprime la semana.
-- **Quién marcó:** cada cambio queda en la columna Historial con la hora y el usuario (por ejemplo, "04-11 15:20 pfarias: Agendado → Llegó").
-
-### Instalarla (una vez, en el PC, ~10 minutos)
-
-1. Abrir la planilla → menú **Extensiones → Apps Script**.
-2. En el archivo `Código.gs`, borrar lo que trae y pegar todo `agenda-web/Codigo.gs`.
-3. Junto a "Archivos", **+ → HTML**, nombre `Index` (sin ".html"). Borrar lo que trae y pegar todo `agenda-web/Index.html`.
-4. Guardar (Ctrl+S). Arriba, ponerle de nombre al proyecto "Agenda de camiones".
-5. **Implementar → Nueva implementación** → en el engranaje, **Aplicación web**:
-   - Ejecutar como: **Usuario que accede a la aplicación web**.
-   - Quién tiene acceso: **Cualquier usuario con cuenta de Google**.
-   - **Implementar**.
-6. **Autorizar acceso** → elegir la cuenta.
-   - Sale "Google no verificó esta app" porque es una app propia, no publicada. Se sigue con **Configuración avanzada → Ir a Agenda de camiones (no seguro) → Permitir**.
-   - El permiso dice "todas tus hojas de cálculo", pero el código solo abre esta planilla (su ID está fijo en `Codigo.gs`).
-7. Copiar la **URL de la aplicación web** (termina en `/exec`) y mandarla a Pato y al papá. En el celular se puede agregar a la pantalla de inicio.
-
-**Acceso:**
-- La app usa la cuenta de Google de quien la abre, así que solo funciona para quien tiene la planilla compartida.
-- Con **Editor** se puede marcar; con **Lector** solo se mira (si intenta marcar, la app le dice que pida permiso de Editor).
-- La primera vez cada uno ve la misma pantalla de autorización del paso 6.
-
-**Actualizarla** (si cambia el código):
-1. Pegar los archivos nuevos y guardar.
-2. **Implementar → Gestionar implementaciones** → lápiz → Versión: **Nueva versión** → **Implementar**.
-
-La URL no cambia.
-
-**Probarla sin Google:** `node agenda-web/prueba/probar.js CARPETA` corre la app con una planilla simulada y datos inventados (77 comprobaciones) y deja capturas en CARPETA.
-
 ## Hojas de la planilla
 
 - **Semana**:
@@ -78,7 +16,7 @@ La URL no cambia.
 
 ## Qué hace Pato
 
-Pato marca **Estado** en la app (o en la lista de la hoja Agenda) y, si quiere, escribe una **Nota de bodega**:
+Pato marca **Estado** en la lista de la hoja Agenda y, si quiere, escribe una **Nota de bodega**:
 
 | Estado | Qué significa | Qué hace el agente |
 |---|---|---|
@@ -111,7 +49,7 @@ Pato marca **Estado** en la app (o en la lista de la hoja Agenda) y, si quiere, 
   - si el correo falla, se borra y se reintenta en la próxima corrida.
 - **Escrituras seguras:** antes de escribir, el clasificador vuelve a leer la hoja.
   - Si alguien la ordenó, ubica la fila por UID, fecha, tipo e hilo.
-  - Arma el Historial con lo último, porque la app también escribe ahí.
+  - Arma el Historial con lo último que tiene la hoja.
   - No pisa un estado que alguien cambió entremedio.
 - **No mover ni renombrar columnas de la hoja Agenda.** Si cambian, el clasificador no escribe nada y avisa ("no tiene las columnas esperadas"). Se pueden agregar columnas al final, después de Aviso.
 - **Si la planilla falla**, el correo se reenvía igual y llega un aviso a lbpiphone4@gmail.com, como máximo uno cada 3 horas. Si Google dice que hay demasiadas lecturas (unas 60 por minuto, pasa en cargas grandes), espera y reintenta.

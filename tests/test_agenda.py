@@ -217,7 +217,7 @@ def test_las_escrituras_releen_la_fila_si_ordenaron_la_hoja_o_pato_la_marco():
     agenda.registrar_acordado(p, correo, acordado("vie 07-11-2026 10:00"), 2, ["c:2"], AHORA)
     leidas = p.leer()
     p.filas.reverse()  # alguien ordenó la hoja entre la lectura y la escritura
-    p.filas[0][COL["Historial"]] += " | 04-11 10:05 pfarias: nota: \"ok\""  # y la app agregó algo al Historial
+    p.filas[0][COL["Historial"]] += " | 04-11 10:05 pfarias: nota: \"ok\""  # y alguien agregó algo al Historial
     assert agenda._aplicar(p, [(3, leidas[1], {"Hora": "11:00"}, "prueba", None)], AHORA) == 1
     assert p.filas[0][COL["Hora"]] == "11:00" and p.filas[1][COL["Hora"]] == "10:00"
     assert 'pfarias: nota: "ok" | 04-11 10:00 prueba' in p.filas[0][COL["Historial"]]
@@ -414,17 +414,3 @@ def test_preparar_otra_vez_no_pisa_la_semana_elegida_y_en_ingles_usa_comas():
     agenda.preparar(p)
     assert p.escrito("'Semana'!B1") is None
     assert "WEEKDAY(TODAY(),3)" in p.escrito("'Semana'!A2:G5")[1][0]
-
-
-def test_la_app_web_usa_los_mismos_nombres_que_la_planilla():
-    import pathlib
-    import re as _re
-    raiz = pathlib.Path(__file__).resolve().parent.parent / "agenda-web"
-    codigo = (raiz / "Codigo.gs").read_text(encoding="utf-8")
-    estados = _re.findall(r"'([^']+)'", _re.search(r"var ESTADOS = \[(.*?)\];", codigo).group(1))
-    assert estados == agenda.ESTADOS
-    campos = _re.findall(r"'([^']+)':", _re.search(r"var CAMPOS = \{(.*?)\};", codigo, _re.S).group(1))
-    assert set(campos) <= set(COLUMNAS) and {"Fecha", "Hora", "Tipo", "Estado", "UID", "Aviso"} <= set(campos)
-    assert agenda.HOJA in codigo
-    html = (raiz / "Index.html").read_text(encoding="utf-8")
-    assert _re.search(r"var ESTADOS = \[(.*?)\];", html).group(1).replace("'", "").split(", ") == agenda.ESTADOS

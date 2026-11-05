@@ -10,7 +10,7 @@
 
 Las cotizaciones y el resto no se mueven. No toca MADA ni responde a clientes.
 
-**Etapa 2 (desde el 4-nov):** agenda de camiones en Google Sheets, paralela al Excel de Pato. Solo tiene lo confirmado y la llena sola el clasificador. Pato marca el estado de cada camión; si marca "No llegó", vuelve a pendientes con `[REAGENDAMIENTO]`. Se ve en una app tipo calendario por semana ([`agenda-web/`](agenda-web)) o en la hoja Semana. Ver [12](docs/12-agenda.md).
+**Etapa 2 (desde el 4-nov):** agenda de camiones en Google Sheets, paralela al Excel de Pato. Solo tiene lo confirmado y la llena sola el clasificador. Pato marca el estado de cada camión; si marca "No llegó", vuelve a pendientes con `[REAGENDAMIENTO]`. Se ve por semana en la hoja Semana. Ver [12](docs/12-agenda.md).
 
 ## Documentos
 

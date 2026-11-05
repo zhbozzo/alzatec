@@ -286,7 +286,7 @@ def tocada_por_bodega(filas):
     """True si bodega ya marcó algo (estado o nota): entonces la agenda no se puede vaciar."""
     return any(f[COL["Estado"]] in ("Llegó", "No llegó", "Anulado") or f[COL["Aviso"]] or
                (f[COL["Nota de bodega"]] and not f[COL["Nota de bodega"]].startswith("No se entendió")) or
-               re.search(r"→|: nota|borró la nota", f[COL["Historial"]]) for f in filas)  # cambios hechos en la app
+               re.search(r"→|: nota|borró la nota", f[COL["Historial"]]) for f in filas)  # cambios con historial de quién marcó
 
 
 SEMANA = "Semana"
@@ -370,7 +370,7 @@ def _preparar_semana(planilla, hoja, sep, nueva):
     listas = [f'=IFERROR(SORT(FILTER({texto}{sep}{a("A")}={c}$3)){sep}"—")' for c in columnas]
     rango_txt = f'="del "&TEXT($A$3{sep}"d mmm")&" al "&TEXT($A$3+6{sep}"d mmm yyyy")'
     explicacion = ("Elige la semana en la celda B1 (si la dejas en \"Esta semana\", avanza sola; el domingo ya "
-                   "muestra la siguiente). Los estados se marcan en la hoja Agenda o en la app.")
+                   "muestra la siguiente). Los estados se marcan en la hoja Agenda, columna Estado.")
     pon = lambda celdas, valores: planilla._pedir(  # noqa: E731
         "PUT", "/values/" + urllib.parse.quote(f"'{SEMANA}'!{celdas}"), {"values": valores},
         {"valueInputOption": "USER_ENTERED"})
@@ -482,8 +482,8 @@ def _identidad(f):
 
 def _aplicar(planilla, cambios, ahora):
     """Escribe cambios en filas leídas antes. Vuelve a leer la hoja justo antes de escribir: ubica cada fila por
-    su identidad (por si alguien ordenó la hoja), arma el Historial con lo último que tiene (la app también
-    escribe ahí) y no toca una fila cuyo Estado cambió entremedio (alguien la marcó) o que no cumple `si`.
+    su identidad (por si alguien ordenó la hoja), arma el Historial con lo último que tiene (alguien pudo
+    escribir ahí) y no toca una fila cuyo Estado cambió entremedio (alguien la marcó) o que no cumple `si`.
     cambios: [(n, fila_leída, {columna: valor}, texto_para_historial, si)]. Devuelve cuántas filas cambió."""
     if not cambios:
         return 0
