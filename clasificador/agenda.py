@@ -346,6 +346,11 @@ def ver(planilla):
             "estados": {e: sum(1 for f in filas if f[COL["Estado"]] == e) for e in ESTADOS},
             "por_fecha": {d: sum(1 for f in filas if f[COL["Fecha"]] == d) for d in sorted({f[COL["Fecha"]] for f in filas})},
             "ultimas": [f[:COL["Nota de bodega"] + 1] for f in filas[-5:]], "como_se_ve": como_se_ve, "con_lista": con_lista, "correos": correos,
+            "marcadas": [[f[COL[c]] for c in ("Fecha", "Hora", "Tipo", "Cliente", "Estado", "Nota de bodega", "Aviso")]
+                         for f in filas if f[COL["Estado"]] in ("Llegó", "No llegó", "Anulado") or
+                         (f[COL["Nota de bodega"]] and not f[COL["Nota de bodega"]].startswith("No se entendió"))],
+            "sin_marcar_pasadas": sum(1 for f in filas if f[COL["Estado"]] == "Agendado" and f[COL["Fecha"]] and
+                                      f[COL["Fecha"]] < datetime.datetime.now(CHILE).date().isoformat()),
             "enlaces": enlaces, "vistas": vistas}
 
 
