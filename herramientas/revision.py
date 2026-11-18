@@ -140,12 +140,13 @@ def cobertura(correos, desde, hasta):
             texto = " ".join((x.get("citado") or "").split())
             # solo cuando el remitente citado ("De:" o "From:") es la persona, no cuando aparece en "Para:"
             patron = (r"(?:De|From):\s*['\"]?[^\n<]{0,40}?" + rx + r"[^\n]{0,150}?(?:Enviado(?: el)?|Sent|Fecha|Date):\s*\w+,?\s*(\d{1,2})\s*(?:de\s*)?(\w+)"
-                      r"\s*(?:de\s*)?(\d{4})\s*(?:a las\s*)?(\d{1,2}):(\d{2})")
+                      r"\s*(?:de\s*)?(\d{4})\s*(?:a las\s*)?(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])?\.?\s*(?:m\b\.?)?")
             for m in re.finditer(patron, texto, re.I):
                 mes = MESES.get(m.group(2).lower())
                 if not mes:
                     continue
-                local = datetime.datetime(int(m.group(3)), mes, int(m.group(1)), int(m.group(4)), int(m.group(5)))
+                hora = int(m.group(4)) % 12 + (12 if (m.group(6) or "").lower() == "p" else 0) if m.group(6) else int(m.group(4))
+                local = datetime.datetime(int(m.group(3)), mes, int(m.group(1)), hora, int(m.group(5)))  # "3:17 p. m." = 15:17
                 if desde <= local.date() < hasta:
                     citados.add(local)
         faltan = []
