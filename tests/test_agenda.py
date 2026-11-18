@@ -506,3 +506,29 @@ def test_correos_faltantes_copia_de_a_poco_los_que_no_estan(cfg, monkeypatch):
     monkeypatch.setattr(principal, "_planilla", lambda c: p)
     principal.correos_faltantes(cfg, BuzonFalso([correo_crudo(), correo_crudo(), correo_crudo()]), lote=1)
     assert sorted(f[0] for f in p.correos) == ["1", "2", "3"] and lotes == [1, 1]
+
+
+def test_cancelar_un_dia_de_una_serie_solo_deja_ese_dia_en_revisar():
+    p, correo = PlanillaFalsa(), leer(correo_crudo())
+    serie = acordado("jue 12-11-2026 10:00; jue 19-11-2026 10:00; jue 26-11-2026 10:00", "recepcion_acordada", "Serie.")
+    agenda.registrar_acordado(p, correo, serie, 7, ["h:a"], AHORA)
+    r = resultado(falta=("cambio_o_anulacion",), movimiento="recepcion")
+    r.update(fecha_movimiento="jue 12-11-2026 10:00", resumen="El cliente cancela la devolución del jueves 12.")
+    assert agenda.marcar_cambio(p, correo, Decision("pendiente", r), 9, ["h:a"], AHORA) == 1
+    assert [f[COL["Estado"]] for f in p.filas] == ["Revisar", "Agendado", "Agendado"]
+    # si el correo no nombra una fecha agendada, se marcan todas las del hilo (como antes)
+    r.update(fecha_movimiento="", resumen="El cliente pide cambiar la devolución, sin decir cuál.")
+    assert agenda.marcar_cambio(p, correo, Decision("pendiente", r), 10, ["h:a"], AHORA) == 2
+    # y a mano se puede volver a Agendado una fila
+    assert agenda.marcar_a_mano(p, 7, "2026-11-19", "Agendado", "corregido: no se anuló", AHORA) == 1
+    assert p.filas[1][COL["Estado"]] == "Agendado" and "corregido: no se anuló" in p.filas[1][COL["Historial"]]
+
+
+def test_cambio_de_fecha_nombra_la_vieja_y_la_nueva():
+    p, correo = PlanillaFalsa(), leer(correo_crudo())
+    agenda.registrar_acordado(p, correo, acordado("mar 17-11-2026 10:00; mar 24-11-2026 10:00", "recepcion_acordada", "Dos."),
+                              7, ["h:a"], AHORA)
+    r = resultado(falta=("cambio_o_anulacion",), movimiento="recepcion")
+    r.update(fecha_movimiento="mié 18-11-2026", resumen="Pide cambiar la devolución agendada para el 17-11 al 18-11.")
+    assert agenda.marcar_cambio(p, correo, Decision("pendiente", r), 9, ["h:a"], AHORA) == 1
+    assert [f[COL["Estado"]] for f in p.filas] == ["Revisar", "Agendado"]

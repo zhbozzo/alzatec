@@ -505,6 +505,10 @@ def main(argv=None):
         elif accion == "agenda_cargar":  # agenda_cargar [desde_cero] UID UID...: acordados ya reenviados, en orden
             cargar_agenda(cfg, buzon, [int(a) for a in argv[1:] if a.isdigit()], desde_cero="desde_cero" in argv[1:])
             return
+        elif accion == "agenda_marcar":  # agenda_marcar,UID,AAAA-MM-DD,Estado,motivo: arreglar una fila a mano
+            n = agenda.marcar_a_mano(_planilla(cfg), argv[1], argv[2], argv[3], "corregido: " + ",".join(argv[4:]))
+            registrar(evento="agenda", uid=argv[1], accion="marcada_a_mano", fecha=argv[2], estado=argv[3], filas=n)
+            return
         elif accion == "agenda_correos":  # copia en la pestaña Correos los correos de la Agenda que falten
             correos_faltantes(cfg, buzon)
             return

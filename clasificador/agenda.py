@@ -349,6 +349,8 @@ def ver(planilla):
             "marcadas": [[f[COL[c]] for c in ("Fecha", "Hora", "Tipo", "Cliente", "Estado", "Nota de bodega", "Aviso")]
                          for f in filas if f[COL["Estado"]] in ("Llegó", "No llegó", "Anulado") or
                          (f[COL["Nota de bodega"]] and not f[COL["Nota de bodega"]].startswith("No se entendió"))],
+            "revisar": [[f[COL[c]] for c in ("Fecha", "Hora", "Tipo", "Cliente", "UID")] + [f[COL["Historial"]].split(" | ")[-1]]
+                        for f in filas if f[COL["Estado"]] == "Revisar"],
             "sin_marcar_pasadas": sum(1 for f in filas if f[COL["Estado"]] == "Agendado" and f[COL["Fecha"]] and
                                       f[COL["Fecha"]] < datetime.datetime.now(CHILE).date().isoformat()),
             "enlaces": enlaces, "vistas": vistas}
@@ -705,13 +707,29 @@ def registrar_acordado(planilla, correo, decision, uid, claves, ahora=None):
 
 
 def marcar_cambio(planilla, correo, decision, uid, claves, ahora=None):
-    """Un pendiente de cambio o anulación deja en Revisar lo agendado a futuro en el mismo hilo."""
+    """Un pendiente de cambio o anulación deja en Revisar lo agendado a futuro en el mismo hilo. Si el correo
+    nombra una fecha que está agendada (la que se cambia o se anula), solo esa: en una serie de devoluciones
+    semanales, cancelar el jueves 12 no toca los otros jueves. Si no nombra ninguna, todas las del hilo."""
     ahora = ahora or datetime.datetime.now(CHILE)
-    tipo = {"despacho": "Despacho", "recepcion": "Devolución"}.get(decision.resultado.get("movimiento"))
-    cambios = [(n, f, {"Estado": "Revisar"}, f"piden cambio o anulación (UID {uid})", None)
-               for n, f in enumerate(planilla.leer(), start=2)
-               if _mismo_hilo(f, claves) and (tipo is None or f[COL["Tipo"]] == tipo) and f[COL["Estado"]] == "Agendado"
-               and f[COL["Fecha"]] >= ahora.date().isoformat()]
+    r = decision.resultado
+    tipo = {"despacho": "Despacho", "recepcion": "Devolución"}.get(r.get("movimiento"))
+    candidatas = [(n, f) for n, f in enumerate(planilla.leer(), start=2)
+                  if _mismo_hilo(f, claves) and (tipo is None or f[COL["Tipo"]] == tipo) and f[COL["Estado"]] == "Agendado"
+                  and f[COL["Fecha"]] >= ahora.date().isoformat()]
+    nombradas = {d.isoformat() for texto in (r.get("fecha_movimiento"), r.get("resumen"))
+                 for d, _ in fechas_horas(texto, ahora.date())}
+    elegidas = [(n, f) for n, f in candidatas if f[COL["Fecha"]] in nombradas] or candidatas
+    cambios = [(n, f, {"Estado": "Revisar"}, f"piden cambio o anulación (UID {uid})", None) for n, f in elegidas]
+    return _aplicar(planilla, cambios, ahora)
+
+
+def marcar_a_mano(planilla, uid, fecha, estado, motivo, ahora=None):
+    """Para arreglar una fila desde Claude: cambia el Estado de la fila de ese UID y fecha, y lo anota."""
+    if estado not in ESTADOS:
+        raise ValueError(f"Estado no válido: {estado}")
+    ahora = ahora or datetime.datetime.now(CHILE)
+    cambios = [(n, f, {"Estado": estado}, motivo, None) for n, f in enumerate(planilla.leer(), start=2)
+               if f[COL["UID"]] == str(uid) and f[COL["Fecha"]] == fecha and f[COL["Estado"]] != estado]
     return _aplicar(planilla, cambios, ahora)
 
 
