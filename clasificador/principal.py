@@ -16,6 +16,7 @@ from .reglas import Decision, VACIO, decidir
 # US$ por millón de tokens: entrada, entrada en caché, salida
 PRECIOS = {
     "gpt-6.1-sol": (2.0, 0.10, 10.0),
+    "gpt-6.2-sol": (2.0, 0.10, 10.0),  # mismo precio que 6.1 según las fuentes del 24-nov-2026 (verificar en OpenAI)
     "claude-sonnet-5-5": (2.0, 0.20, 10.0),
     "claude-haiku-5-5": (0.10, 0.01, 0.50),
 }
