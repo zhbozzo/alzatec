@@ -140,7 +140,7 @@ def cobertura(correos, desde, hasta):
             texto = " ".join((x.get("citado") or "").split())
             # solo cuando el remitente citado ("De:" o "From:") es la persona, no cuando aparece en "Para:"
             patron = (r"(?:De|From):\s*['\"]?[^\n<]{0,40}?" + rx + r"[^\n]{0,150}?(?:Enviado(?: el)?|Sent|Fecha|Date):\s*\w+,?\s*(\d{1,2})\s*(?:de\s*)?(\w+)"
-                      r"\s*(?:de\s*)?(\d{4})\s*(?:a las\s*)?(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])?\.?\s*(?:m\b\.?)?")
+                      r"\s*(?:de\s*)?(\d{4})\s*(?:a las\s*)?(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*([ap])\.?\s*m\b\.?)?")  # "p. m." completo; la "P" de "Para:" no cuenta
             for m in re.finditer(patron, texto, re.I):
                 mes = MESES.get(m.group(2).lower())
                 if not mes:
