@@ -31,10 +31,10 @@ Las cotizaciones y el resto no se mueven. No toca MADA ni responde a clientes.
 
 ## Clasificador (código)
 
-- [`clasificador/`](clasificador): el agente. Usa un solo modelo (GPT-6.1 Sol) y avisa por correo a `lbpiphone4@gmail.com` si algo falla, con qué pasó y qué hacer. Se corre con `python -m clasificador procesar` (cada 3 minutos) y `python -m clasificador resumen` (una vez al día). Cómo funciona: [07](docs/07-agente-v1.md).
+- [`clasificador/`](clasificador): el agente. Usa un solo modelo (GPT-6.2 Sol desde el 25-nov; antes GPT-6.1 Sol) y avisa por correo a `lbpiphone4@gmail.com` si algo falla, con qué pasó y qué hacer. Se corre con `python -m clasificador procesar` (cada 3 minutos) y `python -m clasificador resumen` (una vez al día). Cómo funciona: [07](docs/07-agente-v1.md).
 - Prueba con los 200 correos etiquetados (necesita las API keys y los datos en `datos/`):
   ```
-  python -m clasificador.evaluar --modelo openai:gpt-6.1-sol
+  python -m clasificador.evaluar --modelo openai:gpt-6.2-sol
   ```
 - Pruebas automáticas, sin red: `pip install -r requirements-dev.txt && python -m pytest`.
 - Puesta en marcha en Google Cloud: [`deploy/README.md`](deploy/README.md).

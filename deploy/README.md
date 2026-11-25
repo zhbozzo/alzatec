@@ -72,7 +72,7 @@ Desde la carpeta del repositorio (`git clone` en Cloud Shell). `DESDE` evita pro
 ```bash
 COMUN="--region $REGION --service-account $SA --cpu 1 --memory 512Mi --max-retries 0 \
   --set-secrets AGENTE_PW=agente-pw:latest,OPENAI_API_KEY=openai-api-key:latest \
-  --set-env-vars MODO=vivo,MODELO=openai:gpt-6.1-sol,ESFUERZO=medium,DESDE=19-Oct-2026"
+  --set-env-vars MODO=vivo,MODELO=openai:gpt-6.2-sol,ESFUERZO=medium,DESDE=19-Oct-2026"
 
 gcloud run jobs deploy clasificador --source . $COMUN --task-timeout 10m --args procesar
 IMAGEN=$(gcloud run jobs describe clasificador --region $REGION --format 'value(spec.template.spec.template.spec.containers[0].image)')

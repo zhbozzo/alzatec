@@ -18,7 +18,7 @@ Código propio en Python ([`clasificador/`](../clasificador)), en Google Cloud: 
 | Pieza | Qué hace |
 |---|---|
 | Reglas fijas | Resuelven sin IA lo que siempre se escribe igual: rebotes, avisos de marca de asistencia, informes `RECEPCION #### - GUIA` de Javier y su plantilla *"agendo su hora de devolución"*. |
-| Modelo | **GPT-6.1 Sol** (esfuerzo medio), con salida JSON estructurada. Lee el texto, el hilo citado y las imágenes (por ejemplo, el pantallazo de agenda de Javier). |
+| Modelo | **GPT-6.2 Sol** desde el 25-nov-2026 (antes GPT-6.1 Sol), esfuerzo medio, con salida JSON estructurada. Lee el texto, el hilo citado y las imágenes (por ejemplo, el pantallazo de agenda de Javier). |
 | Segunda opinión | Opcional y **apagada**. Un segundo modelo podría revisar los "acordados"; solo se activa si la evaluación muestra que hace falta. |
 | A prueba de fallas | Si el modelo rechaza o responde a medias **un** correo, ese correo va a pendientes con `[REVISAR]`. Si falla el servicio (sin saldo, API key, caída) o el envío, la corrida se detiene sin tocar los correos, que se procesan apenas se arregle. |
 | Alertas | Correo a `lbpiphone4@gmail.com` con **qué pasó y qué hacer** (por ejemplo, "Sin saldo en OpenAI: recargar créditos"). Máximo un aviso cada 3 horas por problema, y un aviso cuando se resuelve. Si falla la propia casilla `agente@`, avisa Google Cloud. |
