@@ -561,10 +561,12 @@ def _vistas(planilla, agenda, sep):
         f'{ids["Esta semana"]})'
     pon = lambda celdas, valor: planilla._pedir(  # noqa: E731
         "PUT", "/values/" + urllib.parse.quote(celdas), {"values": [[valor]]}, {"valueInputOption": "USER_ENTERED"})
-    pon(f"'{SEMANA}'!D1", f'=HYPERLINK("#gid={agenda}&fvid="&{cual}{sep}"✔ Marcar estos camiones →")')
+    # con la dirección completa: un enlace corto ("#gid=…&fvid=…") cambia de pestaña pero no aplica la vista
+    url = f"https://docs.google.com/spreadsheets/d/{planilla.id}/edit#gid={agenda}&fvid="
+    pon(f"'{SEMANA}'!D1", f'=HYPERLINK("{url}"&{cual}{sep}"✔ Marcar estos camiones →")')
     pon(f"'{SEMANA}'!A2", EXPLICACION_SEMANA)
     pon("'Hoy'!A1", TITULO_HOY)
-    pon("'Hoy'!C1", f'=HYPERLINK("#gid={agenda}&fvid={ids["Hoy"]}"{sep}"✔ Marcar los de hoy →")')
+    pon("'Hoy'!C1", f'=HYPERLINK("{url}{ids["Hoy"]}"{sep}"✔ Marcar los de hoy →")')
     return ids
 
 

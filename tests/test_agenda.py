@@ -571,8 +571,9 @@ def test_ver_correo_pasa_al_lado_de_nota_de_bodega_y_va_en_cada_fila():
     assert vistas["Camiones: Hoy"]["sortSpecs"][0] == {"dimensionIndex": 0, "sortOrder": "ASCENDING"}
     assert r["vistas_filtradas"]["Hoy"] == 500  # sin vistas viejas que borrar
     semana = p.escrito("'Semana'!D1")[0][0]
-    assert semana.startswith('=HYPERLINK("#gid=1&fvid="&SWITCH($B$1;"Semana siguiente";502;') and semana.count(";") == 10
-    assert p.escrito("'Hoy'!C1")[0][0] == '=HYPERLINK("#gid=1&fvid=500";"✔ Marcar los de hoy →")'
+    url = "https://docs.google.com/spreadsheets/d/x/edit#gid=1&fvid="
+    assert semana.startswith(f'=HYPERLINK("{url}"&SWITCH($B$1;"Semana siguiente";502;') and semana.count(";") == 10
+    assert p.escrito("'Hoy'!C1")[0][0] == f'=HYPERLINK("{url}500";"✔ Marcar los de hoy →")'
     # correr otra vez no mueve nada (la hoja ya tiene "Ver correo" en K)
     otra = PlanillaGrabadora({"Agenda": 1, "Correos": 7})
     assert agenda.vistas_filtradas(otra)["enlace_movido"] is False
