@@ -47,7 +47,7 @@ class Config:
     alertas_a: list = field(default_factory=lambda: ["lbpiphone4@gmail.com"])
 
     # Modelo principal y segunda opinión opcional ("openai:gpt-6.1-sol", "anthropic:claude-sonnet-5-5" o "")
-    modelo: str = "openai:gpt-6.1-sol"
+    modelo: str = "openai:gpt-6.2-sol"
     verificador: str = ""
     esfuerzo: str = "medium"
 
