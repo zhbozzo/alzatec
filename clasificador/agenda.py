@@ -22,13 +22,14 @@ from email.utils import getaddresses
 from . import memoria
 
 HOJA = "Agenda"
+ENLACE = "Ver correo"  # enlace (una fórmula) a la copia del correo en la pestaña Correos
 COLUMNAS = ["Fecha", "Hora", "Tipo", "Cliente", "Obra", "Cotización", "Camión", "Toneladas", "Estado", "Nota de bodega",
-            "Resumen", "Correo", "Historial", "Hilo", "UID", "Aviso"]
-SIN_TONELADAS = [c for c in COLUMNAS if c != "Toneladas"]  # cómo era la hoja antes del 5-nov
+            ENLACE, "Resumen", "Correo", "Historial", "Hilo", "UID", "Aviso"]
+ENLACE_AL_FINAL = [c for c in COLUMNAS if c != ENLACE]  # cómo era la hoja hasta el 25-nov (el enlace iba al final)
+SIN_TONELADAS = [c for c in ENLACE_AL_FINAL if c != "Toneladas"]  # cómo era la hoja antes del 5-nov
 CORREOS = "Correos"  # pestaña con una copia de cada correo, para verlo desde la Agenda
 COLUMNAS_CORREO = ["UID", "Fecha", "De", "Para", "CC", "Asunto", "Adjuntos", "Texto"]
 LARGO_TEXTO = 12000
-ENLACE = "Ver correo"  # última columna de la Agenda (una fórmula; el clasificador no escribe ahí)
 ESTADOS = ["Agendado", "Llegó", "No llegó", "Reagendado", "Anulado", "Revisar"]
 TIPOS = {"despacho_acordado": "Despacho", "recepcion_acordada": "Devolución"}
 try:  # hora de Chile con su horario de invierno (UTC-4) y de verano (UTC-3)
@@ -42,6 +43,12 @@ ULTIMA = chr(ord("A") + len(COLUMNAS) - 1)
 
 def _letra(nombre):
     return chr(ord("A") + COL[nombre])
+
+
+def _separador(locale):
+    """En planillas en español los argumentos de las fórmulas se separan con punto y coma."""
+    idioma = (locale or "en").split("_")[0]
+    return ";" if idioma in ("es", "pt", "de", "fr", "it", "nl", "ru", "tr", "pl") else ","
 
 
 # --- Datos de cada fila ---------------------------------------------------------------------------------
@@ -187,7 +194,7 @@ def filas_nuevas(correo, decision, uid, claves, ahora=None):
         "Toneladas": toneladas(camion(r.get("resumen"), correo.texto_nuevo), r.get("resumen"), correo.texto_nuevo),
         "Correo": f"{(correo.asunto or '')[:120]} · {(correo.fecha or '')[:16]}",
         "Historial": f"{ahora:%d-%m %H:%M} agregado desde el correo", "Hilo": " ".join(claves), "UID": str(uid),
-        "Aviso": "",
+        "Aviso": "", ENLACE: "",  # el enlace lo pone Planilla.agregar
     }
     fechas = fechas_horas(r.get("fecha_movimiento"), ahora.date())
     if not fechas:
@@ -241,6 +248,7 @@ class Planilla:
         self.id = id_planilla
         self._token = token
         self._valor_token = None
+        self._formula_enlace = None
 
     def _pedir(self, metodo, ruta, cuerpo=None, params=None):
         if self._valor_token is None:
@@ -294,11 +302,34 @@ class Planilla:
 
     def agregar(self, filas):
         """Se escribe tal cual (RAW): nada de lo que venga en un correo se interpreta como fórmula. La fecha va
-        como número de día para que la planilla la trate como fecha."""
+        como número de día para que la planilla la trate como fecha. Después se pone el enlace "Ver correo"
+        (una fórmula fija, sin nada del correo) en las filas agregadas."""
         filas = [[_serial(v) if i == COL["Fecha"] else v for i, v in enumerate(f)] for f in filas]
-        rango = urllib.parse.quote(f"{HOJA}!A1:{ULTIMA}")  # sin la columna del enlace (es una fórmula)
-        self._pedir("POST", f"/values/{rango}:append", {"values": filas},
-                    {"valueInputOption": "RAW", "insertDataOption": "OVERWRITE"})
+        rango = urllib.parse.quote(f"{HOJA}!A1:{ULTIMA}")
+        r = self._pedir("POST", f"/values/{rango}:append", {"values": filas},
+                        {"valueInputOption": "RAW", "insertDataOption": "OVERWRITE"}) or {}
+        filas_hechas = re.search(r"![A-Z]+(\d+):[A-Z]+(\d+)$", (r.get("updates") or {}).get("updatedRange", ""))
+        if filas_hechas:
+            try:
+                self.poner_enlaces(int(filas_hechas.group(1)), int(filas_hechas.group(2)))
+            except Exception:  # sin enlace la fila sirve igual; agenda_vistas los repone
+                pass
+
+    def formula_enlace(self):
+        """Busca el UID de su propia fila en la pestaña Correos: sigue funcionando si se ordena la hoja."""
+        if self._formula_enlace is None:
+            hojas = {h["properties"]["title"]: h["properties"]["sheetId"] for h in self.info()["sheets"]}
+            sep, uid = _separador(self.info_locale()), _letra("UID")
+            self._formula_enlace = (
+                f'=HYPERLINK("#gid={hojas[CORREOS]}&range=A"&IFERROR(MATCH(INDEX(${uid}:${uid}{sep}ROW()){sep}'
+                f'{CORREOS}!$A:$A{sep}0){sep}1){sep}"{ENLACE}")')
+        return self._formula_enlace
+
+    def poner_enlaces(self, desde, hasta):
+        if hasta >= desde:
+            letra = _letra(ENLACE)
+            self._pedir("PUT", "/values/" + urllib.parse.quote(f"{HOJA}!{letra}{desde}:{letra}{hasta}"),
+                        {"values": [[self.formula_enlace()]] * (hasta - desde + 1)}, {"valueInputOption": "USER_ENTERED"})
 
     def uids_con_correo(self):
         filas = self._pedir("GET", "/values/" + urllib.parse.quote(f"{CORREOS}!A2:A")).get("values", [])
@@ -321,7 +352,7 @@ class Planilla:
         self._pedir("POST", f"/values/{rango}:clear", {})
 
     def lote(self, pedidos):
-        self._pedir("POST", ":batchUpdate", {"requests": pedidos})
+        return self._pedir("POST", ":batchUpdate", {"requests": pedidos})
 
 
 def ver(planilla):
@@ -338,10 +369,12 @@ def ver(planilla):
                                                 "fields": "sheets(data(rowData(values(dataValidation))))"})
     fila2 = ((((celdas.get("sheets") or [{}])[0].get("data") or [{}])[0].get("rowData") or [{}])[0].get("values") or [])
     con_lista = [COLUMNAS[i] for i, c in enumerate(fila2[:len(COLUMNAS)]) if c.get("dataValidation")]
-    enlace = chr(ord(ULTIMA) + 1)
+    enlace = _letra(ENLACE)
     enlaces = planilla._pedir("GET", "/values/" + urllib.parse.quote(f"{HOJA}!{enlace}1:{enlace}3"),
                               params={"valueRenderOption": "FORMULA"}).get("values", []) if CORREOS in hojas else []
     correos = len(planilla.uids_con_correo()) if CORREOS in hojas else 0
+    filtros = planilla._pedir("GET", "", params={"fields": "sheets(filterViews(filterViewId,title))"})
+    filtros = {v.get("title"): v.get("filterViewId") for h in filtros.get("sheets", []) for v in h.get("filterViews", [])}
     return {"hojas": hojas, "locale": planilla.info_locale(), "filas": len(filas),
             "estados": {e: sum(1 for f in filas if f[COL["Estado"]] == e) for e in ESTADOS},
             "por_fecha": {d: sum(1 for f in filas if f[COL["Fecha"]] == d) for d in sorted({f[COL["Fecha"]] for f in filas})},
@@ -353,7 +386,8 @@ def ver(planilla):
                         for f in filas if f[COL["Estado"]] == "Revisar"],
             "sin_marcar_pasadas": sum(1 for f in filas if f[COL["Estado"]] == "Agendado" and f[COL["Fecha"]] and
                                       f[COL["Fecha"]] < datetime.datetime.now(CHILE).date().isoformat()),
-            "enlaces": enlaces, "vistas": vistas}
+            "enlaces": enlaces, "sin_enlace": sum(1 for f in filas if f[COL[ENLACE]] != ENLACE), "vistas": vistas,
+            "vistas_filtradas": filtros}
 
 
 def tocada_por_bodega(filas):
@@ -364,6 +398,10 @@ def tocada_por_bodega(filas):
 
 
 SEMANA = "Semana"
+EXPLICACION_SEMANA = ("Elige la semana en la celda B1 (si la dejas en \"Esta semana\", avanza sola; el domingo ya "
+                      "muestra la siguiente). Para marcar el Estado, usa el enlace de arriba: abre la Agenda solo con "
+                      "esa semana.")
+TITULO_HOY = "Hoy (solo para mirar)"
 OPCIONES_SEMANA = ["Esta semana", "Semana siguiente", "Semana anterior", "En 2 semanas", "Hace 2 semanas"]
 VISTAS = (SEMANA, "Hoy", HOJA, CORREOS)  # orden de las pestañas
 VIEJAS = ("Próximos 7 días", "Hoja 1", "Sheet1", "Hoja1")  # se borran si están
@@ -399,29 +437,28 @@ def preparar(planilla):
                         for _ in h.get("conditionalFormats", [])]
     planilla.lote(pedidos)
     nueva_columna = _agregar_toneladas(planilla, agenda)
+    if nueva_columna:  # una hoja de antes del 5-nov tampoco tenía el enlace
+        _insertar_enlace(planilla, agenda)
+    else:
+        _mover_enlace(planilla, agenda)
     planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"{HOJA}!A1:{ULTIMA}1"), {"values": [COLUMNAS]},
                     {"valueInputOption": "RAW"})
     if nueva_columna:
         _llenar_toneladas(planilla)
-    # En planillas en español los argumentos de las fórmulas se separan con punto y coma
-    idioma = (planilla.info_locale() or "en").split("_")[0]
-    sep = ";" if idioma in ("es", "pt", "de", "fr", "it", "nl", "ru", "tr", "pl") else ","
+    sep = _separador(planilla.info_locale())
     _preparar_hoy(planilla, hoy, sep)
     _preparar_semana(planilla, semana, sep, semana_nueva)
     _preparar_agenda(planilla, agenda)
     _preparar_correos(planilla, correos, agenda, sep)
+    _vistas(planilla, agenda, sep)
 
 
 def _preparar_correos(planilla, hoja, agenda, sep):
-    """Pestaña Correos (una fila por correo) y, en la última columna de la Agenda, un enlace "Ver correo" que
-    salta a esa fila. El enlace es una sola fórmula que busca el UID: sigue funcionando si se ordenan las hojas."""
+    """Pestaña Correos (una fila por correo) y, en la columna "Ver correo" de la Agenda, un enlace que salta a
+    esa fila (ver Planilla.formula_enlace)."""
     planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"{CORREOS}!A1:H1"), {"values": [COLUMNAS_CORREO]},
                     {"valueInputOption": "RAW"})
-    uid, columna = _letra("UID"), chr(ord(ULTIMA) + 1)
-    formula = (f'={{"{ENLACE}";ARRAYFORMULA(IF({uid}2:{uid}=""{sep}""{sep}HYPERLINK("#gid={hoja}&range=A"&'
-               f'IFERROR(MATCH({uid}2:{uid}{sep}{CORREOS}!$A:$A{sep}0){sep}1){sep}"{ENLACE}")))}}')
-    planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"{HOJA}!{columna}1"), {"values": [[formula]]},
-                    {"valueInputOption": "USER_ENTERED"})
+    planilla.poner_enlaces(2, len(planilla.leer()) + 1)
     anchos = [70, 125, 230, 230, 160, 320, 200, 700]
     planilla.lote([
         {"updateSheetProperties": {"properties": {"sheetId": hoja, "gridProperties": {"frozenRowCount": 1}},
@@ -436,7 +473,7 @@ def _preparar_correos(planilla, hoja, agenda, sep):
                                         "properties": {"pixelSize": ancho}, "fields": "pixelSize"}}
          for i, ancho in enumerate(anchos)] + [
         {"updateDimensionProperties": {"range": {"sheetId": agenda, "dimension": "COLUMNS",
-                                                 "startIndex": len(COLUMNAS), "endIndex": len(COLUMNAS) + 1},
+                                                 "startIndex": COL[ENLACE], "endIndex": COL[ENLACE] + 1},
                                        "properties": {"pixelSize": 95}, "fields": "pixelSize"}},
     ])
 
@@ -455,6 +492,82 @@ def _agregar_toneladas(planilla, agenda):
     return True
 
 
+def _mover_enlace(planilla, agenda):
+    """Hasta el 25-nov "Ver correo" iba al final (una sola fórmula en la celda de títulos). Lo deja al lado de
+    Nota de bodega, con una fórmula por fila. Si la hoja ya está así, no hace nada. Devuelve si la movió."""
+    titulos = planilla._pedir("GET", "/values/" + urllib.parse.quote(f"{HOJA}!1:1")).get("values", [[]])
+    titulos = [str(t).strip() for t in (titulos[0] if titulos else [])]
+    if titulos[:len(COLUMNAS)] == COLUMNAS or not titulos:
+        return False
+    if titulos[:len(ENLACE_AL_FINAL)] != ENLACE_AL_FINAL:
+        raise ValueError(f"La hoja {HOJA} no tiene las columnas esperadas: {', '.join(titulos)}")
+    fin = len(ENLACE_AL_FINAL)
+    if titulos[fin:fin + 1] == [ENLACE]:  # se mueve con su formato y su ancho
+        planilla.lote([{"moveDimension": {"source": {"sheetId": agenda, "dimension": "COLUMNS", "startIndex": fin,
+                                                     "endIndex": fin + 1}, "destinationIndex": COL[ENLACE]}}])
+        # la fórmula vieja (una sola, en la celda de títulos) se cambia por el título solo
+        planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"{HOJA}!{_letra(ENLACE)}1"), {"values": [[ENLACE]]},
+                        {"valueInputOption": "RAW"})
+    else:
+        _insertar_enlace(planilla, agenda)
+    return True
+
+
+def _insertar_enlace(planilla, agenda):
+    planilla.lote([{"insertDimension": {"range": {"sheetId": agenda, "dimension": "COLUMNS",
+                                                  "startIndex": COL[ENLACE], "endIndex": COL[ENLACE] + 1},
+                                        "inheritFromBefore": True}}])
+
+
+FILTRO = "Camiones: "  # así empiezan los nombres de las vistas filtradas que arma el agente
+SEMANAS = {"Esta semana": 0, "Semana siguiente": 1, "Semana anterior": -1, "En 2 semanas": 2, "Hace 2 semanas": -2}
+
+
+def vistas_filtradas(planilla):
+    """Comando agenda_vistas. Deja "Ver correo" al lado de Nota de bodega (hasta el 25-nov iba al final), pone el
+    enlace en todas las filas y arma las vistas filtradas (ver _vistas). Se puede correr más de una vez."""
+    hojas = {h["properties"]["title"]: h["properties"]["sheetId"] for h in planilla.info()["sheets"]}
+    movida = _mover_enlace(planilla, hojas[HOJA])
+    filas = planilla.leer()
+    planilla.poner_enlaces(2, len(filas) + 1)
+    ids = _vistas(planilla, hojas[HOJA], _separador(planilla.info_locale()))
+    return {"enlace_movido": movida, "filas": len(filas), "vistas_filtradas": ids}
+
+
+def _vistas(planilla, agenda, sep):
+    """Vistas filtradas de la Agenda: "Camiones: Hoy" y una por cada semana de Semana!B1, con solo esas fechas
+    ordenadas por fecha y hora. Una vista filtrada no cambia la hoja para los demás. En Semana (D1) y en Hoy (C1)
+    queda un enlace que abre la que corresponde, para marcar el Estado sin buscar las filas. Las fórmulas no
+    llevan separadores (sirven en cualquier idioma); la semana parte el lunes (el día 2 de las planillas fue
+    lunes) y el domingo "Esta semana" ya es la siguiente, como en la hoja Semana."""
+    datos = planilla._pedir("GET", "", params={"fields": "sheets(properties(sheetId),filterViews(filterViewId,title))"})
+    pedidos = [{"deleteFilterView": {"filterId": v["filterViewId"]}} for h in datos.get("sheets", [])
+               for v in h.get("filterViews", []) if str(v.get("title", "")).startswith(FILTRO)]
+    esta = "INT((TODAY()+(WEEKDAY(TODAY())=1)-2)/7)"
+    formulas = {"Hoy": "=$A2=TODAY()"}
+    formulas.update({t: f"=INT(($A2-2)/7)={esta}" + (f"{k:+d}" if k else "") for t, k in SEMANAS.items()})
+    orden = [{"dimensionIndex": COL["Fecha"], "sortOrder": "ASCENDING"},
+             {"dimensionIndex": COL["Hora"], "sortOrder": "ASCENDING"}]
+    pedidos += [{"addFilterView": {"filter": {
+        "title": FILTRO + t, "range": {"sheetId": agenda}, "sortSpecs": orden,
+        "filterSpecs": [{"columnIndex": COL["Fecha"], "filterCriteria": {"condition": {
+            "type": "CUSTOM_FORMULA", "values": [{"userEnteredValue": f}]}}}]}}} for t, f in formulas.items()]
+    respuesta = planilla.lote(pedidos) or {}
+    nuevas = [r["addFilterView"]["filter"]["filterViewId"] for r in respuesta.get("replies", []) if "addFilterView" in r]
+    if len(nuevas) != len(formulas):
+        return {}
+    ids = dict(zip(formulas, nuevas))
+    cual = f"SWITCH($B$1{sep}" + "".join(f'"{t}"{sep}{ids[t]}{sep}' for t in SEMANAS if t != "Esta semana") + \
+        f'{ids["Esta semana"]})'
+    pon = lambda celdas, valor: planilla._pedir(  # noqa: E731
+        "PUT", "/values/" + urllib.parse.quote(celdas), {"values": [[valor]]}, {"valueInputOption": "USER_ENTERED"})
+    pon(f"'{SEMANA}'!D1", f'=HYPERLINK("#gid={agenda}&fvid="&{cual}{sep}"✔ Marcar estos camiones →")')
+    pon(f"'{SEMANA}'!A2", EXPLICACION_SEMANA)
+    pon("'Hoy'!A1", TITULO_HOY)
+    pon("'Hoy'!C1", f'=HYPERLINK("#gid={agenda}&fvid={ids["Hoy"]}"{sep}"✔ Marcar los de hoy →")')
+    return ids
+
+
 def _llenar_toneladas(planilla):
     """Llena Toneladas en las filas que ya estaban, con lo que dicen Camión y Resumen."""
     filas = planilla.leer()
@@ -471,7 +584,7 @@ def _preparar_hoy(planilla, hoja, sep):
     formula = (f'=IFERROR(SORT(FILTER({HOJA}!A2:{fin}{sep}{HOJA}!A2:A=TODAY()){sep}1{sep}TRUE{sep}2{sep}TRUE)'
                f'{sep}"Sin movimientos")')
     planilla._pedir("PUT", "/values/" + urllib.parse.quote(f"'Hoy'!A1:{fin}3"),
-                    {"values": [["Hoy (se actualiza sola; el estado se cambia en la hoja Agenda)"] + [""] * (n - 1),
+                    {"values": [[TITULO_HOY] + [""] * (n - 1),
                                 COLUMNAS[:n], [formula] + [""] * (n - 1)]}, {"valueInputOption": "USER_ENTERED"})
     planilla.lote([
         {"updateSheetProperties": {"properties": {"sheetId": hoja, "gridProperties": {"frozenRowCount": 2}},
@@ -501,8 +614,7 @@ def _preparar_semana(planilla, hoja, sep, nueva):
                for c in columnas]
     listas = [f'=IFERROR(SORT(FILTER({texto}{sep}{a("Fecha")}={c}$3)){sep}"—")' for c in columnas]
     rango_txt = f'="del "&TEXT($A$3{sep}"d mmm")&" al "&TEXT($A$3+6{sep}"d mmm yyyy")'
-    explicacion = ("Elige la semana en la celda B1 (si la dejas en \"Esta semana\", avanza sola; el domingo ya "
-                   "muestra la siguiente). Los estados se marcan en la hoja Agenda, columna Estado.")
+    explicacion = EXPLICACION_SEMANA
     pon = lambda celdas, valores: planilla._pedir(  # noqa: E731
         "PUT", "/values/" + urllib.parse.quote(f"'{SEMANA}'!{celdas}"), {"values": valores},
         {"valueInputOption": "USER_ENTERED"})

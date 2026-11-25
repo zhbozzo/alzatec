@@ -10,10 +10,12 @@ Planilla: `https://docs.google.com/spreadsheets/d/1E_-OoaJFamsrI8Nlhr-J7qNSXuWpo
   - lunes a domingo en columnas, con lo de cada día ordenado por hora en una línea ("08:00  Devolución · EBCO · obra · camión", y el estado entre corchetes si no es Agendado);
   - colores por estado y por tipo, y el día de hoy en azul;
   - la semana se elige en la celda **B1** (Esta semana, Semana siguiente, Semana anterior, En 2 semanas, Hace 2 semanas). En "Esta semana" avanza sola y el domingo ya muestra la siguiente.
-  - Es solo para mirar.
-- **Hoy**: lo de hoy, ordenado por hora.
+  - Es solo para mirar. El enlace **"✔ Marcar estos camiones →"** (D1) abre la Agenda filtrada en la semana elegida.
+- **Hoy**: lo de hoy, ordenado por hora. El enlace **"✔ Marcar los de hoy →"** (C1) abre la Agenda filtrada en hoy.
 - **Correos**: una copia de cada correo que agregó algo a la agenda (de, para, CC, fecha, asunto, adjuntos y el texto con el hilo citado, hasta 12.000 caracteres). Está porque Pato y el gerente no tienen acceso a las casillas. El enlace "Ver correo" de la Agenda busca la fila por UID, así que sigue funcionando aunque se ordenen las hojas. Los adjuntos solo aparecen por nombre.
-- **Agenda**: una fila por movimiento. Columnas: Fecha, Hora, Tipo (Despacho/Devolución), Cliente, Obra, Cotización, Camión, **Toneladas** (solo el número, para sumar; vacía si el correo no lo dice, por ejemplo "camión 3/4"; desde el 5-nov), **Estado**, **Nota de bodega**, Resumen, Correo, Historial, las internas Hilo, UID y Aviso, y al final **Ver correo**: un enlace que salta a la copia del correo en la pestaña Correos.
+- **Agenda**: una fila por movimiento. Columnas: Fecha, Hora, Tipo (Despacho/Devolución), Cliente, Obra, Cotización, Camión, **Toneladas** (solo el número, para sumar; vacía si el correo no lo dice, por ejemplo "camión 3/4"; desde el 5-nov), **Estado**, **Nota de bodega**, **Ver correo** (columna K: un enlace que salta a la copia del correo en la pestaña Correos; hasta el 25-nov iba al final), Resumen, Correo, Historial y las internas Hilo, UID y Aviso.
+  - **Vistas filtradas** (desde el 25-nov): "Camiones: Hoy", "Camiones: Esta semana", "Semana siguiente", "Semana anterior", "En 2 semanas" y "Hace 2 semanas". Muestran solo esas fechas, ordenadas por fecha y hora, sin cambiar el orden de la hoja para los demás. Se abren con los enlaces de Semana y Hoy, o desde Datos → Vistas de filtro. Se marca el Estado ahí mismo.
+  - El enlace "Ver correo" es una fórmula por fila que busca el UID de su fila en Correos. La pone el clasificador al agregar la fila (los datos van tal cual y la fórmula aparte).
 
 ## Qué hace Pato
 
@@ -60,6 +62,7 @@ Pato marca **Estado** en la lista de la hoja Agenda y, si quiere, escribe una **
 
 - `agenda_ver`: solo lectura. Registra el evento `agenda_ver` con las filas por estado y por fecha, cómo se ven y las vistas.
 - `agenda_correos`: copia en la pestaña Correos los correos de la Agenda que falten (sin imágenes, de a 10).
+- `agenda_vistas`: deja "Ver correo" en la columna K (si estaba al final), pone el enlace en todas las filas y vuelve a crear las vistas filtradas "Camiones: …" y los enlaces de Semana (D1) y Hoy (C1). Se puede correr más de una vez.
 - `agenda_preparar`: arma las hojas, los títulos, la lista de estados, los colores y las vistas (Semana, Hoy). Se puede correr más de una vez: no toca las filas ni la semana elegida en Semana!B1. Borra la hoja vieja "Próximos 7 días".
 - `agenda_cargar,UID,UID,…`: carga acordados ya reenviados usando la memoria, sin volver a llamar al modelo.
   - Con `agenda_cargar,desde_cero,UID,…` primero vacía la planilla, pero solo si bodega todavía no marcó nada.

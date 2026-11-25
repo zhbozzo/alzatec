@@ -516,6 +516,9 @@ def main(argv=None):
         elif accion == "agenda_ver":  # solo lectura: hojas, filas por estado, últimas filas y vistas
             registrar(evento="agenda_ver", **agenda.ver(_planilla(cfg)))
             return
+        elif accion == "agenda_vistas":  # "Ver correo" junto a Nota de bodega, enlaces y vistas filtradas por semana
+            registrar(evento="agenda_vistas", **agenda.vistas_filtradas(_planilla(cfg)))
+            return
         elif accion == "agenda_preparar":  # títulos, lista de estados, colores y hojas Hoy / Próximos 7 días
             agenda.preparar(_planilla(cfg))
             registrar(evento="agenda_preparada", id=cfg.agenda_id)

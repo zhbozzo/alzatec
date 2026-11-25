@@ -369,9 +369,12 @@ def test_cargar_agenda_usa_la_memoria_y_saca_cliente_y_obra_del_asunto(cfg, monk
 class PlanillaGrabadora(agenda.Planilla):
     """Planilla que no sale a internet: guarda los pedidos y contesta lo mínimo."""
 
-    def __init__(self, hojas, locale="es_ES"):
+    def __init__(self, hojas, locale="es_ES", filas=0):
         super().__init__("x", token=lambda: "t")
-        self.hojas, self.locale, self.pedidos = dict(hojas), locale, []
+        self.hojas, self.locale, self.pedidos, self.n_filas = dict(hojas), locale, [], filas
+
+    def leer(self):
+        return [[""] * len(COLUMNAS) for _ in range(self.n_filas)]
 
     def _pedir(self, metodo, ruta, cuerpo=None, params=None):
         self.pedidos.append((metodo, ruta, cuerpo, params))
@@ -383,9 +386,12 @@ class PlanillaGrabadora(agenda.Planilla):
         if metodo == "GET" and "conditionalFormats" in campos:
             return {"sheets": [{"properties": {"sheetId": i}, "conditionalFormats": [{}, {}]} for i in self.hojas.values()]}
         if metodo == "POST" and ruta == ":batchUpdate":
-            for p in cuerpo["requests"]:
+            respuestas = []
+            for k, p in enumerate(cuerpo["requests"]):
                 if "addSheet" in p:
                     self.hojas[p["addSheet"]["properties"]["title"]] = 100 + len(self.hojas)
+                respuestas.append({"addFilterView": {"filter": {"filterViewId": 500 + k}}} if "addFilterView" in p else {})
+            return {"replies": respuestas}
         return {}
 
     def escrito(self, celdas):
@@ -405,9 +411,7 @@ def test_preparar_arma_semana_hoy_y_agenda_con_formulas_en_espanol():
     orden = [(r["updateSheetProperties"]["properties"]["sheetId"], r["updateSheetProperties"]["properties"]["index"])
              for r in lotes if "updateSheetProperties" in r and "index" in r["updateSheetProperties"]["properties"]]
     assert orden == [(p.hojas["Semana"], 0), (2, 1), (1, 2), (p.hojas["Correos"], 3)]
-    enlace = p.escrito("Agenda!Q1")[0][0]  # última columna: "Ver correo" que salta a la fila del correo
-    assert enlace.startswith('={"Ver correo";ARRAYFORMULA(IF(O2:O="";"";HYPERLINK("#gid=' + str(p.hojas["Correos"]) + '&range=A"&')
-    assert "MATCH(O2:O;Correos!$A:$A;0)" in enlace and "," not in enlace
+    assert p.escrito("Agenda!A1:Q1") == [COLUMNAS] and COLUMNAS[10] == "Ver correo"
     assert p.escrito("Correos!A1:H1") == [agenda.COLUMNAS_CORREO]
     dias = p.escrito("'Semana'!A2:G5")[1]
     assert dias[0].startswith("=TODAY()-WEEKDAY(TODAY();3)+IF(WEEKDAY(TODAY();2)=7;7;0)+7*SWITCH($B$1;")
@@ -459,8 +463,9 @@ def test_preparar_agrega_la_columna_toneladas_a_una_hoja_vieja_y_la_llena():
     agenda.preparar(p)
     lotes = [r for m, ruta, c, _ in p.pedidos if ruta == ":batchUpdate" for r in c["requests"]]
     insertada = [r["insertDimension"]["range"] for r in lotes if "insertDimension" in r]
-    assert insertada == [{"sheetId": 1, "dimension": "COLUMNS", "startIndex": 7, "endIndex": 8}]
-    assert [r["insertDimension"]["inheritFromBefore"] for r in lotes if "insertDimension" in r] == [True]
+    assert insertada == [{"sheetId": 1, "dimension": "COLUMNS", "startIndex": 7, "endIndex": 8},   # Toneladas
+                         {"sheetId": 1, "dimension": "COLUMNS", "startIndex": 10, "endIndex": 11}]  # Ver correo
+    assert [r["insertDimension"]["inheritFromBefore"] for r in lotes if "insertDimension" in r] == [True, True]
     validaciones = [r["setDataValidation"] for r in lotes if "setDataValidation" in r and r["setDataValidation"]["range"]["sheetId"] == 1]
     con_lista = [v["range"] for v in validaciones if "rule" in v]
     sin_lista = [v["range"] for v in validaciones if "rule" not in v]
@@ -532,3 +537,59 @@ def test_cambio_de_fecha_nombra_la_vieja_y_la_nueva():
     r.update(fecha_movimiento="mié 18-11-2026", resumen="Pide cambiar la devolución agendada para el 17-11 al 18-11.")
     assert agenda.marcar_cambio(p, correo, Decision("pendiente", r), 9, ["h:a"], AHORA) == 1
     assert [f[COL["Estado"]] for f in p.filas] == ["Revisar", "Agendado"]
+
+
+def test_ver_correo_pasa_al_lado_de_nota_de_bodega_y_va_en_cada_fila():
+    import urllib.parse
+
+    class ConEnlaceAlFinal(PlanillaGrabadora):
+        def _pedir(self, metodo, ruta, cuerpo=None, params=None):
+            if metodo == "GET" and urllib.parse.unquote(ruta) == "/values/Agenda!1:1":
+                self.pedidos.append((metodo, ruta, cuerpo, params))
+                return {"values": [agenda.ENLACE_AL_FINAL + ["Ver correo"]]}
+            return super()._pedir(metodo, ruta, cuerpo, params)
+
+    p = ConEnlaceAlFinal({"Semana": 5, "Hoy": 2, "Agenda": 1, "Correos": 7}, filas=3)
+    r = agenda.vistas_filtradas(p)
+    lotes = [x for m, ruta, c, _ in p.pedidos if ruta == ":batchUpdate" for x in c["requests"]]
+    movida = [x["moveDimension"] for x in lotes if "moveDimension" in x]
+    assert movida == [{"source": {"sheetId": 1, "dimension": "COLUMNS", "startIndex": 16, "endIndex": 17},
+                       "destinationIndex": 10}]
+    assert p.escrito("Agenda!K1") == [["Ver correo"]]  # la fórmula vieja de la celda de títulos se va
+    enlaces = p.escrito("Agenda!K2:K4")
+    assert len(enlaces) == 3 and enlaces[0] == enlaces[2]
+    assert enlaces[0][0] == ('=HYPERLINK("#gid=7&range=A"&IFERROR(MATCH(INDEX($P:$P;ROW());Correos!$A:$A;0);1);'
+                             '"Ver correo")')
+    # vistas filtradas: hoy y las 5 semanas de Semana!B1, ordenadas por fecha y hora
+    vistas = {x["addFilterView"]["filter"]["title"]: x["addFilterView"]["filter"] for x in lotes if "addFilterView" in x}
+    assert list(vistas) == ["Camiones: Hoy", "Camiones: Esta semana", "Camiones: Semana siguiente",
+                            "Camiones: Semana anterior", "Camiones: En 2 semanas", "Camiones: Hace 2 semanas"]
+    formula = lambda t: vistas[t]["filterSpecs"][0]["filterCriteria"]["condition"]["values"][0]["userEnteredValue"]  # noqa: E731
+    assert formula("Camiones: Hoy") == "=$A2=TODAY()"
+    assert formula("Camiones: Esta semana") == "=INT(($A2-2)/7)=INT((TODAY()+(WEEKDAY(TODAY())=1)-2)/7)"
+    assert formula("Camiones: Hace 2 semanas").endswith("-2)/7)-2")
+    assert vistas["Camiones: Hoy"]["sortSpecs"][0] == {"dimensionIndex": 0, "sortOrder": "ASCENDING"}
+    assert r["vistas_filtradas"]["Hoy"] == 500  # sin vistas viejas que borrar
+    semana = p.escrito("'Semana'!D1")[0][0]
+    assert semana.startswith('=HYPERLINK("#gid=1&fvid="&SWITCH($B$1;"Semana siguiente";502;') and semana.count(";") == 10
+    assert p.escrito("'Hoy'!C1")[0][0] == '=HYPERLINK("#gid=1&fvid=500";"✔ Marcar los de hoy →")'
+    # correr otra vez no mueve nada (la hoja ya tiene "Ver correo" en K)
+    otra = PlanillaGrabadora({"Agenda": 1, "Correos": 7})
+    assert agenda.vistas_filtradas(otra)["enlace_movido"] is False
+
+
+def test_al_agregar_una_fila_le_pone_el_enlace_sin_tocar_lo_demas():
+    class Agrega(PlanillaGrabadora):
+        def _pedir(self, metodo, ruta, cuerpo=None, params=None):
+            if metodo == "POST" and ruta.endswith(":append"):
+                self.pedidos.append((metodo, ruta, cuerpo, params))
+                return {"updates": {"updatedRange": "Agenda!A271:Q272"}}
+            return super()._pedir(metodo, ruta, cuerpo, params)
+
+    p = Agrega({"Agenda": 1, "Correos": 7})
+    p.agregar([["2026-11-26", "10:00", "Despacho", "=IMPORTXML(1)"] + [""] * 13] * 2)
+    metodo, ruta, cuerpo, params = p.pedidos[0]
+    assert params["valueInputOption"] == "RAW" and cuerpo["values"][0][3] == "=IMPORTXML(1)"
+    assert len(p.escrito("Agenda!K271:K272")) == 2
+    puesto = [x for x in p.pedidos if x[0] == "PUT"][0]
+    assert puesto[3]["valueInputOption"] == "USER_ENTERED" and puesto[2]["values"][0][0].startswith("=HYPERLINK(")
